@@ -1,0 +1,9 @@
+*.beam
+*.ez
+/build
+erl_crash.dump
+build/
+/build/
+# Auto generated bundles
+priv/static/todomvc.min.mjs
+priv/static/todomvc.mjs

@@ -1,0 +1,13 @@
+name = "tandemx_server"
+version = "1.0.0"
+
+target = "erlang"
+
+[dependencies]
+gleam_stdlib = "~> 0.32"
+gleam_http = ">= 3.7.2 and < 4.0.0"
+mist = ">= 4.0.6 and < 5.0.0"
+simplifile = "~> 2.2"
+gleam_erlang = ">= 0.34.0 and < 1.0.0"
+gleam_bitwise = ">= 1.3.1 and < 2.0.0"
+argv = ">= 1.0.2 and < 2.0.0"

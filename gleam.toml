@@ -1,0 +1,19 @@
+name = "tandemx_client"
+version = "1.0.0"
+
+[dependencies]
+gleam_stdlib = "~> 0.32"
+lustre = "~> 3.0"
+
+[dev-dependencies]
+gleeunit = "~> 1.0"
+
+target = "javascript"
+
+modules = [
+  "src/todomvc",
+  "src/cards",
+  "src/contracts",
+  "src/divvyqueue",
+  "src/components/nav"
+] 

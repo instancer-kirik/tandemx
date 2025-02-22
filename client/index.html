@@ -6,6 +6,7 @@
         <title>TandemX Platform</title>
         <link rel="stylesheet" href="https://unpkg.com/todomvc-common@1.0.5/base.css">
         <link rel="stylesheet" href="https://unpkg.com/todomvc-app-css@2.4.2/index.css">
+        <link rel="stylesheet" href="src/chartspace.css">
         <style>
             /* Navigation */
             .nav-tray {
@@ -78,13 +79,62 @@
             .todoapp {
                 padding-top: 1rem;
             }
+
+            /* Route containers */
+            .route-container {
+                display: none;
+            }
+            .route-container.active {
+                display: block;
+            }
         </style>
     </head>
     <body>
-        <div id="app"></div>
+        <nav class="nav-tray">
+            <button class="nav-toggle">☰</button>
+            <div class="navbar">
+                <div class="nav-brand">
+                    <a href="#">TandemX</a>
+                </div>
+                <div class="nav-links">
+                    <a href="#/" class="nav-link">Todo</a>
+                    <a href="#/chartspace" class="nav-link">Chartspace</a>
+                </div>
+            </div>
+        </nav>
+
+        <div id="todo-container" class="route-container"></div>
+        <div id="chartspace-container" class="route-container"></div>
+
         <script type="module">
-            import { main } from './build/dev/javascript/tandemx_client/todomvc.mjs'
-            main()
+            import { main as todoMain } from './build/dev/javascript/tandemx_client/todomvc.mjs'
+            import { main as chartspaceMain } from "./build/dev/javascript/tandemx/main.mjs"
+
+            // Simple router
+            function handleRoute() {
+                const hash = window.location.hash || '#/'
+                const todoContainer = document.getElementById('todo-container')
+                const chartspaceContainer = document.getElementById('chartspace-container')
+
+                if (hash === '#/chartspace') {
+                    todoContainer.classList.remove('active')
+                    chartspaceContainer.classList.add('active')
+                    chartspaceMain()
+                } else {
+                    chartspaceContainer.classList.remove('active')
+                    todoContainer.classList.add('active')
+                    todoMain()
+                }
+            }
+
+            // Handle navigation
+            window.addEventListener('hashchange', handleRoute)
+            handleRoute()
+
+            // Handle nav toggle
+            document.querySelector('.nav-toggle').addEventListener('click', () => {
+                document.querySelector('.navbar').classList.toggle('open')
+            })
         </script>
     </body>
 </html>

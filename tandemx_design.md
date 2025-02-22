@@ -191,4 +191,4 @@ TandemX is a real-time collaboration platform that enables:
 - Collaboration time
 - Resource efficiency
 - Feature adoption
-- Community growth 
+- Community growth

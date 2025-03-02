@@ -1,0 +1,539 @@
+.card-item {
+  background: white;
+  border-radius: 12px;
+  padding: 1.25rem;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  transition: transform 0.2s ease;
+}
+
+.card-item:hover {
+  transform: translateY(-2px);
+}
+
+.card-header {
+  margin-bottom: 0.5rem;
+}
+
+.card-name {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.card-number {
+  font-family: monospace;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.card-details {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.card-balance, .card-limit {
+  background: var(--gray-50);
+  padding: 0.75rem;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.card-balance span, .card-limit span {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.25rem;
+}
+
+.card-balance strong, .card-limit strong {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.wallet-balance {
+  background: var(--gray-50);
+  padding: 0.75rem;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.wallet-balance span {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.25rem;
+}
+
+.wallet-balance strong {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--success);
+}
+
+.card-currency {
+  margin: 0.5rem 0;
+}
+
+.card-currency label {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.25rem;
+}
+
+.card-currency select {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid var(--gray-200);
+  border-radius: 6px;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+}
+
+.card-status {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.spending-controls {
+  background: var(--gray-50);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.spending-controls-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.spending-controls-header:hover {
+  background: var(--gray-100);
+}
+
+.spending-controls-header h3 {
+  font-size: 0.9rem;
+  font-weight: 500;
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.toggle-icon {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.spending-controls-content {
+  padding: 0.75rem;
+  border-top: 1px solid var(--gray-200);
+}
+
+.control-group {
+  margin-bottom: 0.75rem;
+}
+
+.control-group:last-child {
+  margin-bottom: 0;
+}
+
+.control-group label {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.25rem;
+}
+
+.control-group input[type="number"] {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid var(--gray-200);
+  border-radius: 6px;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+}
+
+.control-group input[type="checkbox"] {
+  width: 1rem;
+  height: 1rem;
+}
+
+.card-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.card-actions button {
+  flex: 1;
+  padding: 0.5rem;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.card-actions button:hover {
+  transform: translateY(-1px);
+}
+
+/* Card status variations */
+.card-item.active {
+  border-left: 4px solid var(--success);
+}
+
+.card-item.active .card-status {
+  background: var(--success-light);
+  color: var(--success);
+}
+
+.card-item.frozen {
+  border-left: 4px solid var(--warning);
+}
+
+.card-item.frozen .card-status {
+  background: var(--warning-light);
+  color: var(--warning);
+}
+
+.card-item.cancelled {
+  border-left: 4px solid var(--danger);
+}
+
+.card-item.cancelled .card-status {
+  background: var(--danger-light);
+  color: var(--danger);
+}
+
+/* CSS Variables */
+:root {
+  --success: #22c55e;
+  --success-light: #dcfce7;
+  --warning: #f59e0b;
+  --warning-light: #fef3c7;
+  --danger: #ef4444;
+  --danger-light: #fee2e2;
+  --text-primary: #111827;
+  --text-secondary: #6b7280;
+  --gray-50: #f9fafb;
+  --gray-100: #f3f4f6;
+  --gray-200: #e5e7eb;
+}
+
+/* DeFi App Styles */
+.defi-app {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Wallet Section */
+.wallets-section {
+  margin-bottom: 2rem;
+}
+
+.wallets-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1rem;
+}
+
+.wallet-card {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.wallet-header {
+  margin-bottom: 1rem;
+}
+
+.wallet-name {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--gray-900);
+}
+
+.wallet-address {
+  font-family: monospace;
+  font-size: 0.875rem;
+  color: var(--gray-600);
+}
+
+.wallet-details {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: var(--gray-50);
+  border-radius: 8px;
+}
+
+.wallet-balance span,
+.wallet-network span {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--gray-600);
+  margin-bottom: 0.25rem;
+}
+
+.wallet-balance strong,
+.wallet-network strong {
+  display: block;
+  font-size: 1.1rem;
+  color: var(--gray-900);
+}
+
+.wallet-tokens h3 {
+  font-size: 1rem;
+  color: var(--gray-900);
+  margin-bottom: 0.75rem;
+}
+
+.token-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.token-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem;
+  background: var(--gray-50);
+  border-radius: 6px;
+}
+
+.token-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.token-symbol {
+  font-weight: 500;
+  color: var(--gray-900);
+}
+
+.token-balance {
+  color: var(--gray-600);
+}
+
+.token-value {
+  font-weight: 500;
+  color: var(--gray-900);
+}
+
+/* Protocol Section */
+.protocols-section {
+  margin-bottom: 2rem;
+}
+
+.protocols-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1rem;
+}
+
+.protocol-card {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.protocol-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.protocol-name {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--gray-900);
+}
+
+.protocol-status {
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.protocol-details {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding: 1rem;
+  background: var(--gray-50);
+  border-radius: 8px;
+}
+
+.protocol-tvl span,
+.protocol-apy span {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--gray-600);
+  margin-bottom: 0.25rem;
+}
+
+.protocol-tvl strong,
+.protocol-apy strong {
+  display: block;
+  font-size: 1.1rem;
+  color: var(--gray-900);
+}
+
+.protocol-risk {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.protocol-risk span {
+  font-size: 0.875rem;
+  color: var(--gray-600);
+}
+
+.risk-badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.risk-low {
+  background: var(--success-light);
+  color: var(--success);
+}
+
+.risk-medium {
+  background: var(--warning-light);
+  color: var(--warning);
+}
+
+.risk-high {
+  background: var(--danger-light);
+  color: var(--danger);
+}
+
+/* Position Section */
+.positions-section {
+  margin-bottom: 2rem;
+}
+
+.positions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1rem;
+}
+
+.position-card {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.position-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.position-type {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--gray-900);
+}
+
+.position-amount {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--success);
+}
+
+.position-details {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding: 1rem;
+  background: var(--gray-50);
+  border-radius: 8px;
+}
+
+.position-apy span {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--gray-600);
+  margin-bottom: 0.25rem;
+}
+
+.position-apy strong {
+  display: block;
+  font-size: 1.1rem;
+  color: var(--success);
+}
+
+.position-date {
+  font-size: 0.875rem;
+  color: var(--gray-600);
+  align-self: center;
+}
+
+.close-position-btn {
+  width: 100%;
+  padding: 0.75rem;
+  background: var(--danger);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.close-position-btn:hover {
+  background: var(--danger-dark);
+}
+
+/* Status Classes */
+.status-active {
+  background: var(--success-light);
+  color: var(--success);
+}
+
+.status-paused {
+  background: var(--warning-light);
+  color: var(--warning);
+}
+
+.status-deprecated {
+  background: var(--danger-light);
+  color: var(--danger);
+} 

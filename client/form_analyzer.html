@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Form Analyzer</title>
+    <link rel="stylesheet" href="/styles.css">
+    <style>
+        .form-analyzer {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .form-list {
+            margin-top: 20px;
+        }
+        .form-item {
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+        }
+        .field-list {
+            margin-left: 20px;
+        }
+        .field-item {
+            margin: 5px 0;
+            padding: 5px;
+            background: #f5f5f5;
+            border-radius: 3px;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .status.connected {
+            background: #e6ffe6;
+            color: #006600;
+        }
+        .status.disconnected {
+            background: #ffe6e6;
+            color: #660000;
+        }
+    </style>
+</head>
+<body>
+    <div id="app"></div>
+    <script type="module">
+        import { main } from '/build/dev/javascript/tandemx_client/form_analyzer.mjs';
+        
+        // Initialize the app and make it globally available
+        const app = await main();
+        window.app = app;
+    </script>
+</body>
+</html> 

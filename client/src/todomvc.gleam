@@ -1,6 +1,7 @@
 import components/nav
 import gleam/bool
 import gleam/dict.{type Dict}
+import gleam/dynamic
 import gleam/dynamic/decode
 import gleam/int
 import gleam/list
@@ -186,8 +187,8 @@ fn view(model: Model) -> Element(Msg) {
   html.div(
     [
       attribute.class(case model.nav_open {
-        True -> "nav-open"
-        False -> ""
+        True -> "app-container nav-open"
+        False -> "app-container"
       }),
     ],
     [
@@ -223,7 +224,16 @@ fn main_content(model: Model) -> Element(Msg) {
       |> list.filter(fn(i) { i.completed })
       |> list.sort(compare)
   }
-
+  let input =
+    input(
+      on_enter: UserAddedTodo,
+      on_input: UserUpdatedNewInput,
+      on_blur: None,
+      placeholder: "What needs to be done?",
+      autofocus: True,
+      label: "Add a todo",
+      value: model.new_todo_input,
+    )
   html.main([attribute.class("main")], [
     toggle(dict.values(model.todos) |> list.sort(compare)),
     todo_list(visible_todos, model),
@@ -242,16 +252,17 @@ fn footer(model: Model) -> Element(Msg) {
 }
 
 fn new_todo(model: Model) -> Element(Msg) {
-  html.div([attribute.class("view")], [
-    input(
-      on_enter: UserAddedTodo,
-      on_input: UserUpdatedNewInput,
-      on_blur: None,
-      placeholder: "What needs to be done?",
-      autofocus: True,
-      label: "New Todo Input",
-      value: model.new_todo_input,
-    ),
+  html.div([attribute.class("new-todo-container")], [
+    html.input([
+      attribute.class("new-todo"),
+      attribute.type_("text"),
+      attribute.placeholder("What needs to be done?"),
+      attribute.value(model.new_todo_input),
+      event.on_input(UserUpdatedNewInput),
+    ]),
+    html.button([attribute.class("add-todo"), event.on_click(UserAddedTodo)], [
+      html.text("Add"),
+    ]),
   ])
 }
 
@@ -293,14 +304,16 @@ fn todo_item(item: Todo, model: Model) -> Element(Msg) {
 
 fn todo_item_edit(item: Todo, model: Model) -> Element(Msg) {
   html.div([attribute.class("view")], [
-    input(
-      on_enter: UserEditedTodo(item.id),
-      on_input: UserUpdatedExistingInput,
-      on_blur: Some(UserBlurredExistingTodo(item.id)),
-      placeholder: "",
-      autofocus: False,
-      label: "Edit Todo Input",
-      value: model.existing_todo_input,
+    html.input([
+      attribute.class("edit"),
+      attribute.type_("text"),
+      attribute.value(model.existing_todo_input),
+      event.on_input(UserUpdatedExistingInput),
+      event.on_blur(UserBlurredExistingTodo(item.id)),
+    ]),
+    html.button(
+      [attribute.class("save-todo"), event.on_click(UserEditedTodo(item.id))],
+      [html.text("Save")],
     ),
   ])
 }
@@ -390,10 +403,10 @@ fn input(
       attribute.autofocus(autofocus),
       attribute.placeholder(placeholder),
       attribute.value(value),
+      on_enter_down(on_enter),
       event.on_input(on_input),
       on_blur,
     ]),
-    html.button([event.on_click(on_enter)], [html.text("Add")]),
     html.label(
       [attribute.class("visually-hidden"), attribute.for("todo-input")],
       [html.text(label)],
@@ -420,7 +433,7 @@ fn on_double_click(msg: Msg) -> Attribute(Msg) {
 fn focus_edit_input() -> Effect(msg) {
   use _ <- effect.from
   use <- after_render
-  focus(".todo-list .new-todo")
+  focus(".todo-list .edit")
 }
 
 @external(javascript, "./todomvc_ffi.mjs", "focus")
@@ -428,3 +441,15 @@ fn focus(selector: String) -> Nil
 
 @external(javascript, "./todomvc_ffi.mjs", "after_render")
 fn after_render(do: fn() -> a) -> Nil
+
+fn on_enter_down(msg: Msg) -> Attribute(Msg) {
+  use event <- event.on("keydown")
+  event
+  |> dynamic.field("key", dynamic.string)
+  |> result.try(fn(key) {
+    case key {
+      "Enter" -> Ok(msg)
+      _ -> Error([])
+    }
+  })
+}

@@ -87,6 +87,26 @@
             .route-container.active {
                 display: block;
             }
+
+            /* Form analyzer styles */
+            .form-analyzer-container {
+                padding: 2rem;
+                max-width: 1200px;
+                margin: 0 auto;
+            }
+
+            /* Debug styles */
+            .debug-info {
+                position: fixed;
+                bottom: 1rem;
+                right: 1rem;
+                background: rgba(0,0,0,0.8);
+                color: white;
+                padding: 0.5rem;
+                font-family: monospace;
+                font-size: 12px;
+                border-radius: 4px;
+            }
         </style>
     </head>
     <body>
@@ -99,37 +119,135 @@
                 <div class="nav-links">
                     <a href="#/" class="nav-link">Todo</a>
                     <a href="#/chartspace" class="nav-link">Chartspace</a>
+                    <a href="#/form-analyzer" class="nav-link">Form Analyzer</a>
                 </div>
             </div>
         </nav>
 
         <div id="todo-container" class="route-container"></div>
         <div id="chartspace-container" class="route-container"></div>
+        <div id="form-analyzer-container" class="route-container">
+            <div data-lustre-app="form-analyzer" class="form-analyzer-container"></div>
+        </div>
+
+        <div class="debug-info"></div>
 
         <script type="module">
             import { main as todoMain } from './build/dev/javascript/tandemx_client/todomvc.mjs'
             import { main as chartspaceMain } from "./build/dev/javascript/tandemx/main.mjs"
+            import { main as formAnalyzerMain } from "./build/dev/javascript/tandemx_client/form_analyzer.mjs"
+
+            let currentApp = null;
+
+            // Debug helper
+            function updateDebugInfo(info) {
+                const debugEl = document.querySelector('.debug-info');
+                debugEl.textContent = JSON.stringify(info, null, 2);
+            }
 
             // Simple router
-            function handleRoute() {
+            async function handleRoute() {
                 const hash = window.location.hash || '#/'
+                const pathname = window.location.pathname.slice(1)
                 const todoContainer = document.getElementById('todo-container')
                 const chartspaceContainer = document.getElementById('chartspace-container')
+                const formAnalyzerContainer = document.getElementById('form-analyzer-container')
 
-                if (hash === '#/chartspace') {
-                    todoContainer.classList.remove('active')
-                    chartspaceContainer.classList.add('active')
-                    chartspaceMain()
-                } else {
-                    chartspaceContainer.classList.remove('active')
-                    todoContainer.classList.add('active')
-                    todoMain()
+                // Hide all containers first
+                todoContainer.classList.remove('active')
+                chartspaceContainer.classList.remove('active')
+                formAnalyzerContainer.classList.remove('active')
+
+                // Clean up previous app if exists
+                if (currentApp && currentApp.cleanup) {
+                    currentApp.cleanup();
                 }
+                currentApp = null;
+
+                // Handle direct URLs
+                if (pathname === 'form-analyzer' || hash === '#/form-analyzer') {
+                    // Set route status and show container immediately
+                    document.body.setAttribute('data-current-route', 'form-analyzer');
+                    formAnalyzerContainer.classList.add('active');
+                    
+                    // Initialize container
+                    const appContainer = document.querySelector('[data-lustre-app="form-analyzer"]');
+                    if (appContainer) {
+                        appContainer.innerHTML = '';
+                        appContainer.setAttribute('data-app-status', 'initializing');
+                        // Force container to be visible
+                        appContainer.style.display = 'block';
+                    }
+
+                    // Wait for container to be ready in DOM
+                    await new Promise(resolve => setTimeout(resolve, 50));
+
+                    try {
+                        // Initialize app
+                        currentApp = await formAnalyzerMain();
+                        
+                        // Double check container is still available
+                        const container = document.querySelector('[data-lustre-app="form-analyzer"]');
+                        if (!container) {
+                            throw new Error('Container lost during initialization');
+                        }
+                        
+                        // Update debug info
+                        updateDebugInfo({ 
+                            route: 'form-analyzer',
+                            status: 'initialized',
+                            container_status: container.getAttribute('data-app-status'),
+                            container_visible: container.offsetParent !== null,
+                            app: !!currentApp
+                        });
+
+                        // Update URL if needed
+                        if (pathname === 'form-analyzer') {
+                            window.history.replaceState(null, '', '/#/form-analyzer');
+                        }
+                    } catch (error) {
+                        console.error('Error initializing form analyzer:', error);
+                        updateDebugInfo({ 
+                            route: 'form-analyzer',
+                            status: 'error',
+                            error: error.message
+                        });
+                    }
+                    return;
+                } else if (pathname === 'chartspace' || hash === '#/chartspace') {
+                    chartspaceContainer.classList.add('active');
+                    document.body.setAttribute('data-current-route', 'chartspace');
+                    currentApp = await chartspaceMain();
+                    if (pathname === 'chartspace') {
+                        window.history.replaceState(null, '', '/#/chartspace');
+                    }
+                } else {
+                    todoContainer.classList.add('active');
+                    document.body.setAttribute('data-current-route', 'todo');
+                    currentApp = await todoMain();
+                }
+
+                updateDebugInfo({ 
+                    route: hash || pathname,
+                    status: 'mounted',
+                    app: !!currentApp
+                });
             }
 
             // Handle navigation
-            window.addEventListener('hashchange', handleRoute)
-            handleRoute()
+            window.addEventListener('hashchange', handleRoute);
+            window.addEventListener('popstate', handleRoute);
+
+            // Initial route handling
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', () => {
+                    updateDebugInfo({ status: 'loading' });
+                    handleRoute();
+                });
+            } else {
+                updateDebugInfo({ status: 'ready' });
+                handleRoute();
+            }
 
             // Handle nav toggle
             document.querySelector('.nav-toggle').addEventListener('click', () => {

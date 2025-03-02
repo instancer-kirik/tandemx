@@ -1,10 +1,15 @@
 import chartspace
 import lustre
+import lustre/effect
 import lustre/element
 
 pub fn main() {
-  let init = fn(_) { chartspace.init() }
-  let app = lustre.simple(init, chartspace.update, chartspace.render)
-  let assert Ok(_) = lustre.start(app, onto: "#chartspace-container", with: Nil)
-  Ok(Nil)
+  let app =
+    lustre.application(
+      fn(_) { #(chartspace.init(), effect.none()) },
+      chartspace.update,
+      chartspace.render,
+    )
+  let assert Ok(_) = lustre.start(app, "#chartspace-container", Nil)
+  Nil
 }

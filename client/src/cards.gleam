@@ -4,6 +4,7 @@ import gleam/float
 import gleam/int
 import gleam/list
 import gleam/option.{type Option, None, Some}
+import gleam/result
 import lustre
 import lustre/attribute
 import lustre/effect
@@ -18,7 +19,19 @@ pub type Model {
     subscriptions: Dict(Int, Subscription),
     last_id: Int,
     nav_open: Bool,
+    exchange_rates: Dict(String, Float),
+    wallet_balances: Dict(String, Float),
+    expanded_spending_controls: Dict(Int, Bool),
   )
+}
+
+pub type Currency {
+  USD
+  GBP
+  EUR
+  NGN
+  KES
+  ZAR
 }
 
 pub type Card {
@@ -27,8 +40,23 @@ pub type Card {
     name: String,
     number: String,
     balance: Float,
+    currency: Currency,
     status: CardStatus,
     limit: Float,
+    spending_controls: SpendingControls,
+  )
+}
+
+pub type SpendingControls {
+  SpendingControls(
+    merchant_categories: List(String),
+    country_restrictions: List(String),
+    max_transaction_amount: Float,
+    daily_limit: Float,
+    monthly_limit: Float,
+    allowed_days: List(Int),
+    allowed_hours: List(Int),
+    requires_approval: Bool,
   )
 }
 
@@ -43,7 +71,11 @@ pub type Transaction {
     id: Int,
     card_id: Int,
     amount: Float,
+    original_amount: Float,
+    original_currency: Currency,
     merchant: String,
+    merchant_category: String,
+    country: String,
     date: String,
     status: TransactionStatus,
   )
@@ -70,6 +102,11 @@ pub type Msg {
   UserClickedFreezeCard(Int)
   UserClickedUnfreezeCard(Int)
   UserClickedCancelCard(Int)
+  UserUpdatedSpendingControls(Int, SpendingControls)
+  UserClickedApproveTransaction(Int)
+  UserClickedDeclineTransaction(Int)
+  UserChangedCardCurrency(Int, Currency)
+  ToggleSpendingControls(Int)
   NavMsg(nav.Msg)
 }
 
@@ -80,6 +117,21 @@ pub fn main() {
 }
 
 fn init(_) {
+  let sample_exchange_rates =
+    [
+      #("USD", 1.0),
+      #("GBP", 0.79),
+      #("EUR", 0.92),
+      #("NGN", 860.0),
+      #("KES", 143.0),
+      #("ZAR", 19.0),
+    ]
+    |> dict.from_list()
+
+  let sample_wallet_balances =
+    [#("USD", 2500.0), #("EUR", 1800.0), #("GBP", 1200.0)]
+    |> dict.from_list()
+
   let sample_cards =
     [
       #(
@@ -89,8 +141,19 @@ fn init(_) {
           name: "Daily Expenses",
           number: "**** **** **** 1234",
           balance: 1500.0,
+          currency: USD,
           status: CardActive,
           limit: 2000.0,
+          spending_controls: SpendingControls(
+            merchant_categories: [],
+            country_restrictions: [],
+            max_transaction_amount: 0.0,
+            daily_limit: 0.0,
+            monthly_limit: 0.0,
+            allowed_days: [],
+            allowed_hours: [],
+            requires_approval: False,
+          ),
         ),
       ),
       #(
@@ -100,8 +163,19 @@ fn init(_) {
           name: "Business Travel",
           number: "**** **** **** 5678",
           balance: 3000.0,
+          currency: EUR,
           status: CardActive,
           limit: 5000.0,
+          spending_controls: SpendingControls(
+            merchant_categories: [],
+            country_restrictions: [],
+            max_transaction_amount: 0.0,
+            daily_limit: 0.0,
+            monthly_limit: 0.0,
+            allowed_days: [],
+            allowed_hours: [],
+            requires_approval: False,
+          ),
         ),
       ),
     ]
@@ -115,7 +189,11 @@ fn init(_) {
           id: 1,
           card_id: 1,
           amount: 42.5,
+          original_amount: 42.5,
+          original_currency: USD,
           merchant: "Coffee Shop",
+          merchant_category: "Food",
+          country: "USA",
           date: "2024-03-20",
           status: TransactionCompleted,
         ),
@@ -126,7 +204,11 @@ fn init(_) {
           id: 2,
           card_id: 1,
           amount: 89.99,
+          original_amount: 82.79,
+          original_currency: EUR,
           merchant: "Online Store",
+          merchant_category: "Electronics",
+          country: "Germany",
           date: "2024-03-19",
           status: TransactionPending,
         ),
@@ -157,6 +239,9 @@ fn init(_) {
       subscriptions: sample_subscriptions,
       last_id: 2,
       nav_open: False,
+      exchange_rates: sample_exchange_rates,
+      wallet_balances: sample_wallet_balances,
+      expanded_spending_controls: dict.new(),
     ),
     effect.none(),
   )
@@ -191,6 +276,87 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
       #(Model(..model, cards: cards), effect.none())
     }
 
+    UserUpdatedSpendingControls(id, spending_controls) -> {
+      let cards = case dict.get(model.cards, id) {
+        Ok(card) ->
+          dict.insert(
+            model.cards,
+            id,
+            Card(..card, spending_controls: spending_controls),
+          )
+        Error(_) -> model.cards
+      }
+      #(Model(..model, cards: cards), effect.none())
+    }
+
+    UserClickedApproveTransaction(id) -> {
+      let transactions = case dict.get(model.transactions, id) {
+        Ok(transaction) ->
+          dict.insert(
+            model.transactions,
+            id,
+            Transaction(..transaction, status: TransactionCompleted),
+          )
+        Error(_) -> model.transactions
+      }
+      #(Model(..model, transactions: transactions), effect.none())
+    }
+
+    UserClickedDeclineTransaction(id) -> {
+      let transactions = case dict.get(model.transactions, id) {
+        Ok(transaction) ->
+          dict.insert(
+            model.transactions,
+            id,
+            Transaction(..transaction, status: TransactionDeclined),
+          )
+        Error(_) -> model.transactions
+      }
+      #(Model(..model, transactions: transactions), effect.none())
+    }
+
+    UserChangedCardCurrency(id, currency) -> {
+      let cards = case dict.get(model.cards, id) {
+        Ok(card) -> {
+          let old_rate =
+            dict.get(model.exchange_rates, currency_to_string(card.currency))
+            |> result.unwrap(1.0)
+          let new_rate =
+            dict.get(model.exchange_rates, currency_to_string(currency))
+            |> result.unwrap(1.0)
+          let new_balance = card.balance *. old_rate /. new_rate
+          let new_limit = card.limit *. old_rate /. new_rate
+
+          dict.insert(
+            model.cards,
+            id,
+            Card(
+              ..card,
+              currency: currency,
+              balance: new_balance,
+              limit: new_limit,
+            ),
+          )
+        }
+        Error(_) -> model.cards
+      }
+      #(Model(..model, cards: cards), effect.none())
+    }
+
+    ToggleSpendingControls(id) -> {
+      let expanded_controls = case
+        dict.get(model.expanded_spending_controls, id)
+      {
+        Ok(expanded) ->
+          dict.insert(model.expanded_spending_controls, id, !expanded)
+        Error(_) -> model.expanded_spending_controls
+      }
+      #(
+        Model(..model, expanded_spending_controls: expanded_controls),
+        effect.none(),
+      )
+    }
+
     NavMsg(nav_msg) -> {
       case nav_msg {
         nav.ToggleNav -> #(
@@ -215,7 +381,7 @@ fn view(model: Model) -> Element(Msg) {
       html.main([attribute.class("cards-app")], [
         view_header(),
         view_summary_stats(model),
-        view_cards(model.cards),
+        view_cards(model),
         view_transactions(model.transactions),
         view_subscriptions(model.subscriptions),
       ]),
@@ -258,18 +424,27 @@ fn view_summary_stats(model: Model) -> Element(Msg) {
   ])
 }
 
-fn view_cards(cards: Dict(Int, Card)) -> Element(Msg) {
+fn view_cards(model: Model) -> Element(Msg) {
   html.section([attribute.class("cards-section")], [
     html.h2([], [html.text("Your Cards")]),
     html.div(
       [attribute.class("cards-grid")],
-      dict.values(cards)
-        |> list.map(view_card),
+      dict.values(model.cards)
+        |> list.map(fn(card) { view_card(model, card) }),
     ),
   ])
 }
 
-fn view_card(card: Card) -> Element(Msg) {
+fn view_card(model: Model, card: Card) -> Element(Msg) {
+  let wallet_balance =
+    dict.get(model.wallet_balances, currency_to_string(card.currency))
+    |> result.unwrap(0.0)
+
+  let is_expanded = case dict.get(model.expanded_spending_controls, card.id) {
+    Ok(expanded) -> expanded
+    Error(_) -> False
+  }
+
   html.div(
     [
       attribute.class(
@@ -289,12 +464,72 @@ fn view_card(card: Card) -> Element(Msg) {
       html.div([attribute.class("card-details")], [
         html.div([attribute.class("card-balance")], [
           html.span([], [html.text("Balance")]),
-          html.strong([], [html.text("$" <> float.to_string(card.balance))]),
+          html.strong([], [
+            html.text(
+              currency_symbol(card.currency) <> float.to_string(card.balance),
+            ),
+          ]),
         ]),
         html.div([attribute.class("card-limit")], [
           html.span([], [html.text("Limit")]),
-          html.strong([], [html.text("$" <> float.to_string(card.limit))]),
+          html.strong([], [
+            html.text(
+              currency_symbol(card.currency) <> float.to_string(card.limit),
+            ),
+          ]),
         ]),
+      ]),
+      html.div([attribute.class("wallet-balance")], [
+        html.span([], [html.text("Available in Wallet")]),
+        html.strong([], [
+          html.text(
+            currency_symbol(card.currency) <> float.to_string(wallet_balance),
+          ),
+        ]),
+      ]),
+      html.div([attribute.class("card-currency")], [
+        html.label([], [html.text("Currency")]),
+        html.select(
+          [
+            event.on_input(fn(value) {
+              case value {
+                "USD" -> UserChangedCardCurrency(card.id, USD)
+                "GBP" -> UserChangedCardCurrency(card.id, GBP)
+                "EUR" -> UserChangedCardCurrency(card.id, EUR)
+                "NGN" -> UserChangedCardCurrency(card.id, NGN)
+                "KES" -> UserChangedCardCurrency(card.id, KES)
+                "ZAR" -> UserChangedCardCurrency(card.id, ZAR)
+                _ -> UserChangedCardCurrency(card.id, USD)
+              }
+            }),
+          ],
+          [
+            html.option(
+              [attribute.value("USD"), attribute.selected(card.currency == USD)],
+              "USD ($)",
+            ),
+            html.option(
+              [attribute.value("GBP"), attribute.selected(card.currency == GBP)],
+              "GBP (£)",
+            ),
+            html.option(
+              [attribute.value("EUR"), attribute.selected(card.currency == EUR)],
+              "EUR (€)",
+            ),
+            html.option(
+              [attribute.value("NGN"), attribute.selected(card.currency == NGN)],
+              "NGN (₦)",
+            ),
+            html.option(
+              [attribute.value("KES"), attribute.selected(card.currency == KES)],
+              "KES (KSh)",
+            ),
+            html.option(
+              [attribute.value("ZAR"), attribute.selected(card.currency == ZAR)],
+              "ZAR (R)",
+            ),
+          ],
+        ),
       ]),
       html.div([attribute.class("card-status")], [
         html.text(case card.status {
@@ -302,6 +537,111 @@ fn view_card(card: Card) -> Element(Msg) {
           CardFrozen -> "Frozen"
           CardCancelled -> "Cancelled"
         }),
+      ]),
+      html.div([attribute.class("spending-controls")], [
+        html.div(
+          [
+            attribute.class("spending-controls-header"),
+            event.on_click(ToggleSpendingControls(card.id)),
+          ],
+          [
+            html.h3([], [html.text("Spending Controls")]),
+            html.span([attribute.class("toggle-icon")], [
+              html.text(case is_expanded {
+                True -> "▼"
+                False -> "▶"
+              }),
+            ]),
+          ],
+        ),
+        case is_expanded {
+          True ->
+            html.div([attribute.class("spending-controls-content")], [
+              html.div([attribute.class("control-group")], [
+                html.label([], [html.text("Max Transaction Amount")]),
+                html.input([
+                  attribute.type_("number"),
+                  attribute.value(float.to_string(
+                    card.spending_controls.max_transaction_amount,
+                  )),
+                  event.on_input(fn(value) {
+                    let amount = case float.parse(value) {
+                      Ok(amount) -> amount
+                      Error(_) -> 0.0
+                    }
+                    UserUpdatedSpendingControls(
+                      card.id,
+                      SpendingControls(
+                        ..card.spending_controls,
+                        max_transaction_amount: amount,
+                      ),
+                    )
+                  }),
+                ]),
+              ]),
+              html.div([attribute.class("control-group")], [
+                html.label([], [html.text("Daily Limit")]),
+                html.input([
+                  attribute.type_("number"),
+                  attribute.value(float.to_string(
+                    card.spending_controls.daily_limit,
+                  )),
+                  event.on_input(fn(value) {
+                    let amount = case float.parse(value) {
+                      Ok(amount) -> amount
+                      Error(_) -> 0.0
+                    }
+                    UserUpdatedSpendingControls(
+                      card.id,
+                      SpendingControls(
+                        ..card.spending_controls,
+                        daily_limit: amount,
+                      ),
+                    )
+                  }),
+                ]),
+              ]),
+              html.div([attribute.class("control-group")], [
+                html.label([], [html.text("Monthly Limit")]),
+                html.input([
+                  attribute.type_("number"),
+                  attribute.value(float.to_string(
+                    card.spending_controls.monthly_limit,
+                  )),
+                  event.on_input(fn(value) {
+                    let amount = case float.parse(value) {
+                      Ok(amount) -> amount
+                      Error(_) -> 0.0
+                    }
+                    UserUpdatedSpendingControls(
+                      card.id,
+                      SpendingControls(
+                        ..card.spending_controls,
+                        monthly_limit: amount,
+                      ),
+                    )
+                  }),
+                ]),
+              ]),
+              html.div([attribute.class("control-group")], [
+                html.label([], [html.text("Requires Approval")]),
+                html.input([
+                  attribute.type_("checkbox"),
+                  attribute.checked(card.spending_controls.requires_approval),
+                  event.on_check(fn(checked) {
+                    UserUpdatedSpendingControls(
+                      card.id,
+                      SpendingControls(
+                        ..card.spending_controls,
+                        requires_approval: checked,
+                      ),
+                    )
+                  }),
+                ]),
+              ]),
+            ])
+          False -> html.text("")
+        },
       ]),
       html.div([attribute.class("card-actions")], case card.status {
         CardActive -> [
@@ -338,15 +678,48 @@ fn view_transaction(transaction: Transaction) -> Element(Msg) {
   html.div([attribute.class("transaction-item")], [
     html.div([attribute.class("transaction-merchant")], [
       html.text(transaction.merchant),
+      html.div([attribute.class("transaction-category")], [
+        html.text(transaction.merchant_category),
+      ]),
     ]),
     html.div([attribute.class("transaction-amount")], [
-      html.text("$" <> float.to_string(transaction.amount)),
+      html.text(
+        currency_symbol(transaction.original_currency)
+        <> float.to_string(transaction.original_amount),
+      ),
+      case transaction.original_currency == transaction.original_currency {
+        True -> html.text("")
+        False ->
+          html.div([attribute.class("original-amount")], [
+            html.text(
+              currency_symbol(transaction.original_currency)
+              <> float.to_string(transaction.amount),
+            ),
+          ])
+      },
     ]),
-    html.div([attribute.class("transaction-date")], [
+    html.div([attribute.class("transaction-details")], [
       html.text(transaction.date),
+      html.div([attribute.class("transaction-country")], [
+        html.text(transaction.country),
+      ]),
     ]),
     html.div([attribute.class("transaction-status")], [
       html.text(transaction_status_text(transaction.status)),
+      case transaction.status {
+        TransactionPending ->
+          html.div([attribute.class("transaction-actions")], [
+            html.button(
+              [event.on_click(UserClickedApproveTransaction(transaction.id))],
+              [html.text("Approve")],
+            ),
+            html.button(
+              [event.on_click(UserClickedDeclineTransaction(transaction.id))],
+              [html.text("Decline")],
+            ),
+          ])
+        _ -> html.text("")
+      },
     ]),
   ])
 }
@@ -394,5 +767,27 @@ fn transaction_status_text(status: TransactionStatus) -> String {
     TransactionPending -> "Pending"
     TransactionCompleted -> "Completed"
     TransactionDeclined -> "Declined"
+  }
+}
+
+fn currency_to_string(currency: Currency) -> String {
+  case currency {
+    USD -> "USD"
+    GBP -> "GBP"
+    EUR -> "EUR"
+    NGN -> "NGN"
+    KES -> "KES"
+    ZAR -> "ZAR"
+  }
+}
+
+fn currency_symbol(currency: Currency) -> String {
+  case currency {
+    USD -> "$"
+    GBP -> "£"
+    EUR -> "€"
+    NGN -> "₦"
+    KES -> "KSh"
+    ZAR -> "R"
   }
 }

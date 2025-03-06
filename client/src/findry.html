@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Findry - Creative Space Matching</title>
+    <link rel="stylesheet" href="findry.css">
+    <script type="module" src="findry.js"></script>
+</head>
+<body>
+    <nav class="findry-nav">
+        <div class="logo">Findry</div>
+        <div class="nav-links">
+            <a href="/findry/spaces" class="nav-link">Spaces</a>
+            <a href="/findry/artists" class="nav-link">Artists</a>
+            <a href="/findry/matches" class="nav-link">Matches</a>
+        </div>
+        <div class="user-menu">
+            <button class="profile-btn">Profile</button>
+        </div>
+    </nav>
+
+    <main class="findry-main">
+        <div class="card-stack">
+            <!-- Cards will be dynamically inserted here -->
+        </div>
+
+        <div class="swipe-controls">
+            <button class="swipe-btn pass">✕</button>
+            <button class="swipe-btn like">♥</button>
+        </div>
+
+        <div class="filters-panel">
+            <h3>Filters</h3>
+            <div class="filter-group">
+                <label>Space Type</label>
+                <select id="spaceType">
+                    <option value="all">All Types</option>
+                    <option value="studio">Studio</option>
+                    <option value="gallery">Gallery</option>
+                    <option value="practice_room">Practice Room</option>
+                    <option value="workshop">Workshop</option>
+                    <option value="treehouse">Treehouse</option>
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <label>Square Footage</label>
+                <div class="range-inputs">
+                    <input type="number" id="minSqFt" placeholder="Min">
+                    <input type="number" id="maxSqFt" placeholder="Max">
+                </div>
+            </div>
+
+            <div class="filter-group">
+                <label>Budget Range</label>
+                <div class="range-inputs">
+                    <input type="number" id="minBudget" placeholder="Min">
+                    <input type="number" id="maxBudget" placeholder="Max">
+                </div>
+            </div>
+
+            <div class="filter-group">
+                <label>Acoustics Rating</label>
+                <input type="range" id="acoustics" min="0" max="10" step="1">
+            </div>
+
+            <div class="filter-group">
+                <label>Natural Light</label>
+                <input type="checkbox" id="naturalLight">
+            </div>
+
+            <button class="apply-filters">Apply Filters</button>
+        </div>
+    </main>
+
+    <div class="space-details modal" hidden>
+        <div class="modal-content">
+            <button class="close-modal">×</button>
+            <div class="space-gallery">
+                <!-- Photos will be dynamically inserted here -->
+            </div>
+            <div class="space-info">
+                <h2 class="space-name"></h2>
+                <p class="space-type"></p>
+                <div class="space-details-grid">
+                    <div class="detail-item">
+                        <span class="label">Square Footage</span>
+                        <span class="value square-footage"></span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="label">Acoustics</span>
+                        <span class="value acoustics"></span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="label">Lighting</span>
+                        <span class="value lighting"></span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="label">Rate</span>
+                        <span class="value rate"></span>
+                    </div>
+                </div>
+                <div class="equipment-list">
+                    <h3>Equipment & Amenities</h3>
+                    <ul></ul>
+                </div>
+                <div class="availability">
+                    <h3>Availability</h3>
+                    <div class="calendar"></div>
+                </div>
+                <button class="book-space">Book Space</button>
+            </div>
+        </div>
+    </div>
+
+    <template id="space-card-template">
+        <div class="space-card">
+            <div class="card-photos">
+                <!-- Photos will be dynamically inserted here -->
+            </div>
+            <div class="card-info">
+                <h3 class="space-name"></h3>
+                <p class="space-type"></p>
+                <p class="space-price"></p>
+                <div class="space-features">
+                    <!-- Features will be dynamically inserted here -->
+                </div>
+            </div>
+        </div>
+    </template>
+</body>
+</html> 

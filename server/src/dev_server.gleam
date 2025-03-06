@@ -1,5 +1,6 @@
 import argv
 import chartspace_server
+import findry_server
 import gleam/bytes_tree
 import gleam/erlang/process
 import gleam/http/request.{type Request}
@@ -105,6 +106,10 @@ pub fn main() {
   let chartspace_state = chartspace_server.init()
   let assert Ok(chartspace_actor) = chartspace_server.start()
 
+  // Initialize findry
+  let findry_state = findry_server.init()
+  let assert Ok(findry_actor) = findry_server.start()
+
   let handler = fn(req: Request(Connection)) {
     case request.path_segments(req) {
       ["ws", "cart"] -> {
@@ -139,6 +144,20 @@ pub fn main() {
         )
       }
 
+      ["ws", "findry"] -> {
+        let selector = process.new_selector()
+        websocket(
+          request: req,
+          on_init: fn(conn) { #(findry_state, Some(selector)) },
+          on_close: fn(_state) { io.println("Findry WebSocket closed") },
+          handler: fn(state, conn, msg) {
+            let #(new_state, _) =
+              findry_server.handle_message(state, conn, msg, [])
+            actor.continue(new_state)
+          },
+        )
+      }
+
       segments -> {
         case segments {
           [] -> serve_html("divvyqueue.html")
@@ -151,6 +170,14 @@ pub fn main() {
           ["payroll"] -> serve_html("payroll.html")
           ["tax"] -> serve_html("tax.html")
           ["ads"] -> serve_html("ads.html")
+          ["findry"] -> serve_html("findry.html")
+          ["findry", "spaces"] -> serve_html("findry.html")
+          ["findry", "artists"] -> serve_html("findry.html")
+          ["findry", "matches"] -> serve_html("findry.html")
+          ["styles.css"] -> serve_css("styles.css")
+          ["chartspace.css"] -> serve_css("chartspace.css")
+          ["campaign-form.css"] -> serve_css("campaign-form.css")
+          ["findry.css"] -> serve_css("findry.css")
           ["partner-progress"] -> serve_html("partner_progress.html")
           ["divvyqueue", "contracts"] -> serve_html("contracts.html")
           ["form-analyzer"] -> serve_html("form_analyzer.html")

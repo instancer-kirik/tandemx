@@ -65,18 +65,114 @@ pub type Msg {
 }
 
 pub fn init() -> Model {
+  let sample_accounts = [
+    types.AdAccount(
+      id: "acc_001",
+      name: "Facebook Business",
+      platform: Facebook,
+      status: AccountActive,
+      currency: "USD",
+      balance: 5000.0,
+      spend_limit: 10_000.0,
+      virtual_card: None,
+      verification_status: types.Verified,
+    ),
+    types.AdAccount(
+      id: "acc_002",
+      name: "Google Ads",
+      platform: Google,
+      status: AccountActive,
+      currency: "USD",
+      balance: 7500.0,
+      spend_limit: 15_000.0,
+      virtual_card: None,
+      verification_status: types.Verified,
+    ),
+    types.AdAccount(
+      id: "acc_003",
+      name: "LinkedIn Ads",
+      platform: LinkedIn,
+      status: AccountPaused,
+      currency: "USD",
+      balance: 3000.0,
+      spend_limit: 5000.0,
+      virtual_card: None,
+      verification_status: types.InProgress,
+    ),
+  ]
+
+  let sample_campaigns = [
+    types.Campaign(
+      id: "camp_001",
+      name: "Spring Product Launch",
+      platform: Facebook,
+      status: CampaignActive,
+      budget_type: Daily,
+      budget_amount: 100.0,
+      spend: 450.0,
+      start_date: "2024-03-01",
+      end_date: Some("2024-03-31"),
+      performance: types.CampaignPerformance(
+        impressions: 50_000,
+        clicks: 2500,
+        conversions: 100,
+        spend: 450.0,
+        ctr: 0.05,
+        cpc: 0.18,
+        roas: 2.5,
+      ),
+    ),
+    types.Campaign(
+      id: "camp_002",
+      name: "Lead Generation Q1",
+      platform: Google,
+      status: CampaignActive,
+      budget_type: Lifetime,
+      budget_amount: 5000.0,
+      spend: 2100.0,
+      start_date: "2024-01-01",
+      end_date: Some("2024-03-31"),
+      performance: types.CampaignPerformance(
+        impressions: 75_000,
+        clicks: 3800,
+        conversions: 250,
+        spend: 2100.0,
+        ctr: 0.0507,
+        cpc: 0.55,
+        roas: 3.2,
+      ),
+    ),
+  ]
+
+  let sample_alerts = [
+    types.AdSpendAlert(
+      account_id: "acc_001",
+      alert_type: types.DailySpendLimit,
+      threshold: 1000.0,
+      current_spend: 450.0,
+      triggered_at: "2024-03-15",
+    ),
+    types.AdSpendAlert(
+      account_id: "acc_002",
+      alert_type: types.BudgetDepletion,
+      threshold: 5000.0,
+      current_spend: 4200.0,
+      triggered_at: "2024-03-14",
+    ),
+  ]
+
   Model(
     selected_tab: Overview,
-    accounts: [],
-    campaigns: [],
-    alerts: [],
+    accounts: sample_accounts,
+    campaigns: sample_campaigns,
+    alerts: sample_alerts,
     settings: types.AdAccountSettings(
       default_currency: "USD",
       auto_reload: True,
       reload_threshold: 100.0,
       reload_amount: 500.0,
       spend_alerts: [100.0, 500.0, 1000.0],
-      notification_email: "",
+      notification_email: "admin@tandemx.com",
     ),
     nav_open: False,
     campaign_form: new_campaign_form(),
@@ -932,4 +1028,10 @@ fn view_campaign_form(model: Model) -> Element(Msg) {
       ),
     ]),
   ])
+}
+
+pub fn main(_: Nil) -> Nil {
+  let app = lustre.application(fn(_) { #(init(), effect.none()) }, update, view)
+  let assert Ok(_) = lustre.start(app, "#app", Nil)
+  Nil
 }

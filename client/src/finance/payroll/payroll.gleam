@@ -1,8 +1,10 @@
 import components/nav
 import finance/payroll/types.{
-  type Employee, type PayCycle, type PayrollEntry, type PayrollEntryStatus,
-  type PayrollPeriod, Biweekly, Employee, EntryCompleted, EntryFailed,
-  EntryPending, EntryProcessing, Monthly, PayrollEntry, PayrollPeriod,
+  type BankDetails, type Employee, type MobileMoneyDetails, type PayCycle,
+  type PaymentMethod, type PayrollEntry, type PayrollEntryStatus,
+  type PayrollPeriod, type TaxWithholding, Automatic, BankDetails, BankTransfer,
+  Biweekly, Employee, EntryCompleted, EntryFailed, EntryPending, EntryProcessing,
+  Manual, MobileMoney, MobileMoneyDetails, Monthly, PayrollEntry, PayrollPeriod,
   PeriodDraft, Weekly,
 }
 import gleam/dict.{type Dict}
@@ -52,12 +54,82 @@ pub fn main() {
 }
 
 pub fn init(_) {
+  let sample_employees = [
+    Employee(
+      id: "EMP001",
+      name: "John Doe",
+      role: "Software Engineer",
+      salary: 85_000.0,
+      pay_cycle: Monthly,
+      tax_withholding: Automatic,
+      payment_method: BankTransfer,
+      bank_details: Some(BankDetails(
+        bank_name: "First Bank",
+        account_number: "1234567890",
+        account_name: "John Doe",
+        branch_code: "001",
+      )),
+      mobile_money_details: None,
+    ),
+    Employee(
+      id: "EMP002",
+      name: "Jane Smith",
+      role: "Product Manager",
+      salary: 95_000.0,
+      pay_cycle: Monthly,
+      tax_withholding: Automatic,
+      payment_method: BankTransfer,
+      bank_details: Some(BankDetails(
+        bank_name: "GTBank",
+        account_number: "0987654321",
+        account_name: "Jane Smith",
+        branch_code: "002",
+      )),
+      mobile_money_details: None,
+    ),
+    Employee(
+      id: "EMP003",
+      name: "David Wilson",
+      role: "Sales Representative",
+      salary: 65_000.0,
+      pay_cycle: Biweekly,
+      tax_withholding: Manual,
+      payment_method: MobileMoney,
+      bank_details: None,
+      mobile_money_details: Some(MobileMoneyDetails(
+        provider: "MTN",
+        phone_number: "+234 801 234 5678",
+        account_name: "David Wilson",
+      )),
+    ),
+  ]
+
+  let current_period =
+    Some(PayrollPeriod(
+      start_date: "2024-03-01",
+      end_date: "2024-03-31",
+      pay_date: "2024-03-31",
+      status: PeriodDraft,
+    ))
+
+  let payroll_entries =
+    list.map(sample_employees, fn(emp) {
+      PayrollEntry(
+        employee: emp,
+        base_salary: emp.salary /. 12.0,
+        deductions: [],
+        allowances: [],
+        net_pay: emp.salary /. 12.0,
+        status: EntryPending,
+      )
+    })
+
   #(
     Model(
       nav_open: False,
-      current_period: None,
-      employees: [],
-      payroll_entries: [],
+      current_period: current_period,
+      employees: sample_employees,
+      payroll_entries: payroll_entries,
       selected_tab: Overview,
     ),
     effect.none(),

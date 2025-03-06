@@ -20,6 +20,7 @@ pub type Model {
     nav_open: Bool,
     selected_tab: Tab,
     trust_metrics: Dict(String, TrustMetric),
+    playlists: Dict(String, Playlist),
   )
 }
 
@@ -126,6 +127,38 @@ pub type PartyStatus {
   Rejected
 }
 
+pub type Video {
+  Video(
+    id: String,
+    title: String,
+    thumbnail: String,
+    duration: String,
+    added_by: String,
+    added_at: String,
+    annotations: List(VideoAnnotation),
+  )
+}
+
+pub type VideoAnnotation {
+  VideoAnnotation(
+    id: String,
+    timestamp: Float,
+    text: String,
+    author: String,
+    created_at: String,
+  )
+}
+
+pub type Playlist {
+  Playlist(
+    id: String,
+    agreement_id: String,
+    videos: List(Video),
+    created_at: String,
+    updated_at: String,
+  )
+}
+
 pub type Msg {
   UserAddedLoan
   UserUpdatedNewLoan(String)
@@ -134,6 +167,10 @@ pub type Msg {
   UserClickedDefault(Int)
   UserClickedComplete(Int)
   UserSelectedTab(Tab)
+  UserAddedVideo(String, String)
+  UserRemovedVideo(String, String)
+  UserAddedAnnotation(String, String, Float, String)
+  UserRemovedAnnotation(String, String, String)
   NavMsg(nav.Msg)
 }
 
@@ -218,12 +255,13 @@ pub fn init(_) {
       nav_open: False,
       selected_tab: TabLoans,
       trust_metrics: dict.new(),
+      playlists: dict.new(),
     ),
     effect.none(),
   )
 }
 
-fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
+pub fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
   case msg {
     UserAddedLoan -> {
       let last_id = model.last_id + 1
@@ -279,6 +317,18 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
     }
     UserSelectedTab(tab) -> {
       #(Model(..model, selected_tab: tab), effect.none())
+    }
+    UserAddedVideo(agreement_id, video_url) -> {
+      #(model, effect.none())
+    }
+    UserRemovedVideo(agreement_id, video_id) -> {
+      #(model, effect.none())
+    }
+    UserAddedAnnotation(agreement_id, video_id, timestamp, text) -> {
+      #(model, effect.none())
+    }
+    UserRemovedAnnotation(agreement_id, video_id, annotation_id) -> {
+      #(model, effect.none())
     }
     NavMsg(nav_msg) -> {
       case nav_msg {

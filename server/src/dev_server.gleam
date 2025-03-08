@@ -2,11 +2,14 @@ import argv
 import chartspace_server
 import findry_server
 import gleam/bytes_tree
+import gleam/dynamic
 import gleam/erlang/process
+import gleam/http.{Get, Post}
 import gleam/http/request.{type Request}
 import gleam/http/response.{type Response}
 import gleam/int
 import gleam/io
+import gleam/json
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/otp/actor
@@ -17,13 +20,42 @@ import mist.{
   type WebsocketMessage, Bytes, Text, websocket,
 }
 import simplifile
+import wisp
 
+//add gravatar (glevatar)for easy multiprofiles with links and payment opts
 pub type CartState {
   CartState(items: String)
 }
 
 pub type CartActor {
   CartActor(state: CartState, connections: List(Connection))
+}
+
+pub type Meeting {
+  Meeting(
+    id: String,
+    title: String,
+    description: String,
+    date: String,
+    start_time: String,
+    duration_minutes: Int,
+    attendees: List(String),
+    timezone: String,
+  )
+}
+
+pub type EmailNotification {
+  EmailNotification(to: String, subject: String, body: String)
+}
+
+pub type InterestSubmission {
+  InterestSubmission(
+    project: String,
+    email: String,
+    name: String,
+    company: String,
+    message: String,
+  )
 }
 
 fn try_serve_static_file(path: String) -> Result(Response(ResponseData), Nil) {
@@ -37,6 +69,7 @@ fn try_serve_static_file(path: String) -> Result(Response(ResponseData), Nil) {
     string.concat(["../client/build/dev/javascript/gleam_stdlib/gleam/", path]),
     string.concat(["../client/build/dev/javascript/lustre/", path]),
     string.concat(["../client/build/dev/javascript/lustre/lustre/", path]),
+    string.concat(["../client/node_modules/", path]),
   ]
 
   io.println("\nTrying to serve: " <> path)
@@ -52,7 +85,7 @@ fn try_serve_static_file(path: String) -> Result(Response(ResponseData), Nil) {
       io.println("  Found at: " <> file_path)
       let assert Ok(content) = simplifile.read(file_path)
       let content_type = case string.split(path, ".") |> list.last {
-        Ok("js") | Ok("mjs") -> "text/javascript"
+        Ok("js") | Ok("mjs") | Ok("jsx") -> "text/javascript"
         Ok("css") -> "text/css"
         Ok("html") -> "text/html"
         Ok("ico") -> "image/x-icon"
@@ -112,6 +145,7 @@ pub fn main() {
 
   let handler = fn(req: Request(Connection)) {
     case request.path_segments(req) {
+      [] -> serve_html("landing.html")
       ["ws", "cart"] -> {
         let selector = process.new_selector()
         websocket(
@@ -158,10 +192,183 @@ pub fn main() {
         )
       }
 
+      ["api", "schedule-meeting"] -> {
+        case req.method {
+          http.Post -> {
+            case mist.read_body(req, 1024 * 1024) {
+              Ok(req) -> {
+                let json = dynamic.from(req.body)
+                case decode_meeting(json) {
+                  Ok(meeting) -> {
+                    // Send email notifications to all attendees
+                    let notifications =
+                      list.map(meeting.attendees, fn(attendee) {
+                        EmailNotification(
+                          to: attendee,
+                          subject: "New Meeting: " <> meeting.title,
+                          body: string.concat([
+                            "You have been invited to a meeting:\n\n",
+                            "Title: ",
+                            meeting.title,
+                            "\n",
+                            "Description: ",
+                            meeting.description,
+                            "\n",
+                            "Date: ",
+                            meeting.date,
+                            "\n",
+                            "Time: ",
+                            meeting.start_time,
+                            " (",
+                            meeting.timezone,
+                            ")\n",
+                            "Duration: ",
+                            int.to_string(meeting.duration_minutes),
+                            " minutes\n",
+                          ]),
+                        )
+                      })
+
+                    // Send emails (this would connect to an email service in production)
+                    let _ = list.map(notifications, send_email)
+
+                    response.new(200)
+                    |> response.set_header("content-type", "application/json")
+                    |> response.set_body(
+                      Bytes(bytes_tree.from_string("{\"status\":\"success\"}")),
+                    )
+                  }
+                  Error(_) ->
+                    response.new(400)
+                    |> response.set_header("content-type", "application/json")
+                    |> response.set_body(
+                      Bytes(bytes_tree.from_string(
+                        "{\"error\":\"Invalid request data\"}",
+                      )),
+                    )
+                }
+              }
+              Error(_) ->
+                response.new(400)
+                |> response.set_header("content-type", "application/json")
+                |> response.set_body(
+                  Bytes(bytes_tree.from_string(
+                    "{\"error\":\"Invalid request body\"}",
+                  )),
+                )
+            }
+          }
+          _ ->
+            response.new(405)
+            |> response.set_header("content-type", "application/json")
+            |> response.set_body(
+              Bytes(bytes_tree.from_string("{\"error\":\"Method not allowed\"}")),
+            )
+        }
+      }
+
       segments -> {
         case segments {
-          [] -> serve_html("divvyqueue.html")
+          ["landing"] -> serve_html("landing.html")
           ["divvyqueue"] -> serve_html("divvyqueue.html")
+          ["bizpay"] -> serve_html("bizpay.html")
+          ["bizpay", "features"] -> serve_html("bizpay.html")
+          ["bizpay", "pricing"] -> serve_html("bizpay.html")
+          ["bizpay", "docs"] -> serve_html("bizpay.html")
+          ["bizpay", "demo"] -> serve_html("bizpay.html")
+          ["bizpay", "contact"] -> serve_html("bizpay.html")
+          ["bizpay", "interest"] -> handle_interest_form("bizpay")
+          ["bizpay", "api", "submit-interest"] -> {
+            case req.method {
+              http.Post -> {
+                case mist.read_body(req, 1024 * 1024) {
+                  Ok(req) -> {
+                    let json = dynamic.from(req.body)
+                    case decode_interest_submission(json) {
+                      Ok(submission) -> {
+                        // TODO: Store in database
+                        // For now, just log it
+                        io.println(
+                          string.concat([
+                            "\nNew interest submission:\n",
+                            "Project: ",
+                            submission.project,
+                            "\nName: ",
+                            submission.name,
+                            "\nEmail: ",
+                            submission.email,
+                            "\nCompany: ",
+                            submission.company,
+                            "\nMessage: ",
+                            submission.message,
+                          ]),
+                        )
+
+                        response.new(200)
+                        |> response.set_header(
+                          "content-type",
+                          "application/json",
+                        )
+                        |> response.set_body(
+                          Bytes(bytes_tree.from_string(
+                            "{\"status\":\"success\",\"message\":\"Thank you for your interest! We'll be in touch soon.\"}",
+                          )),
+                        )
+                      }
+                      Error(_) ->
+                        response.new(400)
+                        |> response.set_header(
+                          "content-type",
+                          "application/json",
+                        )
+                        |> response.set_body(
+                          Bytes(bytes_tree.from_string(
+                            "{\"error\":\"Invalid submission data\"}",
+                          )),
+                        )
+                    }
+                  }
+                  Error(_) ->
+                    response.new(400)
+                    |> response.set_header("content-type", "application/json")
+                    |> response.set_body(
+                      Bytes(bytes_tree.from_string(
+                        "{\"error\":\"Invalid request body\"}",
+                      )),
+                    )
+                }
+              }
+              _ ->
+                response.new(405)
+                |> response.set_header("content-type", "application/json")
+                |> response.set_body(
+                  Bytes(bytes_tree.from_string(
+                    "{\"error\":\"Method not allowed\"}",
+                  )),
+                )
+            }
+          }
+          ["bizpay.css"] -> serve_css("bizpay.css")
+          [project_name, "interest"] -> handle_interest_form(project_name)
+          ["findry"] -> serve_html("findry.html")
+          ["projects"] -> serve_html("projects.html")
+          ["sledge"] -> serve_html("sledge.html")
+          ["dd"] -> serve_html("dd.html")
+          ["shiny"] -> serve_html("shiny.html")
+          ["space-captains"] -> serve_html("space-captains.html")
+          ["hunter"] -> serve_html("hunter.html")
+          ["chartspace"] -> serve_html("chartspace.html")
+          ["compliance"] -> serve_html("compliance.html")
+          ["buzzpay"] -> serve_html("buzzpay.html")
+          ["findry", "spaces"] -> serve_html("findry.html")
+          ["findry", "artists"] -> serve_html("findry.html")
+          ["findry", "matches"] -> serve_html("findry.html")
+          ["styles.css"] -> serve_css("styles.css")
+          ["landing.css"] -> serve_css("landing.css")
+          ["chartspace.css"] -> serve_css("chartspace.css")
+          ["campaign-form.css"] -> serve_css("campaign-form.css")
+          ["findry.css"] -> serve_css("findry.css")
+          ["projects.css"] -> serve_css("projects.css")
           ["todos"] -> serve_html("todos.html")
           ["banking"] -> serve_html("banking.html")
           ["cards"] -> serve_html("cards.html")
@@ -170,22 +377,10 @@ pub fn main() {
           ["payroll"] -> serve_html("payroll.html")
           ["tax"] -> serve_html("tax.html")
           ["ads"] -> serve_html("ads.html")
-          ["findry"] -> serve_html("findry.html")
           ["findry", "spaces"] -> serve_html("findry.html")
           ["findry", "artists"] -> serve_html("findry.html")
           ["findry", "matches"] -> serve_html("findry.html")
           ["styles.css"] -> serve_css("styles.css")
-          ["chartspace.css"] -> serve_css("chartspace.css")
-          ["campaign-form.css"] -> serve_css("campaign-form.css")
-          ["findry.css"] -> serve_css("findry.css")
-          ["partner-progress"] -> serve_html("partner_progress.html")
-          ["divvyqueue", "contracts"] -> serve_html("contracts.html")
-          ["form-analyzer"] -> serve_html("form_analyzer.html")
-          ["constructs"] -> serve_html("constructs.html")
-          ["constructs", "works"] -> serve_html("constructs.html")
-          ["constructs", "personas"] -> serve_html("constructs.html")
-          ["constructs", "social"] -> serve_html("constructs.html")
-          ["constructs", "metrics"] -> serve_html("constructs.html")
           ["chartspace"] -> serve_html("chartspace.html")
           ["chartspace", "editor"] -> serve_html("chartspace.html")
           ["chartspace", "viewer"] -> serve_html("chartspace.html")
@@ -254,4 +449,59 @@ fn serve_content(
   response.new(200)
   |> response.set_header("content-type", content_type)
   |> response.set_body(Bytes(bytes_tree.from_string(content)))
+}
+
+fn decode_meeting(
+  json: dynamic.Dynamic,
+) -> Result(Meeting, List(dynamic.DecodeError)) {
+  dynamic.decode8(
+    Meeting,
+    dynamic.field("id", dynamic.string),
+    dynamic.field("title", dynamic.string),
+    dynamic.field("description", dynamic.string),
+    dynamic.field("date", dynamic.string),
+    dynamic.field("start_time", dynamic.string),
+    dynamic.field("duration_minutes", dynamic.int),
+    dynamic.field("attendees", dynamic.list(dynamic.string)),
+    dynamic.field("timezone", dynamic.string),
+  )(json)
+}
+
+@external(erlang, "io", "format")
+fn io_format(format: String, args: List(String)) -> Nil
+
+fn send_email(notification: EmailNotification) -> Result(Nil, String) {
+  io_format("Sending email:\nTo: ~s\nSubject: ~s\nBody: ~s\n---\n", [
+    notification.to,
+    notification.subject,
+    notification.body,
+  ])
+  Ok(Nil)
+}
+
+fn handle_interest_form(project_name: String) -> Response(ResponseData) {
+  // TODO: In the future, this will store interest in a database
+  // For now, we'll just return a JSON response
+  response.new(200)
+  |> response.set_header("content-type", "application/json")
+  |> response.set_body(
+    Bytes(bytes_tree.from_string(
+      "{\"status\":\"success\",\"message\":\"Thank you for your interest in "
+      <> project_name
+      <> "\"}",
+    )),
+  )
+}
+
+fn decode_interest_submission(
+  json: dynamic.Dynamic,
+) -> Result(InterestSubmission, List(dynamic.DecodeError)) {
+  dynamic.decode5(
+    InterestSubmission,
+    dynamic.field("project", dynamic.string),
+    dynamic.field("email", dynamic.string),
+    dynamic.field("name", dynamic.string),
+    dynamic.field("company", dynamic.string),
+    dynamic.field("message", dynamic.string),
+  )(json)
 }

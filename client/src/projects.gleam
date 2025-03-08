@@ -6,11 +6,12 @@ import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/string
 import lustre
-import lustre/attribute
-import lustre/effect
+import lustre/attribute.{class}
+import lustre/effect.{type Effect}
 import lustre/element.{type Element}
 import lustre/element/html
 import lustre/event
+import project_catalog.{type ProjectInfo}
 
 pub type Model {
   Model(
@@ -182,10 +183,12 @@ pub type Msg {
   CreateWork(Work)
   UpdateWork(Work)
   DeleteWork(String)
+  NavigateTo(String)
+  ExpressInterest(String)
   UpdateFilters(Filters)
 }
 
-pub fn main(_: Nil) -> Nil {
+pub fn main() {
   let app = lustre.application(init, update, view)
   let assert Ok(_) = lustre.start(app, "#app", Nil)
   Nil
@@ -392,403 +395,124 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
       effect.none(),
     )
     UpdateFilters(filters) -> #(Model(..model, filters: filters), effect.none())
+    NavigateTo(path) -> {
+      let _ = set_window_location(path)
+      #(model, effect.none())
+    }
+    ExpressInterest(project) -> {
+      let _ = set_window_location("/" <> project <> "/interest")
+      #(model, effect.none())
+    }
   }
 }
 
+@external(javascript, "./projects_ffi.js", "setWindowLocation")
+fn set_window_location(path: String) -> Nil
+
 pub fn view(model: Model) -> Element(Msg) {
-  html.div(
-    [
-      attribute.class(case model.nav_open {
-        True -> "app-container nav-open"
-        False -> "app-container"
-      }),
-    ],
-    [
-      element.map(nav.view(), NavMsg),
-      html.main([attribute.class("projects-app")], [
-        view_header(),
-        view_tabs(model.selected_tab),
-        html.div([attribute.class("main-content")], [
-          case model.selected_tab {
-            Overview -> view_overview(model)
-            Projects -> view_projects(model)
-            Tasks -> view_tasks(model)
-            Charts -> view_charts(model)
-            Works -> view_works(model)
-          },
-        ]),
-      ]),
-    ],
-  )
+  html.div([class("projects-page")], [
+    view_header(),
+    ..list.map(project_catalog.get_domains(), fn(domain) {
+      let #(title, description) = domain
+      view_domain_section(
+        title,
+        description,
+        project_catalog.get_projects_by_domain(title)
+          |> list.map(view_project_card),
+      )
+    })
+  ])
 }
 
 fn view_header() -> Element(Msg) {
-  html.header([attribute.class("app-header")], [
-    html.h1([], [html.text("Project Organization")]),
-    html.p([attribute.class("header-subtitle")], [
-      html.text("Manage projects, tasks, charts, and works in one place"),
+  html.div([class("page-header")], [
+    html.h1([class("page-title")], [html.text("Our Projects")]),
+    html.p([class("page-description")], [
+      html.text(
+        "Explore our comprehensive suite of tools designed to revolutionize creative business operations. From space management to payment processing, each project addresses specific industry needs while maintaining seamless integration with our ecosystem.",
+      ),
     ]),
   ])
 }
 
-fn view_tabs(selected_tab: Tab) -> Element(Msg) {
-  html.div([attribute.class("tabs")], [
-    view_tab(Overview, "Overview", selected_tab),
-    view_tab(Projects, "Projects", selected_tab),
-    view_tab(Tasks, "Tasks", selected_tab),
-    view_tab(Charts, "Charts", selected_tab),
-    view_tab(Works, "Works", selected_tab),
+fn view_domain_section(
+  title: String,
+  description: String,
+  projects: List(Element(Msg)),
+) -> Element(Msg) {
+  html.div([class("domain-section")], [
+    html.div([class("domain-header")], [
+      html.h2([class("domain-title")], [html.text(title)]),
+      html.p([class("domain-description")], [html.text(description)]),
+    ]),
+    html.div([class("projects-grid")], projects),
   ])
 }
 
-fn view_tab(tab: Tab, label: String, selected_tab: Tab) -> Element(Msg) {
-  html.button(
-    [
-      attribute.class(case selected_tab == tab {
-        True -> "tab active"
-        False -> "tab"
-      }),
-      event.on_click(SelectTab(tab)),
-    ],
-    [html.text(label)],
-  )
-}
-
-fn view_overview(model: Model) -> Element(Msg) {
-  html.div([attribute.class("overview-section")], [
-    html.div([attribute.class("stats-grid")], [
-      view_stat_card(
-        "Total Projects",
-        int.to_string(list.length(model.projects)),
-      ),
-      view_stat_card(
-        "Active Tasks",
-        int.to_string(
-          list.filter(model.tasks, fn(t) { t.status == InProgress })
-          |> list.length,
+fn view_project_card(project: ProjectInfo) -> Element(Msg) {
+  html.div([class("project-card")], [
+    html.div([class("project-header")], [
+      html.span([class("project-emoji")], [html.text(project.emoji)]),
+      html.h3([class("project-name")], [html.text(project.name)]),
+      case project.source_url {
+        Some(url) ->
+          html.a(
+            [
+              class("source-link"),
+              attribute.href(url),
+              attribute.target("_blank"),
+            ],
+            [
+              html.img([
+                class("source-icon"),
+                attribute.src("/assets/github.svg"),
+                attribute.alt("Source Code"),
+              ]),
+            ],
+          )
+        None -> element.none()
+      },
+    ]),
+    html.span(
+      [
+        class(
+          "project-status "
+          <> case project.status {
+            "Active" -> "status-active"
+            "Upcoming" -> "status-upcoming"
+            _ -> ""
+          },
         ),
-      ),
-      view_stat_card("Charts", int.to_string(list.length(model.charts))),
-      view_stat_card("Works", int.to_string(list.length(model.works))),
-    ]),
-    html.div([attribute.class("recent-activity")], [
-      html.h2([], [html.text("Recent Activity")]),
-      view_recent_tasks(model.tasks),
-    ]),
-  ])
-}
-
-fn view_stat_card(label: String, value: String) -> Element(Msg) {
-  html.div([attribute.class("stat-card")], [
-    html.div([attribute.class("stat-value")], [html.text(value)]),
-    html.div([attribute.class("stat-label")], [html.text(label)]),
-  ])
-}
-
-fn view_recent_tasks(tasks: List(Task)) -> Element(Msg) {
-  html.div(
-    [attribute.class("recent-tasks")],
-    list.sort(tasks, fn(a, b) { string.compare(a.id, b.id) })
-      |> list.take(5)
-      |> list.map(view_task_card),
-  )
-}
-
-fn view_task_card(task: Task) -> Element(Msg) {
-  html.div([attribute.class("task-card")], [
-    html.div([attribute.class("task-header")], [
-      html.h3([], [html.text(task.title)]),
-      html.span(
-        [
-          attribute.class(
-            "task-status "
-            <> case task.status {
-              Todo -> "status-todo"
-              InProgress -> "status-progress"
-              Review -> "status-review"
-              Done -> "status-done"
-              Blocked -> "status-blocked"
-            },
-          ),
-        ],
-        [
-          html.text(case task.status {
-            Todo -> "To Do"
-            InProgress -> "In Progress"
-            Review -> "In Review"
-            Done -> "Done"
-            Blocked -> "Blocked"
-          }),
-        ],
-      ),
-    ]),
-    html.div([attribute.class("task-details")], [
-      html.p([], [html.text(task.description)]),
-      case task.assignee {
-        Some(assignee) ->
-          html.div([attribute.class("task-assignee")], [
-            html.text("Assigned to: " <> assignee),
-          ])
-        None -> html.text("")
-      },
-      case task.due_date {
-        Some(date) ->
-          html.div([attribute.class("task-due-date")], [
-            html.text("Due: " <> date),
-          ])
-        None -> html.text("")
-      },
-    ]),
-    html.div([attribute.class("task-progress")], [
-      html.div(
-        [
-          attribute.class("progress-bar"),
-          attribute.style(
-            "width: "
-            <> int.to_string(task.progress)
-            <> "%; background: #4CAF50",
-          ),
-        ],
-        [],
-      ),
-    ]),
-  ])
-}
-
-fn view_projects(model: Model) -> Element(Msg) {
-  html.div([attribute.class("projects-section")], [
-    html.div([attribute.class("section-header")], [
-      html.h2([], [html.text("Projects")]),
-      html.button([attribute.class("btn-primary")], [html.text("New Project")]),
-    ]),
-    html.div(
-      [attribute.class("projects-grid")],
-      list.map(model.projects, view_project_card),
+      ],
+      [html.text(project.status)],
     ),
-  ])
-}
-
-fn view_project_card(project: Project) -> Element(Msg) {
-  html.div([attribute.class("project-card")], [
-    html.div([attribute.class("project-header")], [
-      html.h3([], [html.text(project.name)]),
-      html.span(
-        [
-          attribute.class(
-            "project-status "
-            <> case project.status {
-              Planning -> "status-planning"
-              Active -> "status-active"
-              OnHold -> "status-hold"
-              ProjectCompleted -> "status-completed"
-              Archived -> "status-archived"
-            },
-          ),
-        ],
-        [
-          html.text(case project.status {
-            Planning -> "Planning"
-            Active -> "Active"
-            OnHold -> "On Hold"
-            ProjectCompleted -> "Completed"
-            Archived -> "Archived"
-          }),
-        ],
-      ),
-    ]),
-    html.p([attribute.class("project-description")], [
-      html.text(project.description),
-    ]),
-    html.div([attribute.class("project-meta")], [
-      html.div([attribute.class("project-owner")], [
-        html.text("Owner: " <> project.owner),
-      ]),
-      case project.due_date {
-        Some(date) ->
-          html.div([attribute.class("project-due-date")], [
-            html.text("Due: " <> date),
-          ])
-        None -> html.text("")
-      },
-    ]),
-    html.div([attribute.class("project-stats")], [
-      html.div([attribute.class("stat")], [
-        html.text("Tasks: " <> int.to_string(list.length(project.tasks))),
-      ]),
-      html.div([attribute.class("stat")], [
-        html.text("Charts: " <> int.to_string(list.length(project.charts))),
-      ]),
-      html.div([attribute.class("stat")], [
-        html.text("Works: " <> int.to_string(list.length(project.works))),
-      ]),
-    ]),
-    html.div([attribute.class("project-tags")], [
+    html.p([class("project-description")], [html.text(project.description)]),
+    html.ul(
+      [class("project-features")],
+      list.map(project.features, fn(feature) {
+        html.li([], [
+          html.span([class("feature-check")], [html.text("✓")]),
+          html.text(feature),
+        ])
+      }),
+    ),
+    html.div([class("project-tech")], [
+      html.h4([class("tech-title")], [html.text("Tech Stack")]),
       html.div(
-        [attribute.class("tags")],
-        list.map(project.tags, fn(tag) {
-          html.span([attribute.class("tag")], [html.text(tag)])
+        [class("tech-stack")],
+        list.map(project.tech_stack, fn(tech) {
+          html.span([class("tech-tag")], [html.text(tech)])
         }),
       ),
     ]),
-  ])
-}
-
-fn view_tasks(model: Model) -> Element(Msg) {
-  html.div([attribute.class("tasks-section")], [
-    html.div([attribute.class("section-header")], [
-      html.h2([], [html.text("Tasks")]),
-      html.button([attribute.class("btn-primary")], [html.text("New Task")]),
-    ]),
-    view_task_filters(model.filters),
-    html.div(
-      [attribute.class("tasks-grid")],
-      list.map(model.tasks, view_task_card),
-    ),
-  ])
-}
-
-fn view_task_filters(filters: Filters) -> Element(Msg) {
-  html.div([attribute.class("filters-section")], [
-    html.div([attribute.class("filter-group")], [
-      html.label([], [html.text("Status")]),
-      html.select([], [
-        html.option([attribute.value("")], [html.text("All")]),
-        html.option([attribute.value("todo")], [html.text("To Do")]),
-        html.option([attribute.value("progress")], [html.text("In Progress")]),
-        html.option([attribute.value("review")], [html.text("In Review")]),
-        html.option([attribute.value("done")], [html.text("Done")]),
-        html.option([attribute.value("blocked")], [html.text("Blocked")]),
+    html.div([class("project-actions")], [
+      html.a([class("project-link"), event.on_click(NavigateTo(project.path))], [
+        html.text("Learn More"),
       ]),
-    ]),
-    html.div([attribute.class("filter-group")], [
-      html.label([], [html.text("Priority")]),
-      html.select([], [
-        html.option([attribute.value("")], [html.text("All")]),
-        html.option([attribute.value("low")], [html.text("Low")]),
-        html.option([attribute.value("medium")], [html.text("Medium")]),
-        html.option([attribute.value("high")], [html.text("High")]),
-        html.option([attribute.value("urgent")], [html.text("Urgent")]),
-      ]),
-    ]),
-  ])
-}
-
-fn view_charts(model: Model) -> Element(Msg) {
-  html.div([attribute.class("charts-section")], [
-    html.div([attribute.class("section-header")], [
-      html.h2([], [html.text("Charts")]),
-      html.button([attribute.class("btn-primary")], [html.text("New Chart")]),
-    ]),
-    html.div(
-      [attribute.class("charts-grid")],
-      list.map(model.charts, view_chart_card),
-    ),
-  ])
-}
-
-fn view_chart_card(chart: Chart) -> Element(Msg) {
-  html.div([attribute.class("chart-card")], [
-    html.div([attribute.class("chart-header")], [
-      html.h3([], [html.text(chart.title)]),
-      html.span([attribute.class("chart-type")], [
-        html.text(case chart.chart_type {
-          Timeline -> "Timeline"
-          Gantt -> "Gantt"
-          Kanban -> "Kanban"
-          Mindmap -> "Mind Map"
-          Flowchart -> "Flowchart"
-          Custom(name) -> name
-        }),
-      ]),
-    ]),
-    html.p([attribute.class("chart-description")], [
-      html.text(chart.description),
-    ]),
-    html.div([attribute.class("chart-meta")], [
-      html.div([attribute.class("chart-creator")], [
-        html.text("Created by: " <> chart.creator),
-      ]),
-      html.div([attribute.class("chart-date")], [
-        html.text("Last updated: " <> chart.last_updated),
-      ]),
-    ]),
-  ])
-}
-
-fn view_works(model: Model) -> Element(Msg) {
-  html.div([attribute.class("works-section")], [
-    html.div([attribute.class("section-header")], [
-      html.h2([], [html.text("Works")]),
-      html.button([attribute.class("btn-primary")], [html.text("New Work")]),
-    ]),
-    html.div(
-      [attribute.class("works-grid")],
-      list.map(model.works, view_work_card),
-    ),
-  ])
-}
-
-fn view_work_card(work: Work) -> Element(Msg) {
-  html.div([attribute.class("work-card")], [
-    html.div([attribute.class("work-header")], [
-      html.h3([], [html.text(work.title)]),
-      html.span(
-        [
-          attribute.class(
-            "work-status "
-            <> case work.status {
-              Draft -> "status-draft"
-              InReview -> "status-review"
-              Approved -> "status-approved"
-              Rejected -> "status-rejected"
-              WorkCompleted -> "status-completed"
-            },
-          ),
-        ],
-        [
-          html.text(case work.status {
-            Draft -> "Draft"
-            InReview -> "In Review"
-            Approved -> "Approved"
-            Rejected -> "Rejected"
-            WorkCompleted -> "Completed"
-          }),
-        ],
+      html.button(
+        [class("interest-btn"), event.on_click(ExpressInterest(project.name))],
+        [html.text("Express Interest")],
       ),
-    ]),
-    html.p([attribute.class("work-description")], [html.text(work.description)]),
-    html.div([attribute.class("work-meta")], [
-      html.div([attribute.class("work-type")], [
-        html.text(case work.work_type {
-          Design -> "Design"
-          Development -> "Development"
-          Research -> "Research"
-          Documentation -> "Documentation"
-          Testing -> "Testing"
-          Other(name) -> name
-        }),
-      ]),
-      html.div([attribute.class("work-assignees")], [
-        html.text("Assignees: " <> string.join(work.assignees, ", ")),
-      ]),
-    ]),
-    html.div([attribute.class("work-artifacts")], [
-      html.h4([], [html.text("Artifacts")]),
-      html.div(
-        [attribute.class("artifacts-list")],
-        list.map(work.artifacts, view_artifact),
-      ),
-    ]),
-  ])
-}
-
-fn view_artifact(artifact: Artifact) -> Element(Msg) {
-  html.div([attribute.class("artifact-item")], [
-    html.a([attribute.href(artifact.url), attribute.target("_blank")], [
-      html.text(artifact.name),
-    ]),
-    html.span([attribute.class("artifact-meta")], [
-      html.text(artifact.file_type <> " • " <> artifact.created_at),
     ]),
   ])
 }

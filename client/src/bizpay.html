@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BizPay - Where Money Moves 💸</title>
+    <link rel="stylesheet" href="/bizpay.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+    <link rel="icon" type="image/svg+xml" href="/assets/bizpay-icon.svg">
+    <meta name="description" content="Cooking up some exquisite business software">
+    <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.162.0/build/three.module.js",
+        "three/fiber": "https://unpkg.com/@react-three/fiber@8.15.16/dist/react-three-fiber.esm.js",
+        "three/drei": "https://unpkg.com/@react-three/drei@9.99.5/index.js",
+        "react": "https://esm.sh/react@18.2.0",
+        "react-dom": "https://esm.sh/react-dom@18.2.0",
+        "/src/": "/src/"
+      }
+    }
+    </script>
+</head>
+<body>
+    <div id="app"></div>
+    <script type="module">
+        import { main } from "./build/dev/javascript/tandemx_client/bizpay.mjs";
+        main();
+    </script>
+</body>
+</html> 

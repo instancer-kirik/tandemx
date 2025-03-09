@@ -1,3 +1,5 @@
+import { toList } from "./gleam.mjs";
+
 // Get today's date in YYYY-MM-DD format
 export function getTodayDate() {
   const now = new Date();
@@ -47,8 +49,8 @@ export function getMonthData(year, month) {
       date,
       is_today: false,
       is_current_month: false,
-      events: [],
-      reminders: []
+      events: toList([]),
+      reminders: toList([])
     });
   }
   
@@ -61,8 +63,8 @@ export function getMonthData(year, month) {
                 today.getMonth() === month - 1 && 
                 today.getDate() === day,
       is_current_month: true,
-      events: [],
-      reminders: []
+      events: toList([]),
+      reminders: toList([])
     });
   }
   
@@ -77,12 +79,12 @@ export function getMonthData(year, month) {
       date,
       is_today: false,
       is_current_month: false,
-      events: [],
-      reminders: []
+      events: toList([]),
+      reminders: toList([])
     });
   }
   
-  return days;
+  return toList(days);
 }
 
 // Generate a unique ID

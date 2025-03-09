@@ -19,6 +19,7 @@ pub type Model {
     calendar_data: CalendarData,
     meetings: List(Meeting),
     schedule_state: ScheduleState,
+    selected_date: Option(String),
   )
 }
 
@@ -119,15 +120,13 @@ fn init(_: Nil) -> #(Model, Effect(Msg)) {
       name: "Default Calendar",
       description: "Standard calendar system",
       timezone: "UTC",
-      first_day_of_week: 1,
-      // Monday
-      working_days: [1, 2, 3, 4, 5],
-      // Mon-Fri
+      first_day_of_week: 0,
+      working_days: [0, 1, 2, 3, 4],
       working_hours: #(9, 17),
-      // 9 AM to 5 PM
     )
 
   let today = get_today()
+  let today_date = get_today_date()
   let calendar_data = get_month_data("user1", today.0, today.1, default_system)
 
   #(
@@ -139,6 +138,7 @@ fn init(_: Nil) -> #(Model, Effect(Msg)) {
       calendar_data: calendar_data,
       meetings: [],
       schedule_state: NotScheduling,
+      selected_date: Some(today_date),
     ),
     effect.none(),
   )
@@ -182,8 +182,7 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
     }
 
     SelectDate(date) -> {
-      // TODO: Implement date selection
-      #(model, effect.none())
+      #(Model(..model, selected_date: Some(date)), effect.none())
     }
 
     AddEvent(event) -> {
@@ -197,7 +196,14 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
     }
 
     StartScheduling(date) -> {
-      #(Model(..model, schedule_state: SchedulingStep1(date)), effect.none())
+      #(
+        Model(
+          ..model,
+          schedule_state: SchedulingStep1(date),
+          selected_date: Some(date),
+        ),
+        effect.none(),
+      )
     }
 
     SelectTime(time) -> {
@@ -388,21 +394,20 @@ fn view_calendar(model: Model) -> Element(Msg) {
       model.calendar_data.day_data,
       model.calendar_system,
       model.meetings,
+      model.selected_date,
     ),
     view_scheduling_modal(model),
   ])
 }
 
 fn view_weekdays(system: CalendarSystem) -> Element(Msg) {
-  let weekdays = [
-    "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday",
-  ]
+  let weekdays = ["A", "B", "C", "D", "E", "F", "G"]
 
   // Rotate weekdays based on first_day_of_week
   let rotated_weekdays = case system.first_day_of_week {
-    1 -> weekdays
+    0 -> weekdays
     n -> {
-      let index = n - 1
+      let index = n
       list.append(list.drop(weekdays, index), list.take(weekdays, index))
     }
   }
@@ -415,43 +420,54 @@ fn view_weekdays(system: CalendarSystem) -> Element(Msg) {
   )
 }
 
+fn view_day(
+  day: DayData,
+  system: CalendarSystem,
+  meetings: List(Meeting),
+  selected_date: Option(String),
+) -> Element(Msg) {
+  let is_working_day = list.contains(system.working_days, get_weekday(day.date))
+  html.div(
+    [
+      class(
+        "day"
+        <> case day.is_current_month {
+          True -> " current-month"
+          False -> " other-month"
+        }
+        <> case day.is_today {
+          True -> " today"
+          False -> ""
+        }
+        <> case is_working_day {
+          True -> " working-day"
+          False -> " non-working-day"
+        }
+        <> case selected_date {
+          Some(date) if date == day.date -> " selected"
+          _ -> ""
+        },
+      ),
+      event.on_click(SelectDate(day.date)),
+    ],
+    [
+      html.div([class("day-number")], [html.text(get_day_number(day.date))]),
+      view_day_events(day.events),
+      view_day_reminders(day.reminders),
+      view_day_meetings(day.date, meetings),
+    ],
+  )
+}
+
 fn view_days(
   days: List(DayData),
   system: CalendarSystem,
   meetings: List(Meeting),
+  selected_date: Option(String),
 ) -> Element(Msg) {
   html.div(
     [class("days")],
-    list.map(days, fn(day) {
-      let is_working_day =
-        list.contains(system.working_days, get_weekday(day.date))
-      html.div(
-        [
-          class(
-            "day"
-            <> case day.is_current_month {
-              True -> " current-month"
-              False -> " other-month"
-            }
-            <> case day.is_today {
-              True -> " today"
-              False -> ""
-            }
-            <> case is_working_day {
-              True -> " working-day"
-              False -> " non-working-day"
-            },
-          ),
-          event.on_click(StartScheduling(day.date)),
-        ],
-        [
-          html.div([class("day-number")], [html.text(get_day_number(day.date))]),
-          view_day_events(day.events),
-          view_day_reminders(day.reminders),
-          view_day_meetings(day.date, meetings),
-        ],
-      )
-    }),
+    list.map(days, fn(day) { view_day(day, system, meetings, selected_date) }),
   )
 }
 
@@ -475,7 +491,6 @@ fn view_day_reminders(reminders: List(String)) -> Element(Msg) {
 
 fn view_day_meetings(date: String, meetings: List(Meeting)) -> Element(Msg) {
   let day_meetings = list.filter(meetings, fn(meeting) { meeting.date == date })
-
   html.div(
     [class("day-meetings")],
     list.map(day_meetings, fn(meeting) {
@@ -489,7 +504,6 @@ fn view_day_meetings(date: String, meetings: List(Meeting)) -> Element(Msg) {
 fn view_time_slots(date: String, working_hours: #(Int, Int)) -> Element(Msg) {
   let #(start_hour, end_hour) = working_hours
   let hours = list.range(start_hour, end_hour)
-
   html.div(
     [class("time-slots-grid")],
     list.flat_map(hours, fn(hour) {
@@ -569,3 +583,6 @@ fn convert_to_est(date: String, time: String) -> String
 
 @external(javascript, "./calendar_ffi.js", "scheduleMeeting")
 fn schedule_meeting(meeting: Meeting) -> Effect(Msg)
+
+@external(javascript, "./calendar_ffi.js", "getTodayDate")
+fn get_today_date() -> String

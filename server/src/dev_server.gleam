@@ -20,7 +20,6 @@ import mist.{
   type WebsocketMessage, Bytes, Text, websocket,
 }
 import simplifile
-import wisp
 
 //add gravatar (glevatar)for easy multiprofiles with links and payment opts
 pub type CartState {
@@ -385,6 +384,11 @@ pub fn main() {
           ["chartspace", "editor"] -> serve_html("chartspace.html")
           ["chartspace", "viewer"] -> serve_html("chartspace.html")
           ["settings"] -> serve_html("settings.html")
+          ["calendar"] -> serve_html("calendar.html")
+          ["calendar.css"] -> serve_css("calendar.css")
+          ["calendar.mjs"] -> serve_file("calendar.mjs", "text/javascript")
+          ["calendar_ffi.js"] ->
+            serve_file("calendar_ffi.js", "text/javascript")
           ["compliance"] -> serve_html("compliance.html")
           ["compliance", "audit"] -> serve_html("compliance.html")
           ["compliance", "reports"] -> serve_html("compliance.html")
@@ -418,6 +422,7 @@ pub fn main() {
     handler
     |> mist.new
     |> mist.port(port)
+    |> mist.bind("0.0.0.0")
     |> mist.start_http
 
   process.sleep_forever()
@@ -504,4 +509,11 @@ fn decode_interest_submission(
     dynamic.field("company", dynamic.string),
     dynamic.field("message", dynamic.string),
   )(json)
+}
+
+fn serve_file(filename: String, content_type: String) -> Response(ResponseData) {
+  case try_serve_static_file(filename) {
+    Ok(response) -> response
+    Error(_) -> serve_404()
+  }
 }

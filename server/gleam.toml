@@ -14,10 +14,7 @@ gleam_erlang = "~> 0.24"
 snag = "~> 1.1.0"
 glisten = "~> 7.0.1"
 gleam_regexp = ">= 1.1.0 and < 2.0.0"
-jsx = "~> 3.1"
-json = ">= 1.4.1 and < 2.0.0"
 gleam_httpc = "~> 2.0"
 gleam_json = "~> 2.3.0"
-wisp = ">= 0.1.0 and < 1.0.0"
 
 [dev-dependencies]

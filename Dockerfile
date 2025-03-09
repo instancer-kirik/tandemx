@@ -37,4 +37,4 @@ WORKDIR /app/server
 EXPOSE 8000
 
 # Start the server
-CMD ["gleam", "run", "-m", "dev_server"] 
+CMD ["gleam", "run", "-m", "dev_server"]

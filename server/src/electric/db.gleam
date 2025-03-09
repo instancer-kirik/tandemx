@@ -7,7 +7,7 @@ import gleam/http.{Delete, Get, Patch, Post}
 import gleam/http/request.{type Request}
 import gleam/http/response.{type Response}
 import gleam/httpc
-import gleam/json
+import gleam/json.{type Json}
 import gleam/option.{type Option, None, Some}
 import gleam/result
 import gleam/string
@@ -33,11 +33,49 @@ pub type ShapeResponse {
   ShapeResponse(nodes: List(Node), connections: List(NodeConnection))
 }
 
-@external(erlang, "jsx", "encode")
-fn encode_json(data: Dynamic) -> String
+fn encode_json(data: Dynamic) -> String {
+  let json_value = case dynamic.classify(data) {
+    "List" -> {
+      let assert Ok(list) = dynamic.list(dynamic.dynamic)(data)
+      json.array(list, fn(x) {
+        case dynamic.classify(x) {
+          "String" -> {
+            let assert Ok(s) = dynamic.string(x)
+            json.string(s)
+          }
+          "Int" -> {
+            let assert Ok(i) = dynamic.int(x)
+            json.int(i)
+          }
+          "Float" -> {
+            let assert Ok(f) = dynamic.float(x)
+            json.float(f)
+          }
+          _ -> json.null()
+        }
+      })
+    }
+    "String" -> {
+      let assert Ok(s) = dynamic.string(data)
+      json.string(s)
+    }
+    "Int" -> {
+      let assert Ok(i) = dynamic.int(data)
+      json.int(i)
+    }
+    "Float" -> {
+      let assert Ok(f) = dynamic.float(data)
+      json.float(f)
+    }
+    _ -> json.null()
+  }
+  json.to_string(json_value)
+}
 
-@external(erlang, "jsx", "decode")
-fn decode_json(data: String) -> Dynamic
+fn decode_json(data: String) -> Dynamic {
+  json.decode(data, dynamic.dynamic)
+  |> result.unwrap(dynamic.from(Nil))
+}
 
 pub fn connect(url: String) -> Result(Database, DbError) {
   Ok(Database(url))

@@ -1,3 +1,4 @@
+/** @jsxImportSource react */
 import React, { useRef, useEffect } from 'react';
 import { Canvas, useFrame, useThree } from 'three/fiber';
 import { useGLTF, Environment } from 'three/drei';

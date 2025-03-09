@@ -1,22 +1,19 @@
-import components/nav
-import defi/types.{
-  type AlertType, type DeFiAlert, type DeFiProtocol, type DeFiTransaction,
-  type DeFiWallet, type NFT, type Network, type Position, type PositionType,
-  type ProtocolStatus, type RiskLevel, type Token, type TransactionStatus,
-  type WalletStatus, type WalletType,
-}
-import gleam/dict.{type Dict}
+import gleam/list
 import gleam/float
 import gleam/int
-import gleam/list
+import gleam/string
 import gleam/option.{type Option, None, Some}
+import gleam/dict.{type Dict}
 import gleam/result
-import lustre
 import lustre/attribute
-import lustre/effect
 import lustre/element.{type Element}
 import lustre/element/html
 import lustre/event
+import lustre/cmd.{type Cmd, none}
+import defi/types.{AlertType, DeFiAlert, DeFiProtocol, DeFiTransaction,
+  DeFiWallet, NFT, Network, Position, PositionType, ProtocolStatus, RiskLevel,
+  Token, TransactionStatus, WalletStatus, WalletType}
+import ../../client/src/components/nav.{type Msg as NavMsg, ToggleNav, view as view_nav}
 
 pub type Model {
   Model(
@@ -32,6 +29,8 @@ pub type Model {
 }
 
 pub type Msg {
+  NoOp
+  NavMsg(NavMsg)
   ConnectWallet(String, String, Network)
   DisconnectWallet(String)
   LockWallet(String)
@@ -46,7 +45,6 @@ pub type Msg {
   CreatePosition(String, String, String, PositionType, Float)
   ClosePosition(String)
   SetAlertThreshold(String, AlertType, Float)
-  NavMsg(nav.Msg)
 }
 
 pub fn main() {
@@ -57,99 +55,101 @@ pub fn main() {
 
 fn init(_) {
   let sample_wallet =
-    DeFiWallet(
-      id: "wallet1",
-      name: "Main Wallet",
-      address: "0x1234...5678",
-      network: types.Ethereum,
-      wallet_type: types.EOA,
-      status: types.WalletActive,
-      balance: 1.5,
-      tokens: [
-        Token(
-          address: "0xdac17f958d2ee523a2206206994597c13d831ec7",
-          symbol: "USDT",
-          name: "Tether USD",
-          decimals: 6,
-          balance: 1000.0,
-          price_usd: 1.0,
-          chain_id: 1,
+    types.DeFiWallet(
+      "wallet1",
+      "Main Wallet",
+      "0x1234...5678",
+      types.Ethereum,
+      types.EOA,
+      types.WalletActive,
+      1.5,
+      [
+        #(
+          "0xdac17f958d2ee523a2206206994597c13d831ec7",
+          "USDT",
+          "Tether USD",
+          6,
+          1000.0,
+          1.0,
+          1,
         ),
-        Token(
-          address: "0x2260fac5e5542a773aa44fbcfedf7c193bc2c599",
-          symbol: "WBTC",
-          name: "Wrapped Bitcoin",
-          decimals: 8,
-          balance: 0.05,
-          price_usd: 65_000.0,
-          chain_id: 1,
+        #(
+          "0x2260fac5e5542a773aa44fbcfedf7c193bc2c599",
+          "WBTC",
+          "Wrapped Bitcoin",
+          8,
+          0.05,
+          65_000.0,
+          1,
         ),
       ],
-      nfts: [],
-      connected_at: "2024-03-20T10:00:00Z",
-      last_activity: "2024-03-20T15:30:00Z",
+      [],
+      "2024-03-20T10:00:00Z",
+      "2024-03-20T15:30:00Z",
     )
 
   let sample_protocol =
-    DeFiProtocol(
-      id: "aave_v3",
-      name: "Aave V3",
-      network: types.Ethereum,
-      tvl_usd: 5_000_000_000.0,
-      apy: 4.5,
-      risk_level: types.Low,
-      supported_tokens: [
-        "0xdac17f958d2ee523a2206206994597c13d831ec7",
-        "0x2260fac5e5542a773aa44fbcfedf7c193bc2c599",
-      ],
-      status: types.ProtocolActive,
+    types.DeFiProtocol(
+      "protocol1",
+      "Aave V3",
+      types.Ethereum,
+      10_000_000.0,
+      4.5,
+      types.Low,
+      ["0xdac17f958d2ee523a2206206994597c13d831ec7"],
+      types.ProtocolActive,
     )
 
   let sample_position =
-    Position(
-      id: "pos1",
-      protocol_id: "aave_v3",
-      wallet_address: "0x1234...5678",
-      position_type: types.Lending,
-      token_address: "0xdac17f958d2ee523a2206206994597c13d831ec7",
-      amount: 500.0,
-      value_usd: 500.0,
-      apy: 4.5,
-      opened_at: "2024-03-20T12:00:00Z",
-      last_updated: "2024-03-20T15:30:00Z",
+    types.Position(
+      "position1",
+      "protocol1",
+      "0x1234...5678",
+      types.Lending,
+      "0xdac17f958d2ee523a2206206994597c13d831ec7",
+      500.0,
+      500.0,
+      4.5,
+      "2024-03-20T12:00:00Z",
+      "2024-03-20T15:30:00Z",
     )
 
   #(
     Model(
       wallets: dict.from_list([#("wallet1", sample_wallet)]),
-      protocols: dict.from_list([#("aave_v3", sample_protocol)]),
-      positions: dict.from_list([#("pos1", sample_position)]),
+      protocols: dict.from_list([#("protocol1", sample_protocol)]),
+      positions: dict.from_list([#("position1", sample_position)]),
       transactions: dict.new(),
       alerts: dict.new(),
       selected_wallet: Some("wallet1"),
-      selected_protocol: Some("aave_v3"),
+      selected_protocol: Some("protocol1"),
       nav_open: False,
     ),
     effect.none(),
   )
 }
 
-fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
+pub fn update(model: Model, msg: Msg) -> #(Model, Cmd(Msg)) {
   case msg {
+    NoOp -> #(model, Cmd.none())
+    NavMsg(ToggleNav) -> #(
+      Model(..model, nav_open: !model.nav_open),
+      Cmd.none(),
+    )
     ConnectWallet(name, address, network) -> {
       let wallet =
-        DeFiWallet(
-          id: address,
-          name: name,
-          address: address,
-          network: network,
-          wallet_type: types.EOA,
-          status: types.WalletActive,
-          balance: 0.0,
-          tokens: [],
-          nfts: [],
-          connected_at: "2024-03-20T10:00:00Z",
-          last_activity: "2024-03-20T10:00:00Z",
+        types.DeFiWallet(
+          address,
+          name,
+          address,
+          network,
+          types.EOA,
+          types.WalletActive,
+          0.0,
+          [],
+          [],
+          "2024-03-20T10:00:00Z",
+          "2024-03-20T15:30:00Z",
         )
       #(
         Model(..model, wallets: dict.insert(model.wallets, address, wallet)),
@@ -170,7 +170,7 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
           dict.insert(
             model.wallets,
             address,
-            DeFiWallet(..wallet, status: types.WalletLocked),
+            types.DeFiWallet(..wallet, status: types.WalletLocked),
           )
         Error(_) -> model.wallets
       }
@@ -183,7 +183,7 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
           dict.insert(
             model.wallets,
             address,
-            DeFiWallet(..wallet, status: types.WalletActive),
+            types.DeFiWallet(..wallet, status: types.WalletActive),
           )
         Error(_) -> model.wallets
       }
@@ -196,7 +196,7 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
           dict.insert(
             model.wallets,
             address,
-            DeFiWallet(..wallet, status: types.WalletArchived),
+            types.DeFiWallet(..wallet, status: types.WalletArchived),
           )
         Error(_) -> model.wallets
       }
@@ -209,7 +209,7 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
           dict.insert(
             model.wallets,
             address,
-            DeFiWallet(..wallet, tokens: tokens),
+            types.DeFiWallet(..wallet, tokens: tokens),
           )
         Error(_) -> model.wallets
       }
@@ -219,7 +219,11 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
     UpdateWalletNFTs(address, nfts) -> {
       let wallets = case dict.get(model.wallets, address) {
         Ok(wallet) ->
-          dict.insert(model.wallets, address, DeFiWallet(..wallet, nfts: nfts))
+          dict.insert(
+            model.wallets,
+            address,
+            types.DeFiWallet(..wallet, nfts: nfts),
+          )
         Error(_) -> model.wallets
       }
       #(Model(..model, wallets: wallets), effect.none())
@@ -237,7 +241,7 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
       let position_id =
         protocol_id <> "_" <> wallet_address <> "_" <> token_address
       let position =
-        Position(
+        types.Position(
           id: position_id,
           protocol_id: protocol_id,
           wallet_address: wallet_address,
@@ -279,7 +283,7 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
       let position_id =
         protocol_id <> "_" <> wallet_address <> "_" <> token_address
       let position =
-        Position(
+        types.Position(
           id: position_id,
           protocol_id: protocol_id,
           wallet_address: wallet_address,
@@ -312,7 +316,7 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
     SetAlertThreshold(wallet_address, alert_type, threshold) -> {
       let alert_id = wallet_address <> "_" <> alert_type_to_string(alert_type)
       let alert =
-        DeFiAlert(
+        types.DeFiAlert(
           id: alert_id,
           wallet_address: wallet_address,
           alert_type: alert_type,
@@ -325,19 +329,10 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
         effect.none(),
       )
     }
-
-    NavMsg(nav_msg) -> {
-      case nav_msg {
-        nav.ToggleNav -> #(
-          Model(..model, nav_open: !model.nav_open),
-          effect.none(),
-        )
-      }
-    }
   }
 }
 
-fn view(model: Model) -> Element(Msg) {
+pub fn view(model: Model) -> Element(Msg) {
   html.div(
     [
       attribute.class(case model.nav_open {
@@ -377,7 +372,7 @@ fn view_wallets(model: Model) -> Element(Msg) {
   ])
 }
 
-fn view_wallet(wallet: DeFiWallet) -> Element(Msg) {
+fn view_wallet(wallet: types.DeFiWallet) -> Element(Msg) {
   html.div([attribute.class("wallet-card")], [
     html.div([attribute.class("wallet-header")], [
       html.div([attribute.class("wallet-name")], [html.text(wallet.name)]),
@@ -404,15 +399,16 @@ fn view_wallet(wallet: DeFiWallet) -> Element(Msg) {
 }
 
 fn view_token(token: Token) -> Element(Msg) {
+  let #(address, symbol, name, decimals, balance, price_usd, chain_id) = token
   html.div([attribute.class("token-item")], [
     html.div([attribute.class("token-info")], [
-      html.span([attribute.class("token-symbol")], [html.text(token.symbol)]),
+      html.span([attribute.class("token-symbol")], [html.text(symbol)]),
       html.span([attribute.class("token-balance")], [
-        html.text(float.to_string(token.balance)),
+        html.text(float.to_string(balance)),
       ]),
     ]),
     html.div([attribute.class("token-value")], [
-      html.text("$" <> float.to_string(token.balance *. token.price_usd)),
+      html.text("$" <> float.to_string(balance *. price_usd)),
     ]),
   ])
 }
@@ -428,7 +424,7 @@ fn view_protocols(model: Model) -> Element(Msg) {
   ])
 }
 
-fn view_protocol(protocol: DeFiProtocol) -> Element(Msg) {
+fn view_protocol(protocol: types.DeFiProtocol) -> Element(Msg) {
   html.div([attribute.class("protocol-card")], [
     html.div([attribute.class("protocol-header")], [
       html.div([attribute.class("protocol-name")], [html.text(protocol.name)]),
@@ -478,7 +474,7 @@ fn view_positions(model: Model) -> Element(Msg) {
   ])
 }
 
-fn view_position(position: Position) -> Element(Msg) {
+fn view_position(position: types.Position) -> Element(Msg) {
   html.div([attribute.class("position-card")], [
     html.div([attribute.class("position-header")], [
       html.div([attribute.class("position-type")], [
@@ -569,11 +565,21 @@ fn alert_type_to_string(type_: AlertType) -> String {
   }
 }
 
-fn format_large_number(num: Float) -> String {
-  case num {
-    n if n >= 1_000_000_000.0 -> float.to_string(n /. 1_000_000_000.0) <> "B"
-    n if n >= 1_000_000.0 -> float.to_string(n /. 1_000_000.0) <> "M"
-    n if n >= 1000.0 -> float.to_string(n /. 1000.0) <> "K"
-    n -> float.to_string(n)
+fn format_large_number(n: Float) -> String {
+  let n = float.floor(n)
+  case n {
+    n if n >= 1_000_000_000.0 -> {
+      let b = n /. 1_000_000_000.0
+      string.append(float.to_string(b), "B")
+    }
+    n if n >= 1_000_000.0 -> {
+      let m = n /. 1_000_000.0
+      string.append(float.to_string(m), "M")
+    }
+    n if n >= 1000.0 -> {
+      let k = n /. 1000.0
+      string.append(float.to_string(k), "K")
+    }
+    _ -> float.to_string(n)
   }
 }

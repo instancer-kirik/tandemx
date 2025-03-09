@@ -1,4 +1,4 @@
-import components/background
+//import components/background
 import gleam/list
 import lustre
 import lustre/attribute.{class}
@@ -54,7 +54,7 @@ fn set_window_location(path: String) -> Nil
 
 fn view(model: Model) -> Element(Msg) {
   html.div([class("bizpay-landing")], [
-    background.view(),
+    //  background.view(),
     view_header(),
     view_hero(),
     view_features(model.selected_feature),
@@ -94,11 +94,11 @@ fn view_hero() -> Element(Msg) {
   html.section([class("hero-section")], [
     html.div([class("hero-content")], [
       html.h1([class("hero-title")], [
-        html.text("Building the Future of Business Payments Together 🚀"),
+        html.text("Business software; more than paying 🚀"),
       ]),
       html.p([class("hero-subtitle")], [
         html.text(
-          "We're crafting a payment platform that works the way you do. Join us early and help shape the future of business payments. Share your needs, suggest features, and get early access benefits.",
+          "I'm starting a business. I want good business software, thus..this. Join us early and help shape the future of business payments. Share your needs, support, suggest features, and get early access benefits.",
         ),
       ]),
       html.div([class("hero-badges")], [

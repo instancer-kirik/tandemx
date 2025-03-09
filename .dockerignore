@@ -1,0 +1,12 @@
+ build/
+_build/
+.git/
+node_modules/
+*.beam
+*.ez
+.DS_Store
+*.swp
+*.swo
+stash/
+sledge/
+.env

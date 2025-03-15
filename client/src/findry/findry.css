@@ -1,0 +1,324 @@
+.findry-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.space-card {
+  border: none;
+  border-radius: 16px;
+  padding: 0;
+  margin-bottom: 20px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  background: white;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  overflow: hidden;
+  position: relative;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.space-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
+}
+
+.space-card h2 {
+  margin-top: 0;
+  color: #333;
+}
+
+.space-photos {
+  position: relative;
+  width: 100%;
+  height: 400px;
+  overflow: hidden;
+}
+
+.space-photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.space-info {
+  padding: 24px;
+  background: linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.9) 20%, rgba(255,255,255,1) 100%);
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+}
+
+.space-name {
+  font-size: 24px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 8px;
+}
+
+.space-type {
+  font-size: 16px;
+  color: #4f46e5;
+  margin-bottom: 12px;
+  font-weight: 500;
+}
+
+.space-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.space-detail {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: #4b5563;
+}
+
+.space-detail i {
+  color: #6366f1;
+}
+
+.swipe-buttons {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  padding: 24px;
+  background: white;
+}
+
+.swipe-button {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  font-size: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.swipe-left {
+  background-color: white;
+  color: #ef4444;
+  border: 2px solid #ef4444;
+}
+
+.swipe-left:hover {
+  background-color: #ef4444;
+  color: white;
+  transform: scale(1.05);
+}
+
+.swipe-right {
+  background-color: white;
+  color: #22c55e;
+  border: 2px solid #22c55e;
+}
+
+.swipe-right:hover {
+  background-color: #22c55e;
+  color: white;
+  transform: scale(1.05);
+}
+
+.artist-card {
+  border: none;
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  background: white;
+  transition: transform 0.3s ease;
+}
+
+.artist-card:hover {
+  transform: translateY(-4px);
+}
+
+.artist-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.artist-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #f3f4f6;
+}
+
+.artist-info {
+  flex: 1;
+}
+
+.artist-name {
+  font-size: 20px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 4px;
+}
+
+.artist-discipline {
+  font-size: 14px;
+  color: #6366f1;
+}
+
+.artist-details {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.artist-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.detail-label {
+  font-size: 12px;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.detail-value {
+  font-size: 14px;
+  color: #1a1a1a;
+  font-weight: 500;
+}
+
+.spaces-section,
+.artists-section {
+  margin-bottom: 40px;
+}
+
+.spaces-section h2,
+.artists-section h2 {
+  color: #333;
+  margin-bottom: 20px;
+}
+
+.swipe-notification,
+.booking-notification {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: white;
+  padding: 16px 24px;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  animation: slideIn 0.3s ease-out;
+  z-index: 1000;
+  border-left: 4px solid #6366f1;
+}
+
+.booking-notification {
+  min-width: 320px;
+}
+
+.booking-notification h3 {
+  margin: 0 0 8px 0;
+  color: #1a1a1a;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Card stack for swipe interface */
+.card-stack {
+  position: relative;
+  height: 600px;
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+  perspective: 1000px;
+}
+
+.card-stack .space-card {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  transform-origin: center;
+  cursor: grab;
+  user-select: none;
+}
+
+.card-stack .space-card.swiping {
+  cursor: grabbing;
+  transition: transform 0.1s ease-out;
+}
+
+.card-stack .space-card.swipe-left {
+  animation: swipeLeft 0.3s ease-out forwards;
+}
+
+.card-stack .space-card.swipe-right {
+  animation: swipeRight 0.3s ease-out forwards;
+}
+
+@keyframes swipeLeft {
+  to {
+    transform: translateX(-150%) rotate(-30deg);
+    opacity: 0;
+  }
+}
+
+@keyframes swipeRight {
+  to {
+    transform: translateX(150%) rotate(30deg);
+    opacity: 0;
+  }
+}
+
+/* Empty state */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 400px;
+  text-align: center;
+  color: #6b7280;
+  padding: 24px;
+}
+
+.empty-state-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  color: #d1d5db;
+}
+
+.empty-state-text {
+  font-size: 18px;
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+
+.empty-state-subtext {
+  font-size: 14px;
+  color: #9ca3af;
+} 

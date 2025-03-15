@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Findry - Creative Space Matching</title>
+    <link rel="stylesheet" href="findry.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script type="module" src="findry.js"></script>
+</head>
+<body>
+    <nav class="findry-nav">
+        <div class="logo">Findry</div>
+        <div class="nav-links">
+            <a href="/findry/spaces" class="nav-link active">Spaces</a>
+            <a href="/findry/artists" class="nav-link">Artists</a>
+            <a href="/findry/matches" class="nav-link">Matches</a>
+        </div>
+        <div class="user-menu">
+            <button class="profile-btn">
+                <i class="fas fa-user"></i>
+                Profile
+            </button>
+        </div>
+    </nav>
+
+    <main class="findry-main">
+        <div class="card-stack">
+            <!-- Cards will be dynamically inserted here -->
+        </div>
+
+        <div class="swipe-controls">
+            <button class="swipe-button swipe-left" aria-label="Pass">
+                <i class="fas fa-times"></i>
+            </button>
+            <button class="swipe-button swipe-right" aria-label="Like">
+                <i class="fas fa-heart"></i>
+            </button>
+        </div>
+
+        <div class="filters-panel">
+            <h3>Filters</h3>
+            <div class="filter-group">
+                <label for="spaceType">Space Type</label>
+                <select id="spaceType">
+                    <option value="all">All Types</option>
+                    <option value="studio">Studio</option>
+                    <option value="gallery">Gallery</option>
+                    <option value="practice_room">Practice Room</option>
+                    <option value="workshop">Workshop</option>
+                    <option value="treehouse">Treehouse</option>
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <label>Square Footage</label>
+                <div class="range-inputs">
+                    <input type="number" id="minSqFt" placeholder="Min" min="0">
+                    <input type="number" id="maxSqFt" placeholder="Max" min="0">
+                </div>
+            </div>
+
+            <div class="filter-group">
+                <label>Budget Range</label>
+                <div class="range-inputs">
+                    <input type="number" id="minBudget" placeholder="Min" min="0">
+                    <input type="number" id="maxBudget" placeholder="Max" min="0">
+                </div>
+            </div>
+
+            <div class="filter-group">
+                <label for="acoustics">Acoustics Rating</label>
+                <div class="range-slider">
+                    <input type="range" id="acoustics" min="0" max="10" step="1">
+                    <div class="range-value"></div>
+                </div>
+            </div>
+
+            <div class="filter-group">
+                <label class="checkbox-label">
+                    <input type="checkbox" id="naturalLight">
+                    Natural Light Required
+                </label>
+            </div>
+
+            <button class="apply-filters">
+                <i class="fas fa-filter"></i>
+                Apply Filters
+            </button>
+        </div>
+    </main>
+
+    <template id="space-card-template">
+        <div class="space-card">
+            <div class="space-photos">
+                <!-- Photos will be dynamically inserted here -->
+            </div>
+            <div class="space-info">
+                <h3 class="space-name"></h3>
+                <p class="space-type"></p>
+                <div class="space-details">
+                    <div class="space-detail">
+                        <i class="fas fa-ruler-combined"></i>
+                        <span class="sqft"></span>
+                    </div>
+                    <div class="space-detail">
+                        <i class="fas fa-dollar-sign"></i>
+                        <span class="price"></span>
+                    </div>
+                    <div class="space-detail">
+                        <i class="fas fa-music"></i>
+                        <span class="acoustics"></span>
+                    </div>
+                </div>
+                <div class="space-features">
+                    <!-- Features will be dynamically inserted here -->
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <template id="empty-state-template">
+        <div class="empty-state">
+            <div class="empty-state-icon">
+                <i class="far fa-compass"></i>
+            </div>
+            <h3 class="empty-state-text">No More Spaces</h3>
+            <p class="empty-state-subtext">Try adjusting your filters to see more spaces</p>
+        </div>
+    </template>
+</body>
+</html> 

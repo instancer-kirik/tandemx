@@ -1,24 +1,59 @@
-import findry/websocket.{type WebSocket}
+import gleam/dynamic
 import gleam/float
 import gleam/int
 import gleam/io
-import gleam/json.{type Json}
+import gleam/json
 import gleam/list
 import gleam/option.{type Option, None, Some}
+import gleam/result
+import gleam/string
 import lustre
-import lustre/attribute.{class}
+import lustre/attribute.{class, style}
 import lustre/effect.{type Effect}
 import lustre/element.{type Element}
 import lustre/element/html
 import lustre/event
+import mist.{type WebsocketConnection, type WebsocketMessage, Text}
 
-pub type SpaceType {
-  Studio
-  Gallery
-  PracticeRoom
-  Workshop
-  Treehouse
-  Other(String)
+pub type FormEvent {
+  FormEvent(target: FormTarget)
+}
+
+pub type FormTarget {
+  FormTarget(value: String, checked: Bool)
+}
+
+pub type Msg {
+  NoOp
+  Navigate(String)
+  SpacesUpdated(List(Space))
+  SwipeStart(Int)
+  SwipeMove(Int)
+  SwipeEnd(Int)
+  ApplyFilters(Filters)
+  WebSocketMsg(String)
+}
+
+pub type Model {
+  Model(
+    route: String,
+    spaces: List(Space),
+    ui_state: UiState,
+    ws: Option(WebsocketConnection),
+  )
+}
+
+pub type UiState {
+  UiState(
+    current_space_id: Option(String),
+    swipe_state: SwipeState,
+    filters: Filters,
+  )
+}
+
+pub type SwipeState {
+  NotSwiping
+  Swiping(Int, Int)
 }
 
 pub type Space {
@@ -27,91 +62,23 @@ pub type Space {
     name: String,
     space_type: SpaceType,
     square_footage: Int,
-    equipment_list: List(String),
-    availability_schedule: List(TimeSlot),
     pricing_terms: PricingTerms,
     acoustics_rating: Int,
-    lighting_details: LightingDetails,
-    access_hours: AccessHours,
-    location_data: LocationData,
+    natural_light: Bool,
     photos: List(String),
-    virtual_tour_url: Option(String),
   )
 }
 
-pub type TimeSlot {
-  TimeSlot(start_time: String, end_time: String)
+pub type SpaceType {
+  Studio
+  RehearsalRoom
+  RecordingStudio
+  LiveVenue
+  Other
 }
 
 pub type PricingTerms {
-  PricingTerms(
-    hourly_rate: Float,
-    daily_rate: Option(Float),
-    weekly_rate: Option(Float),
-    monthly_rate: Option(Float),
-    deposit_required: Bool,
-    deposit_amount: Option(Float),
-  )
-}
-
-pub type LightingDetails {
-  LightingDetails(
-    natural_light: Bool,
-    adjustable: Bool,
-    color_temperature: Option(Int),
-    special_features: List(String),
-  )
-}
-
-pub type AccessHours {
-  AccessHours(
-    monday: List(TimeSlot),
-    tuesday: List(TimeSlot),
-    wednesday: List(TimeSlot),
-    thursday: List(TimeSlot),
-    friday: List(TimeSlot),
-    saturday: List(TimeSlot),
-    sunday: List(TimeSlot),
-    special_hours: List(#(String, List(TimeSlot))),
-  )
-}
-
-pub type LocationData {
-  LocationData(
-    address: String,
-    latitude: Float,
-    longitude: Float,
-    public_transport: List(String),
-    parking_available: Bool,
-    loading_zone: Bool,
-    noise_restrictions: List(String),
-  )
-}
-
-pub type Route {
-  Landing
-  Spaces
-  Artists
-  Matches
-  Sponsor
-  Credit
-  Support
-  Market
-  Contact
-}
-
-pub type Msg {
-  NavigateTo(Route)
-  SpaceAdded(Space)
-  SpaceUpdated(Space)
-  SpaceDeleted(String)
-  SwipeRight(String)
-  SwipeLeft(String)
-  ShowSpaceDetails(Space)
-  CloseModal
-  ApplyFilters(Filters)
-  WebSocketMessage(Json)
-  ConnectToSpaces
+  PricingTerms(hourly_rate: Float, minimum_hours: Int, deposit_required: Bool)
 }
 
 pub type Filters {
@@ -119,45 +86,133 @@ pub type Filters {
     space_type: Option(SpaceType),
     min_square_footage: Option(Int),
     max_square_footage: Option(Int),
-    min_budget: Option(Float),
-    max_budget: Option(Float),
-    min_acoustics: Option(Int),
+    min_hourly_rate: Option(Float),
+    max_hourly_rate: Option(Float),
+    min_acoustics_rating: Option(Int),
     natural_light_required: Bool,
   )
 }
 
-pub type Model {
-  Model(
-    route: Route,
-    spaces: List(Space),
-    current_space_index: Int,
-    selected_space: Option(Space),
-    filters: Filters,
-    ws: Option(WebSocket),
-  )
+@external(javascript, "./findry_ffi.js", "getWebSocketUrl")
+fn get_websocket_url() -> String
+
+@external(javascript, "./findry_ffi.js", "dispatch")
+fn dispatch(msg: String) -> Nil
+
+@external(javascript, "./findry_ffi.js", "getWindowWidth")
+fn window_width() -> Float
+
+@external(javascript, "./findry_ffi.js", "onChange")
+fn on_change(handler: fn(FormEvent) -> Msg) -> attribute.Attribute(Msg)
+
+@external(javascript, "./findry_ffi.js", "onInput")
+fn on_input(handler: fn(FormEvent) -> Msg) -> attribute.Attribute(Msg)
+
+fn format_space_type(space_type: SpaceType) -> String {
+  case space_type {
+    Studio -> "Studio"
+    RehearsalRoom -> "Rehearsal Room"
+    RecordingStudio -> "Recording Studio"
+    LiveVenue -> "Live Venue"
+    Other -> "Other"
+  }
 }
 
-pub fn main() {
-  let app = lustre.application(init, update, view)
-  let assert Ok(_) = lustre.start(app, "#app", Nil)
-  Nil
+fn handle_swipe_right(model: Model) -> Model {
+  let current_index = case model.ui_state.current_space_id {
+    Some(id) ->
+      list.index_map(model.spaces, fn(s, i) {
+        case s.id == id {
+          True -> Some(i)
+          False -> None
+        }
+      })
+      |> list.find(fn(x) { x != None })
+      |> option.from_result
+      |> option.flatten
+    None -> Some(-1)
+  }
+
+  let spaces_length = list.length(model.spaces)
+
+  case current_index {
+    Some(idx) -> {
+      let next_spaces = list.drop(model.spaces, idx + 1)
+      case next_spaces {
+        [next, ..] ->
+          case next {
+            Space(id: id, ..) ->
+              Model(
+                ..model,
+                ui_state: UiState(..model.ui_state, current_space_id: Some(id)),
+              )
+          }
+        [] -> model
+      }
+    }
+    None -> model
+  }
 }
 
-fn init(_) -> #(Model, Effect(Msg)) {
+fn handle_swipe_left(model: Model) -> Model {
+  let current_index = case model.ui_state.current_space_id {
+    Some(id) ->
+      list.index_map(model.spaces, fn(s, i) {
+        case s.id == id {
+          True -> Some(i)
+          False -> None
+        }
+      })
+      |> list.find(fn(x) { x != None })
+      |> option.from_result
+      |> option.flatten
+    None -> None
+  }
+
+  case current_index {
+    Some(idx) -> {
+      case idx > 0 {
+        True -> {
+          let prev_spaces = list.take(model.spaces, idx)
+          case list.last(prev_spaces) {
+            Ok(space) ->
+              case space {
+                Space(id: id, ..) ->
+                  Model(
+                    ..model,
+                    ui_state: UiState(
+                      ..model.ui_state,
+                      current_space_id: Some(id),
+                    ),
+                  )
+              }
+            Error(_) -> model
+          }
+        }
+        False -> model
+      }
+    }
+    None -> model
+  }
+}
+
+pub fn init() -> #(Model, effect.Effect(Msg)) {
   let model =
     Model(
-      route: Landing,
+      route: "/",
       spaces: [],
-      current_space_index: 0,
-      selected_space: None,
-      filters: Filters(
-        space_type: None,
-        min_square_footage: None,
-        max_square_footage: None,
-        min_budget: None,
-        max_budget: None,
-        min_acoustics: None,
-        natural_light_required: False,
+      ui_state: UiState(
+        current_space_id: None,
+        swipe_state: NotSwiping,
+        filters: Filters(
+          space_type: None,
+          min_square_footage: None,
+          max_square_footage: None,
+          min_hourly_rate: None,
+          max_hourly_rate: None,
+          min_acoustics_rating: None,
+          natural_light_required: False,
+        ),
       ),
       ws: None,
     )
@@ -165,519 +220,378 @@ fn init(_) -> #(Model, Effect(Msg)) {
   #(model, effect.none())
 }
 
-@external(javascript, "./findry_ffi.js", "getWebSocketUrl")
-fn get_websocket_url() -> String
-
-@external(javascript, "./findry_ffi.js", "dispatch")
-fn dispatch(msg: Msg) -> Nil
-
-fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
+pub fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
   case msg {
-    NavigateTo(route) -> {
-      case route {
-        Spaces -> {
-          case model.ws {
-            Some(_) -> #(Model(..model, route: route), effect.none())
-            None -> {
-              let ws =
-                websocket.connect(
-                  get_websocket_url(),
-                  fn(msg) { dispatch(WebSocketMessage(msg)) },
-                  fn() { io.println("WebSocket closed") },
-                )
-              #(Model(..model, route: route, ws: Some(ws)), effect.none())
-            }
-          }
-        }
-        _ -> #(Model(..model, route: route), effect.none())
-      }
-    }
+    NoOp -> #(model, effect.none())
 
-    ConnectToSpaces -> {
-      let ws =
-        websocket.connect(
-          get_websocket_url(),
-          fn(msg) { dispatch(WebSocketMessage(msg)) },
-          fn() { io.println("WebSocket closed") },
+    Navigate(route) -> #(Model(..model, route: route), effect.none())
+
+    SpacesUpdated(spaces) -> #(Model(..model, spaces: spaces), effect.none())
+
+    SwipeStart(x) -> #(
+      Model(
+        ..model,
+        ui_state: UiState(..model.ui_state, swipe_state: Swiping(x, x)),
+      ),
+      effect.none(),
+    )
+
+    SwipeMove(x) ->
+      case model.ui_state.swipe_state {
+        Swiping(start_x, _) -> #(
+          Model(
+            ..model,
+            ui_state: UiState(
+              ..model.ui_state,
+              swipe_state: Swiping(start_x, x),
+            ),
+          ),
+          effect.none(),
         )
-      #(Model(..model, ws: Some(ws)), effect.none())
-    }
+        NotSwiping -> #(model, effect.none())
+      }
 
-    SpaceAdded(space) -> {
-      #(Model(..model, spaces: [space, ..model.spaces]), effect.none())
-    }
+    SwipeEnd(end_x) -> {
+      let offset =
+        int.to_float(
+          end_x
+          - case model.ui_state.swipe_state {
+            Swiping(start_x, _) -> start_x
+            NotSwiping -> end_x
+          },
+        )
+      let threshold = window_width() *. 0.3
+      let neg_threshold = float.subtract(0.0, threshold)
 
-    SpaceUpdated(updated_space) -> {
-      let updated_spaces =
-        list.map(model.spaces, fn(s) {
-          case s.id == updated_space.id {
-            True -> updated_space
-            False -> s
+      let new_model = case model.ui_state.swipe_state {
+        Swiping(start_x, _) -> {
+          case offset >. threshold, offset <. neg_threshold {
+            True, _ -> handle_swipe_right(model)
+            _, True -> handle_swipe_left(model)
+            _, _ ->
+              Model(
+                ..model,
+                ui_state: UiState(..model.ui_state, swipe_state: NotSwiping),
+              )
           }
-        })
-      #(Model(..model, spaces: updated_spaces), effect.none())
-    }
-
-    SpaceDeleted(space_id) -> {
-      let filtered_spaces =
-        list.filter(model.spaces, fn(s) { s.id != space_id })
-      #(Model(..model, spaces: filtered_spaces), effect.none())
-    }
-
-    SwipeRight(space_id) -> {
-      case model.ws {
-        Some(ws) -> {
-          websocket.send(
-            ws,
-            json.object([
-              #("type", json.string("SwipeRight")),
-              #("spaceId", json.string(space_id)),
-            ]),
-          )
-          #(show_next_space(model), effect.none())
         }
-        None -> #(model, effect.none())
+        NotSwiping -> model
       }
+      #(new_model, effect.none())
     }
 
-    SwipeLeft(space_id) -> {
-      case model.ws {
-        Some(ws) -> {
-          websocket.send(
-            ws,
-            json.object([
-              #("type", json.string("SwipeLeft")),
-              #("spaceId", json.string(space_id)),
-            ]),
-          )
-          #(show_next_space(model), effect.none())
+    ApplyFilters(filters) -> #(
+      Model(..model, ui_state: UiState(..model.ui_state, filters: filters)),
+      effect.none(),
+    )
+
+    WebSocketMsg(msg) -> {
+      case string.starts_with(msg, "spaces:") {
+        True -> {
+          let spaces = parse_spaces(string.slice(msg, 7, string.length(msg)))
+          #(Model(..model, spaces: spaces), effect.none())
         }
-        None -> #(model, effect.none())
+        False -> #(model, effect.none())
       }
-    }
-
-    ShowSpaceDetails(space) -> {
-      #(Model(..model, selected_space: Some(space)), effect.none())
-    }
-
-    CloseModal -> {
-      #(Model(..model, selected_space: None), effect.none())
-    }
-
-    ApplyFilters(filters) -> {
-      #(Model(..model, filters: filters), effect.none())
-    }
-
-    WebSocketMessage(msg) -> {
-      #(handle_ws_message(model, msg), effect.none())
     }
   }
 }
 
-fn show_next_space(model: Model) -> Model {
-  Model(..model, current_space_index: model.current_space_index + 1)
-}
+fn view_space_card(space: Space, swipe_state: SwipeState) -> Element(Msg) {
+  let transform = case swipe_state {
+    Swiping(start_x, current_x) -> {
+      let offset = current_x - start_x
+      "translateX(" <> int.to_string(offset) <> "px)"
+    }
+    NotSwiping -> "translateX(0px)"
+  }
 
-fn handle_ws_message(model: Model, msg: Json) -> Model {
-  // TODO: Implement WebSocket message handling
-  model
-}
-
-fn view(model: Model) -> Element(Msg) {
-  html.div([class("findry-app")], [
-    view_nav(),
-    case model.route {
-      Landing -> view_landing_page()
-      Spaces -> view_spaces_page(model)
-      Artists -> view_artists_page()
-      Matches -> view_matches_page()
-      Sponsor -> view_sponsor_page()
-      Credit -> view_credit_page()
-      Support -> view_support_page()
-      Market -> view_market_page()
-      Contact -> view_contact_page()
-    },
-  ])
-}
-
-fn view_nav() -> Element(Msg) {
-  html.nav([attribute.class("findry-nav")], [
-    // Left section with logo
-    html.a([attribute.class("logo"), event.on_click(NavigateTo(Landing))], [
-      html.text("Findry"),
-    ]),
-    // Center section with main navigation
-    html.div([attribute.class("nav-links")], [
-      html.a([attribute.class("nav-link"), event.on_click(NavigateTo(Spaces))], [
-        html.text("Spaces"),
+  html.div([class("space-card"), style([#("transform", transform)])], [
+    html.h2([], [html.text(space.name)]),
+    html.p([], [html.text(format_space_type(space.space_type))]),
+    html.div([class("space-photos")], case space.photos {
+      [] -> [html.div([class("placeholder-photo")], [])]
+      photos ->
+        list.map(photos, fn(photo) {
+          html.img([attribute.src(photo), attribute.alt(space.name)])
+        })
+    }),
+    html.div([class("space-info")], [
+      html.div([class("space-details")], [
+        html.p([], [
+          html.text(
+            int.to_string(space.square_footage)
+            <> " sq ft · $"
+            <> float.to_string(space.pricing_terms.hourly_rate)
+            <> "/hr",
+          ),
+        ]),
+        html.p([], [
+          html.text(
+            "Acoustics: " <> int.to_string(space.acoustics_rating) <> "/10",
+          ),
+        ]),
       ]),
-      html.a(
-        [attribute.class("nav-link"), event.on_click(NavigateTo(Artists))],
-        [html.text("Artists")],
-      ),
-      html.a(
-        [attribute.class("nav-link"), event.on_click(NavigateTo(Matches))],
-        [html.text("Matches")],
-      ),
-    ]),
-    // Right section with user menu and additional buttons
-    html.div([attribute.class("nav-right")], [
-      html.div([attribute.class("action-buttons")], [
-        html.a(
-          [
-            attribute.class("action-btn sponsor"),
-            event.on_click(NavigateTo(Sponsor)),
-          ],
-          [html.text("🤝 Sponsor")],
-        ),
-        html.a(
-          [
-            attribute.class("action-btn credit"),
-            event.on_click(NavigateTo(Credit)),
-          ],
-          [html.text("💳 Reverse Credit")],
-        ),
-        html.a(
-          [
-            attribute.class("action-btn support"),
-            event.on_click(NavigateTo(Support)),
-          ],
-          [html.text("💬 Support")],
-        ),
-        html.a(
-          [
-            attribute.class("action-btn market"),
-            event.on_click(NavigateTo(Market)),
-          ],
-          [html.text("📊 Market")],
-        ),
-        html.a(
-          [
-            attribute.class("action-btn contact"),
-            event.on_click(NavigateTo(Contact)),
-          ],
-          [html.text("📧 Contact")],
-        ),
-        html.a(
-          [
-            attribute.class("action-btn source"),
-            attribute.href("https://github.com/yourusername/findry"),
-            attribute.target("_blank"),
-            attribute.rel("noopener noreferrer"),
-          ],
-          [html.text("📝 Source")],
-        ),
-      ]),
-      html.div([attribute.class("user-menu")], [
-        html.button([attribute.class("profile-btn")], [html.text("Profile")]),
-      ]),
-    ]),
-  ])
-}
-
-fn view_landing_page() -> Element(Msg) {
-  html.div([attribute.class("landing-page")], [
-    html.div([attribute.class("hero-section")], [
-      html.h1([attribute.class("hero-title")], [
-        html.text("Find Your Perfect Creative Space"),
-      ]),
-      html.p([attribute.class("hero-subtitle")], [
-        html.text(
-          "Connect with studios, galleries, practice rooms, and workshops tailored to your artistic vision",
-        ),
-      ]),
-      html.div([attribute.class("cta-buttons")], [
-        html.button(
-          [
-            attribute.class("cta-btn primary"),
-            event.on_click(NavigateTo(Spaces)),
-          ],
-          [html.text("Find Spaces")],
-        ),
-        html.button(
-          [
-            attribute.class("cta-btn secondary"),
-            event.on_click(NavigateTo(Artists)),
-          ],
-          [html.text("I'm a Space Owner")],
-        ),
-      ]),
-    ]),
-    html.div([attribute.class("features-section")], [
-      view_feature_card(
-        "🎨",
-        "Creative Spaces",
-        "Discover unique spaces perfect for your artistic needs",
-      ),
-      view_feature_card(
-        "🤝",
-        "Direct Connections",
-        "Connect directly with space owners and artists",
-      ),
-      view_feature_card(
-        "📅",
-        "Easy Booking",
-        "Simple scheduling and booking process",
-      ),
-      view_feature_card(
-        "💡",
-        "Smart Matching",
-        "Find spaces that match your specific requirements",
-      ),
-    ]),
-    html.div([attribute.class("social-proof-section")], [
-      html.h2([attribute.class("section-title")], [
-        html.text("Trusted by Artists"),
-      ]),
-      html.div([attribute.class("testimonials")], [
-        view_testimonial(
-          "Sarah M.",
-          "Visual Artist",
-          "Found my dream studio space in just a few days!",
-        ),
-        view_testimonial(
-          "James K.",
-          "Musician",
-          "The practice room search was incredibly easy.",
-        ),
-        view_testimonial(
-          "Emily R.",
-          "Photographer",
-          "Perfect for finding unique shooting locations.",
-        ),
-      ]),
-    ]),
-  ])
-}
-
-fn view_feature_card(
-  emoji: String,
-  title: String,
-  description: String,
-) -> Element(Msg) {
-  html.div([attribute.class("feature-card")], [
-    html.div([attribute.class("feature-emoji")], [html.text(emoji)]),
-    html.h3([attribute.class("feature-title")], [html.text(title)]),
-    html.p([attribute.class("feature-description")], [html.text(description)]),
-  ])
-}
-
-fn view_testimonial(name: String, role: String, quote: String) -> Element(Msg) {
-  html.div([class("testimonial-card")], [
-    html.p([class("testimonial-quote")], [html.text(quote)]),
-    html.div([class("testimonial-author")], [
-      html.p([class("author-name")], [html.text(name)]),
-      html.p([class("author-role")], [html.text(role)]),
     ]),
   ])
 }
 
 fn view_spaces_page(model: Model) -> Element(Msg) {
-  html.main([class("findry-main")], [
-    view_card_stack(model),
-    view_swipe_controls(),
-    view_filters_panel(model.filters),
-    case model.selected_space {
-      Some(space) -> view_space_details(space)
-      None -> html.text("")
-    },
+  html.div([class("spaces-page")], [
+    view_nav(model),
+    html.div([class("content")], [
+      view_card_stack(model),
+      view_swipe_controls(),
+      view_filters_panel(model.ui_state.filters),
+    ]),
+  ])
+}
+
+fn view_nav(model: Model) -> Element(Msg) {
+  html.nav([], [
+    html.a(
+      [
+        attribute.class("nav-link"),
+        event.on("click", fn(_e) { Ok(Navigate("/")) }),
+      ],
+      [html.text("Spaces")],
+    ),
   ])
 }
 
 fn view_card_stack(model: Model) -> Element(Msg) {
-  case model.spaces {
-    [] ->
-      html.div([attribute.class("empty-state")], [
-        html.text("No spaces available"),
-      ])
-    spaces -> {
-      let current_space =
-        list.first(list.drop(spaces, model.current_space_index))
-      case current_space {
-        Ok(space) -> view_space_card(space)
-        Error(_) ->
-          html.div([attribute.class("empty-state")], [
-            html.text("No more spaces"),
-          ])
+  let current_space = case model.ui_state.current_space_id {
+    Some(id) ->
+      list.find(model.spaces, fn(space) { space.id == id })
+      |> result.map(fn(space) { Some(space) })
+      |> option.from_result
+      |> option.flatten
+    None ->
+      case model.spaces {
+        [first, ..] -> Some(first)
+        [] -> None
       }
-    }
+  }
+
+  case current_space {
+    Some(space) -> view_space_card(space, model.ui_state.swipe_state)
+    None -> view_empty_state()
   }
 }
 
-fn view_space_card(space: Space) -> Element(Msg) {
-  html.div(
-    [attribute.class("space-card"), event.on_click(ShowSpaceDetails(space))],
-    [
-      html.div([attribute.class("space-photo")], case list.first(space.photos) {
-        Ok(photo) -> [html.img([attribute.src(photo)])]
-        Error(_) -> []
-      }),
-      html.div([attribute.class("space-info")], [
-        html.h2([], [html.text(space.name)]),
-        html.p([], [html.text(format_space_type(space.space_type))]),
-      ]),
-      view_swipe_controls(),
-    ],
-  )
+fn view_empty_state() -> Element(Msg) {
+  html.div([class("empty-state")], [
+    html.h2([], [html.text("No more spaces")]),
+    html.p([], [html.text("Try adjusting your filters to see more spaces")]),
+  ])
 }
 
 fn view_swipe_controls() -> Element(Msg) {
-  html.div([attribute.class("swipe-controls")], [
-    html.button([attribute.class("swipe-left"), event.on_click(SwipeLeft(""))], [
-      html.text("←"),
-    ]),
+  html.div([class("swipe-controls")], [
     html.button(
-      [attribute.class("swipe-right"), event.on_click(SwipeRight(""))],
-      [html.text("→")],
+      [class("swipe-left"), event.on("click", fn(_e) { Ok(SwipeStart(-1)) })],
+      [html.text("👎")],
+    ),
+    html.button(
+      [class("swipe-right"), event.on("click", fn(_e) { Ok(SwipeStart(1)) })],
+      [html.text("👍")],
     ),
   ])
 }
 
 fn view_filters_panel(filters: Filters) -> Element(Msg) {
-  // TODO: Implement filters panel view
-  html.div([], [])
-}
-
-fn view_space_details(space: Space) -> Element(Msg) {
-  html.div([attribute.class("modal")], [
-    html.div([attribute.class("modal-content")], [
-      html.div([attribute.class("modal-header")], [
-        html.h2([], [html.text(space.name)]),
-        html.button(
-          [attribute.class("close-modal"), event.on_click(CloseModal)],
-          [html.text("×")],
-        ),
-      ]),
-      html.div(
-        [attribute.class("gallery")],
-        list.map(space.photos, fn(photo) { html.img([attribute.src(photo)]) }),
+  html.div([class("filters-panel")], [
+    html.h3([], [html.text("Filters")]),
+    html.div([class("filter-group")], [
+      html.label([], [html.text("Space Type")]),
+      html.select(
+        [
+          on_change(fn(e) {
+            ApplyFilters(
+              Filters(..filters, space_type: parse_space_type(e.target.value)),
+            )
+          }),
+        ],
+        [
+          html.option([attribute.value("")], "Any"),
+          html.option([attribute.value("studio")], "Studio"),
+          html.option([attribute.value("rehearsal")], "Rehearsal Room"),
+          html.option([attribute.value("recording")], "Recording Studio"),
+          html.option([attribute.value("live")], "Live Venue"),
+          html.option([attribute.value("other")], "Other"),
+        ],
       ),
-      html.div([attribute.class("space-details")], [
-        html.p([], [html.text(format_space_type(space.space_type))]),
-        html.p([], [html.text(space.location_data.address)]),
+    ]),
+    html.div([class("filter-group")], [
+      html.label([], [html.text("Square Footage")]),
+      html.input([
+        attribute.type_("number"),
+        attribute.placeholder("Min"),
+        on_input(fn(e) {
+          ApplyFilters(
+            Filters(
+              ..filters,
+              min_square_footage: parse_int_option(e.target.value),
+            ),
+          )
+        }),
+      ]),
+      html.input([
+        attribute.type_("number"),
+        attribute.placeholder("Max"),
+        on_input(fn(e) {
+          ApplyFilters(
+            Filters(
+              ..filters,
+              max_square_footage: parse_int_option(e.target.value),
+            ),
+          )
+        }),
+      ]),
+    ]),
+    html.div([class("filter-group")], [
+      html.label([], [html.text("Budget Range ($/hr)")]),
+      html.input([
+        attribute.type_("number"),
+        attribute.placeholder("Min"),
+        on_input(fn(e) {
+          ApplyFilters(
+            Filters(
+              ..filters,
+              min_hourly_rate: parse_float_option(e.target.value),
+            ),
+          )
+        }),
+      ]),
+      html.input([
+        attribute.type_("number"),
+        attribute.placeholder("Max"),
+        on_input(fn(e) {
+          ApplyFilters(
+            Filters(
+              ..filters,
+              max_hourly_rate: parse_float_option(e.target.value),
+            ),
+          )
+        }),
+      ]),
+    ]),
+    html.div([class("filter-group")], [
+      html.label([], [html.text("Acoustics Rating (min)")]),
+      html.input([
+        attribute.type_("number"),
+        attribute.min("1"),
+        attribute.max("10"),
+        on_input(fn(e) {
+          ApplyFilters(
+            Filters(
+              ..filters,
+              min_acoustics_rating: parse_int_option(e.target.value),
+            ),
+          )
+        }),
+      ]),
+    ]),
+    html.div([class("filter-group")], [
+      html.label([], [
+        html.input([
+          attribute.type_("checkbox"),
+          attribute.checked(filters.natural_light_required),
+          on_change(fn(e) {
+            ApplyFilters(
+              Filters(..filters, natural_light_required: e.target.checked),
+            )
+          }),
+        ]),
+        html.text("Natural Light Required"),
       ]),
     ]),
   ])
 }
 
-fn format_space_type(space_type: SpaceType) -> String {
-  case space_type {
-    Studio -> "Studio"
-    Gallery -> "Gallery"
-    PracticeRoom -> "Practice Room"
-    Workshop -> "Workshop"
-    Treehouse -> "Treehouse"
-    Other(name) -> name
+fn parse_int_option(value: String) -> Option(Int) {
+  case int.parse(value) {
+    Ok(n) -> Some(n)
+    Error(_) -> None
   }
 }
 
-fn format_location(location: LocationData) -> String {
-  // Only use the address field since city and state don't exist
-  location.address
-}
-
-fn view_gallery(photos: List(String)) -> List(Element(Msg)) {
-  list.map(photos, fn(photo) { html.img([attribute.src(photo)]) })
-}
-
-fn view_space_details_grid(space: Space) -> Element(Msg) {
-  html.div([class("space-details-grid")], [
-    view_detail_item(
-      "Square Footage",
-      int.to_string(space.square_footage) <> " sq ft",
-    ),
-    view_detail_item(
-      "Acoustics",
-      int.to_string(space.acoustics_rating) <> "/10",
-    ),
-    view_detail_item("Lighting", case space.lighting_details.natural_light {
-      True -> "Natural"
-      False -> "Artificial"
-    }),
-    view_detail_item("Rate", format_price(space.pricing_terms)),
-  ])
-}
-
-fn view_detail_item(label: String, value: String) -> Element(Msg) {
-  html.div([class("detail-item")], [
-    html.span([class("label")], [html.text(label)]),
-    html.span([class("value")], [html.text(value)]),
-  ])
-}
-
-fn view_equipment_list(equipment: List(String)) -> Element(Msg) {
-  html.div([class("equipment-list")], [
-    html.h3([], [html.text("Equipment & Amenities")]),
-    html.ul(
-      [],
-      list.map(equipment, fn(item) { html.li([], [html.text(item)]) }),
-    ),
-  ])
-}
-
-fn view_availability(slots: List(TimeSlot)) -> Element(Msg) {
-  html.div([class("availability")], [
-    html.h3([], [html.text("Availability")]),
-    html.div([class("calendar")], []),
-    // TODO: Implement calendar view
-  ])
-}
-
-fn view_feature_tags(space: Space) -> Element(Msg) {
-  let features = []
-  let features = case space.acoustics_rating > 7 {
-    True -> [view_feature_tag("🎵 Great Acoustics"), ..features]
-    False -> features
+fn parse_float_option(value: String) -> Option(Float) {
+  case float.parse(value) {
+    Ok(n) -> Some(n)
+    Error(_) -> None
   }
-  let features = case space.lighting_details.natural_light {
-    True -> [view_feature_tag("☀️ Natural Light"), ..features]
-    False -> features
+}
+
+fn parse_space_type(value: String) -> Option(SpaceType) {
+  case value {
+    "studio" -> Some(Studio)
+    "rehearsal" -> Some(RehearsalRoom)
+    "recording" -> Some(RecordingStudio)
+    "live" -> Some(LiveVenue)
+    "other" -> Some(Other)
+    _ -> None
   }
-  let features = case list.length(space.equipment_list) > 0 {
-    True -> [view_feature_tag("🛠️ Equipped"), ..features]
-    False -> features
+}
+
+fn parse_spaces(json: String) -> List(Space) {
+  case json.decode(json, dynamic.list(dynamic.dynamic)) {
+    Ok(json_value) -> {
+      let list_decoder = dynamic.list(space_decoder)
+      case list_decoder(dynamic.from(json_value)) {
+        Ok(spaces) -> spaces
+        Error(err) -> {
+          io.debug(err)
+          []
+        }
+      }
+    }
+    Error(_) -> []
   }
-  let features = case space.location_data.parking_available {
-    True -> [view_feature_tag("🅿️ Parking"), ..features]
-    False -> features
+}
+
+fn space_decoder(
+  dynamic: dynamic.Dynamic,
+) -> Result(Space, List(dynamic.DecodeError)) {
+  let space_type_decoder = fn(d: dynamic.Dynamic) {
+    case dynamic.string(d) {
+      Ok("studio") -> Ok(Studio)
+      Ok("rehearsal") -> Ok(RehearsalRoom)
+      Ok("recording") -> Ok(RecordingStudio)
+      Ok("live") -> Ok(LiveVenue)
+      Ok("other") -> Ok(Other)
+      Ok(_) ->
+        Error([
+          dynamic.DecodeError(
+            expected: "valid space type",
+            found: "unknown space type",
+            path: [],
+          ),
+        ])
+      Error(e) -> Error(e)
+    }
   }
 
-  html.div([class("space-features")], features)
-}
+  let decoder =
+    dynamic.decode8(
+      Space,
+      dynamic.field("id", dynamic.string),
+      dynamic.field("name", dynamic.string),
+      dynamic.field("space_type", space_type_decoder),
+      dynamic.field("square_footage", dynamic.int),
+      dynamic.field(
+        "pricing_terms",
+        dynamic.decode3(
+          PricingTerms,
+          dynamic.field("hourly_rate", dynamic.float),
+          dynamic.field("minimum_hours", dynamic.int),
+          dynamic.field("deposit_required", dynamic.bool),
+        ),
+      ),
+      dynamic.field("acoustics_rating", dynamic.int),
+      dynamic.field("natural_light", dynamic.bool),
+      dynamic.field("photos", dynamic.list(dynamic.string)),
+    )
 
-fn view_feature_tag(text: String) -> Element(Msg) {
-  html.span([class("feature-tag")], [html.text(text)])
-}
-
-fn format_price(pricing: PricingTerms) -> String {
-  "$" <> float.to_string(pricing.hourly_rate) <> "/hour"
-}
-
-// Placeholder views for other pages
-fn view_artists_page() -> Element(Msg) {
-  html.div([class("coming-soon")], [html.text("Artists page coming soon")])
-}
-
-fn view_matches_page() -> Element(Msg) {
-  html.div([class("coming-soon")], [html.text("Matches page coming soon")])
-}
-
-fn view_sponsor_page() -> Element(Msg) {
-  html.div([class("coming-soon")], [html.text("Sponsor page coming soon")])
-}
-
-fn view_credit_page() -> Element(Msg) {
-  html.div([class("coming-soon")], [html.text("Credit page coming soon")])
-}
-
-fn view_support_page() -> Element(Msg) {
-  html.div([class("coming-soon")], [html.text("Support page coming soon")])
-}
-
-fn view_market_page() -> Element(Msg) {
-  html.div([class("coming-soon")], [html.text("Market page coming soon")])
-}
-
-fn view_contact_page() -> Element(Msg) {
-  html.div([class("coming-soon")], [html.text("Contact page coming soon")])
+  decoder(dynamic)
 }

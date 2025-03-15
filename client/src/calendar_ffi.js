@@ -25,14 +25,18 @@ export function getWeekday(dateStr) {
 }
 
 // Get days data for a month
-export function getMonthData(year, month) {
+export function getMonthData(year, month, system) {
   const firstDay = new Date(year, month - 1, 1);
   const lastDay = new Date(year, month, 0);
   const today = new Date();
   
+  // Default values if system is not provided
+  const week_offset = system ? system.week_offset : 0;
+  const week_length = system ? system.week_length : 7;
+  
   // Get days from previous month to fill first week
-  const firstWeekday = firstDay.getDay() || 7; // Convert Sunday (0) to 7
-  const prevMonthDays = firstWeekday - 1;
+  const firstWeekday = (firstDay.getDay() + week_offset) % week_length;
+  const prevMonthDays = firstWeekday;
   
   const daysInMonth = lastDay.getDate();
   const days = [];
@@ -68,8 +72,12 @@ export function getMonthData(year, month) {
     });
   }
   
-  // Add days from next month to complete the grid
-  const remainingDays = 42 - days.length; // Always show 6 weeks
+  // Calculate remaining days needed to complete the grid
+  const totalDays = days.length;
+  const weeksNeeded = Math.ceil(totalDays / week_length);
+  const remainingDays = (weeksNeeded * week_length) - totalDays;
+  
+  // Add days from next month
   const nextMonth = month === 12 ? 1 : month + 1;
   const nextYear = month === 12 ? year + 1 : year;
   

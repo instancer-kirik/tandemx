@@ -144,7 +144,7 @@ pub fn main() {
 
   let handler = fn(req: Request(Connection)) {
     case request.path_segments(req) {
-      [] -> serve_html("landing.html")
+      [] -> serve_html("app.html")
       ["ws", "cart"] -> {
         let selector = process.new_selector()
         websocket(
@@ -268,89 +268,56 @@ pub fn main() {
 
       segments -> {
         case segments {
-          ["landing"] -> serve_html("landing.html")
-          ["divvyqueue"] -> serve_html("divvyqueue.html")
+          // Main app routes
+          ["app.html"] -> serve_html("app.html")
+          ["app.css"] -> serve_css("app.css")
+          ["app.mjs"] -> serve_file("app.mjs", "text/javascript")
+          ["app_ffi.js"] -> serve_file("app_ffi.js", "text/javascript")
+
+          // Events module routes
+          ["events"] -> serve_html("events/events.html")
+          ["events", "share"] -> serve_html("events/events.html")
+          ["events", "events.css"] -> serve_css("events/events.css")
+          ["events", "events.html"] -> serve_html("events/events.html")
+          ["events", "events.mjs"] ->
+            serve_file("events/events.mjs", "text/javascript")
+          ["events", "events_ffi.js"] ->
+            serve_file("events/events_ffi.js", "text/javascript")
+          ["events", event_id] -> serve_html("events/events.html")
+
+          // Revert to serving individual HTML files for each route
           ["bizpay"] -> serve_html("bizpay.html")
+          ["divvyqueue"] -> serve_html("divvyqueue.html")
+          ["findry"] -> serve_html("findry.html")
+          ["projects"] -> serve_html("projects.html")
+          ["login"] -> serve_html("login.html")
+          ["signup"] -> serve_html("signup.html")
+
+          // Non-SPA routes
+          ["landing"] -> serve_html("landing.html")
+          ["revu"] -> serve_html("revu.html")
+          ["revu", "curl_tool.css"] -> serve_css("revu/curl_tool.css")
+          ["divvyqueue", "contracts"] -> serve_html("contracts.html")
+          ["contracts"] -> serve_html("contracts.html")
+          ["ambigunector", "ambigunector_ffi.js"] ->
+            serve_file("ambigunector/ambigunector_ffi.js", "text/javascript")
+          ["findry", "findry.css"] -> serve_css("findry/findry.css")
+          ["findry", "findry.js"] ->
+            serve_file("findry/findry.js", "text/javascript")
+          ["findry", "spaces"] -> serve_html("findry.html")
+          ["styles.css"] -> serve_css("styles.css")
+          ["landing.css"] -> serve_css("landing.css")
+          ["chartspace.css"] -> serve_css("chartspace.css")
+          ["campaign-form.css"] -> serve_css("campaign-form.css")
+          ["projects.css"] -> serve_css("projects.css")
           ["bizpay", "features"] -> serve_html("bizpay.html")
           ["bizpay", "pricing"] -> serve_html("bizpay.html")
           ["bizpay", "docs"] -> serve_html("bizpay.html")
           ["bizpay", "demo"] -> serve_html("bizpay.html")
           ["bizpay", "contact"] -> serve_html("bizpay.html")
           ["bizpay", "interest"] -> handle_interest_form("bizpay")
-          ["bizpay", "api", "submit-interest"] -> {
-            case req.method {
-              http.Post -> {
-                case mist.read_body(req, 1024 * 1024) {
-                  Ok(req) -> {
-                    let json = dynamic.from(req.body)
-                    case decode_interest_submission(json) {
-                      Ok(submission) -> {
-                        // TODO: Store in database
-                        // For now, just log it
-                        io.println(
-                          string.concat([
-                            "\nNew interest submission:\n",
-                            "Project: ",
-                            submission.project,
-                            "\nName: ",
-                            submission.name,
-                            "\nEmail: ",
-                            submission.email,
-                            "\nCompany: ",
-                            submission.company,
-                            "\nMessage: ",
-                            submission.message,
-                          ]),
-                        )
-
-                        response.new(200)
-                        |> response.set_header(
-                          "content-type",
-                          "application/json",
-                        )
-                        |> response.set_body(
-                          Bytes(bytes_tree.from_string(
-                            "{\"status\":\"success\",\"message\":\"Thank you for your interest! We'll be in touch soon.\"}",
-                          )),
-                        )
-                      }
-                      Error(_) ->
-                        response.new(400)
-                        |> response.set_header(
-                          "content-type",
-                          "application/json",
-                        )
-                        |> response.set_body(
-                          Bytes(bytes_tree.from_string(
-                            "{\"error\":\"Invalid submission data\"}",
-                          )),
-                        )
-                    }
-                  }
-                  Error(_) ->
-                    response.new(400)
-                    |> response.set_header("content-type", "application/json")
-                    |> response.set_body(
-                      Bytes(bytes_tree.from_string(
-                        "{\"error\":\"Invalid request body\"}",
-                      )),
-                    )
-                }
-              }
-              _ ->
-                response.new(405)
-                |> response.set_header("content-type", "application/json")
-                |> response.set_body(
-                  Bytes(bytes_tree.from_string(
-                    "{\"error\":\"Method not allowed\"}",
-                  )),
-                )
-            }
-          }
           ["bizpay.css"] -> serve_css("bizpay.css")
           [project_name, "interest"] -> handle_interest_form(project_name)
-          ["findry"] -> serve_html("findry.html")
-          ["projects"] -> serve_html("projects.html")
           ["sledge"] -> serve_html("sledge.html")
           ["dd"] -> serve_html("dd.html")
           ["shiny"] -> serve_html("shiny.html")
@@ -359,15 +326,6 @@ pub fn main() {
           ["chartspace"] -> serve_html("chartspace.html")
           ["compliance"] -> serve_html("compliance.html")
           ["buzzpay"] -> serve_html("buzzpay.html")
-          ["findry", "spaces"] -> serve_html("findry.html")
-          ["findry", "artists"] -> serve_html("findry.html")
-          ["findry", "matches"] -> serve_html("findry.html")
-          ["styles.css"] -> serve_css("styles.css")
-          ["landing.css"] -> serve_css("landing.css")
-          ["chartspace.css"] -> serve_css("chartspace.css")
-          ["campaign-form.css"] -> serve_css("campaign-form.css")
-          ["findry.css"] -> serve_css("findry.css")
-          ["projects.css"] -> serve_css("projects.css")
           ["todos"] -> serve_html("todos.html")
           ["banking"] -> serve_html("banking.html")
           ["cards"] -> serve_html("cards.html")
@@ -376,23 +334,12 @@ pub fn main() {
           ["payroll"] -> serve_html("payroll.html")
           ["tax"] -> serve_html("tax.html")
           ["ads"] -> serve_html("ads.html")
-          ["findry", "spaces"] -> serve_html("findry.html")
-          ["findry", "artists"] -> serve_html("findry.html")
-          ["findry", "matches"] -> serve_html("findry.html")
-          ["styles.css"] -> serve_css("styles.css")
-          ["chartspace"] -> serve_html("chartspace.html")
-          ["chartspace", "editor"] -> serve_html("chartspace.html")
-          ["chartspace", "viewer"] -> serve_html("chartspace.html")
           ["settings"] -> serve_html("settings.html")
           ["calendar"] -> serve_html("calendar.html")
           ["calendar.css"] -> serve_css("calendar.css")
           ["calendar.mjs"] -> serve_file("calendar.mjs", "text/javascript")
           ["calendar_ffi.js"] ->
             serve_file("calendar_ffi.js", "text/javascript")
-          ["compliance"] -> serve_html("compliance.html")
-          ["compliance", "audit"] -> serve_html("compliance.html")
-          ["compliance", "reports"] -> serve_html("compliance.html")
-          ["compliance", "tax"] -> serve_html("compliance.html")
           ["debug", "files"] -> {
             let assert Ok(files) = simplifile.read_directory("../client/build")
             let content = string.join(files, "\n")

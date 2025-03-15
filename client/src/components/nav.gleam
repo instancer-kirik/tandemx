@@ -50,6 +50,17 @@ pub fn view() -> Element(Msg) {
             ]),
           ]),
         ]),
+        // Events Management
+        html.a([attribute.href("/events")], [
+          html.text("Events"),
+          html.div([attribute.class("nav-sub-links")], [
+            html.a([attribute.href("/events")], [html.text("Discover")]),
+            html.a([attribute.href("/events/share")], [
+              html.text("Share Schedule"),
+            ]),
+            html.a([attribute.href("/events/calendar")], [html.text("Calendar")]),
+          ]),
+        ]),
         // Constructs System
         html.a([attribute.href("/constructs")], [
           html.text("Constructs"),

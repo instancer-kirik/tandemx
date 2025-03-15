@@ -1,5 +1,6 @@
 import gleam/list
 import gleam/option.{type Option, None, Some}
+import gleam/string
 
 pub type ProjectInfo {
   ProjectInfo(
@@ -14,6 +15,11 @@ pub type ProjectInfo {
     source_url: Option(String),
     screenshots: List(String),
   )
+}
+
+// Helper function to generate GitHub URLs
+fn github_url(project_name: String) -> String {
+  "https://github.com/instancer-kirik/" <> string.lowercase(project_name)
 }
 
 pub fn get_domains() -> List(#(String, String)) {
@@ -55,7 +61,7 @@ pub fn get_projects() -> List(ProjectInfo) {
       ],
       tech_stack: ["pyqt6"],
       domain: "Development Tools & Environments",
-      source_url: Some("https://github.com/kirick13/sledge"),
+      source_url: Some(github_url("sledge")),
       screenshots: [],
     ),
     ProjectInfo(
@@ -70,7 +76,7 @@ pub fn get_projects() -> List(ProjectInfo) {
       ],
       tech_stack: ["D", "dlangui with modular backends"],
       domain: "Development Tools & Environments",
-      source_url: None,
+      source_url: Some(github_url("ddew")),
       screenshots: [],
     ),
     ProjectInfo(
@@ -87,7 +93,7 @@ pub fn get_projects() -> List(ProjectInfo) {
       ],
       tech_stack: ["Gleam, js, Erlang, D.d"],
       domain: "Development Tools & Environments",
-      source_url: None,
+      source_url: Some(github_url("shiny")),
       screenshots: [],
     ),
     ProjectInfo(
@@ -101,7 +107,7 @@ pub fn get_projects() -> List(ProjectInfo) {
       ],
       tech_stack: ["pyqt"],
       domain: "Development Tools & Environments",
-      source_url: None,
+      source_url: Some(github_url("biglinks")),
       screenshots: [],
     ),
     ProjectInfo(
@@ -115,7 +121,7 @@ pub fn get_projects() -> List(ProjectInfo) {
       ],
       tech_stack: ["pyqt"],
       domain: "Development Tools & Environments",
-      source_url: None,
+      source_url: Some(github_url("compyutinator")),
       screenshots: [],
     ),
     ProjectInfo(
@@ -129,7 +135,7 @@ pub fn get_projects() -> List(ProjectInfo) {
       ],
       tech_stack: ["C#"],
       domain: "Development Tools & Environments",
-      source_url: None,
+      source_url: Some(github_url("explorinator")),
       screenshots: [],
     ),
     // Gaming & Entertainment
@@ -151,7 +157,7 @@ pub fn get_projects() -> List(ProjectInfo) {
         "Physics simulation", "AI systems",
       ],
       domain: "Gaming & Entertainment",
-      source_url: None,
+      source_url: Some(github_url("spaceos")),
       screenshots: [],
     ),
     ProjectInfo(
@@ -163,7 +169,7 @@ pub fn get_projects() -> List(ProjectInfo) {
       features: ["Dynamic quests", "Multiplayer maps", "Stats tracking"],
       tech_stack: ["Elixir"],
       domain: "Gaming & Entertainment",
-      source_url: None,
+      source_url: Some(github_url("pause-effect")),
       screenshots: [],
     ),
     // Creative Tools
@@ -176,7 +182,7 @@ pub fn get_projects() -> List(ProjectInfo) {
       features: ["Bones", "Tape", "Quaternions"],
       tech_stack: ["blender python"],
       domain: "Creative Tools",
-      source_url: None,
+      source_url: Some(github_url("bonify")),
       screenshots: [],
     ),
     ProjectInfo(
@@ -190,7 +196,7 @@ pub fn get_projects() -> List(ProjectInfo) {
       ],
       tech_stack: ["Elixir"],
       domain: "Creative Tools",
-      source_url: None,
+      source_url: Some(github_url("mediata")),
       screenshots: [],
     ),
     // System Tools
@@ -203,7 +209,7 @@ pub fn get_projects() -> List(ProjectInfo) {
       features: ["Skip patterns", "Git integration", "AUR releases"],
       tech_stack: ["pyqt"],
       domain: "System Tools",
-      source_url: None,
+      source_url: Some(github_url("varchiver")),
       screenshots: [],
     ),
     ProjectInfo(
@@ -215,7 +221,7 @@ pub fn get_projects() -> List(ProjectInfo) {
       features: ["Visual tree layouts", "Directory generation"],
       tech_stack: ["zig"],
       domain: "System Tools",
-      source_url: None,
+      source_url: Some(github_url("clipdirstructor")),
       screenshots: [],
     ),
     ProjectInfo(
@@ -229,7 +235,7 @@ pub fn get_projects() -> List(ProjectInfo) {
       ],
       tech_stack: ["pyqt"],
       domain: "System Tools",
-      source_url: None,
+      source_url: Some(github_url("eepy-explorer")),
       screenshots: [],
     ),
     ProjectInfo(
@@ -241,7 +247,7 @@ pub fn get_projects() -> List(ProjectInfo) {
       features: [],
       tech_stack: ["Elixir first, pending remake"],
       domain: "Development Tools & Environments",
-      source_url: None,
+      source_url: Some(github_url("deepscape")),
       screenshots: [],
     ),
     ProjectInfo(
@@ -257,7 +263,7 @@ pub fn get_projects() -> List(ProjectInfo) {
       ],
       tech_stack: ["Gleam", "JavaScript"],
       domain: "Project Management",
-      source_url: None,
+      source_url: Some(github_url("glitters")),
       screenshots: [],
     ),
     // Language Tools
@@ -270,7 +276,7 @@ pub fn get_projects() -> List(ProjectInfo) {
       features: ["E language support", "Development tools"],
       tech_stack: ["zig"],
       domain: "Language Tools",
-      source_url: None,
+      source_url: Some(github_url("enzige")),
       screenshots: [],
     ),
     ProjectInfo(
@@ -282,7 +288,7 @@ pub fn get_projects() -> List(ProjectInfo) {
       features: ["RAG context", "Translation support"],
       tech_stack: ["Python"],
       domain: "Language Tools",
-      source_url: None,
+      source_url: Some(github_url("translinator")),
       screenshots: [],
     ),
     // Data & Search
@@ -295,7 +301,7 @@ pub fn get_projects() -> List(ProjectInfo) {
       features: ["Data management", "Backend services"],
       tech_stack: ["Elixir"],
       domain: "Data & Search",
-      source_url: None,
+      source_url: Some(github_url("resolvinator")),
       screenshots: [],
     ),
     ProjectInfo(
@@ -307,7 +313,7 @@ pub fn get_projects() -> List(ProjectInfo) {
       features: ["Resource indexing", "Link management"],
       tech_stack: ["Elixir"],
       domain: "Data & Search",
-      source_url: None,
+      source_url: Some(github_url("seek")),
       screenshots: [],
     ),
     // Project Management
@@ -320,7 +326,7 @@ pub fn get_projects() -> List(ProjectInfo) {
       features: ["Custom calendars", "Event tracking", "Duration tracking"],
       tech_stack: ["Elixir"],
       domain: "Project Management",
-      source_url: None,
+      source_url: Some(github_url("timetracker")),
       screenshots: [],
     ),
     // Business & Contracts
@@ -337,7 +343,7 @@ pub fn get_projects() -> List(ProjectInfo) {
       ],
       tech_stack: ["Gleam", "maybe E, zig"],
       domain: "Business & Contracts",
-      source_url: None,
+      source_url: Some(github_url("divvyqueue")),
       screenshots: [],
     ),
     ProjectInfo(
@@ -358,7 +364,7 @@ pub fn get_projects() -> List(ProjectInfo) {
         "WebSocket real-time", "ElecticSQL or Supabase or Squirrel idk",
       ],
       domain: "Creative Tools",
-      source_url: None,
+      source_url: Some(github_url("findry")),
       screenshots: [],
     ),
     ProjectInfo(
@@ -370,7 +376,7 @@ pub fn get_projects() -> List(ProjectInfo) {
       features: ["Partner management", "Shared inventory", "Resource tracking"],
       tech_stack: ["Gleam", "Elixir"],
       domain: "Business & Contracts",
-      source_url: None,
+      source_url: Some(github_url("tandemx")),
       screenshots: [],
     ),
   ]

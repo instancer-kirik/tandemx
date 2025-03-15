@@ -2,6 +2,7 @@ import gleam/dict.{type Dict}
 import gleam/int
 import gleam/list
 import gleam/option.{type Option, None, Some}
+import gleam/result
 import gleam/string
 import lustre
 import lustre/attribute.{class, content, selected, value}
@@ -32,6 +33,10 @@ pub type CalendarSystem {
     first_day_of_week: Int,
     working_days: List(Int),
     working_hours: #(Int, Int),
+    week_length: Int,
+    // Number of days in a week
+    week_offset: Int,
+    // Offset for the first day (0-6)
   )
 }
 
@@ -101,6 +106,8 @@ pub type Msg {
   SelectTime(String)
   SetMeetingDetails(String, String, List(String))
   CancelScheduling
+  SetWeekLength(Int)
+  SetWeekOffset(Int)
 }
 
 pub type FormData {
@@ -123,6 +130,8 @@ fn init(_: Nil) -> #(Model, Effect(Msg)) {
       first_day_of_week: 0,
       working_days: [0, 1, 2, 3, 4],
       working_hours: #(9, 17),
+      week_length: 7,
+      week_offset: 0,
     )
 
   let today = get_today()
@@ -247,6 +256,36 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
       effect.none(),
     )
 
+    SetWeekLength(length) -> {
+      let new_system =
+        CalendarSystem(..model.calendar_system, week_length: length)
+      let calendar_data =
+        get_month_data(model.user_id, model.year, model.month, new_system)
+      #(
+        Model(
+          ..model,
+          calendar_system: new_system,
+          calendar_data: calendar_data,
+        ),
+        effect.none(),
+      )
+    }
+
+    SetWeekOffset(offset) -> {
+      let new_system =
+        CalendarSystem(..model.calendar_system, week_offset: offset)
+      let calendar_data =
+        get_month_data(model.user_id, model.year, model.month, new_system)
+      #(
+        Model(
+          ..model,
+          calendar_system: new_system,
+          calendar_data: calendar_data,
+        ),
+        effect.none(),
+      )
+    }
+
     _ -> #(model, effect.none())
   }
 }
@@ -273,6 +312,55 @@ fn view_header(model: Model) -> Element(Msg) {
       ]),
       html.button([class("control-btn"), event.on_click(NextMonth)], [
         html.text("→"),
+      ]),
+      html.div([class("week-controls")], [
+        html.div([class("slider-control")], [
+          html.label([], [html.text("Week Length")]),
+          html.div([class("slider-container")], [
+            html.input([
+              attribute.type_("range"),
+              attribute.min("5"),
+              attribute.max("10"),
+              attribute.value(int.to_string(model.calendar_system.week_length)),
+              class("slider"),
+              event.on_input(fn(value) {
+                case int.parse(value) {
+                  Ok(length) -> SetWeekLength(length)
+                  Error(_) -> SetWeekLength(7)
+                }
+              }),
+            ]),
+            html.div([class("slider-value")], [
+              html.text(int.to_string(model.calendar_system.week_length)),
+            ]),
+          ]),
+        ]),
+        html.div([class("slider-control")], [
+          html.label([], [html.text("Week Offset")]),
+          html.div([class("slider-container")], [
+            html.input([
+              attribute.type_("range"),
+              attribute.min("0"),
+              attribute.max("6"),
+              attribute.value(int.to_string(model.calendar_system.week_offset)),
+              class("slider"),
+              event.on_input(fn(value) {
+                case int.parse(value) {
+                  Ok(offset) -> SetWeekOffset(offset)
+                  Error(_) -> SetWeekOffset(0)
+                }
+              }),
+            ]),
+            html.div([class("slider-value")], [
+              html.text(
+                int.to_string(model.calendar_system.week_offset)
+                <> " ("
+                <> get_day_letter(model.calendar_system.week_offset)
+                <> ")",
+              ),
+            ]),
+          ]),
+        ]),
       ]),
     ]),
   ])
@@ -312,19 +400,41 @@ fn view_scheduling_modal(model: Model) -> Element(Msg) {
     NotScheduling -> element.none()
 
     SchedulingStep1(date) ->
-      html.div([class("scheduling-modal")], [
-        html.h2([], [html.text("Select Meeting Time")]),
-        html.div([class("time-slots")], [
-          view_time_slots(date, model.calendar_system.working_hours),
+      html.div([class("scheduler-dialog")], [
+        html.div([class("scheduler-header")], [
+          html.h2([], [html.text("Schedule for " <> format_date(date))]),
+          html.button(
+            [class("close-scheduler"), event.on_click(CancelScheduling)],
+            [html.text("×")],
+          ),
         ]),
-        html.button([class("cancel-btn"), event.on_click(CancelScheduling)], [
-          html.text("Cancel"),
+        html.div([class("scheduler-tabs")], [
+          html.button([class("scheduler-tab active")], [html.text("Meeting")]),
+          html.button([class("scheduler-tab")], [html.text("Event")]),
+          html.button([class("scheduler-tab")], [html.text("Reminder")]),
+        ]),
+        html.div([class("scheduler-content")], [
+          html.h3([], [html.text("Select Time")]),
+          html.div([class("time-slots")], [
+            view_time_slots(date, model.calendar_system.working_hours),
+          ]),
+        ]),
+        html.div([class("scheduler-actions")], [
+          html.button([class("cancel-btn"), event.on_click(CancelScheduling)], [
+            html.text("Cancel"),
+          ]),
         ]),
       ])
 
     SchedulingStep2(date, time) ->
-      html.div([class("scheduling-modal")], [
-        html.h2([], [html.text("Meeting Details")]),
+      html.div([class("scheduler-dialog")], [
+        html.div([class("scheduler-header")], [
+          html.h2([], [html.text("Meeting Details")]),
+          html.button(
+            [class("close-scheduler"), event.on_click(CancelScheduling)],
+            [html.text("×")],
+          ),
+        ]),
         html.div([class("meeting-form")], [
           html.div([class("form-group")], [
             html.label([attribute.for("title")], [html.text("Title")]),
@@ -332,13 +442,20 @@ fn view_scheduling_modal(model: Model) -> Element(Msg) {
               attribute.type_("text"),
               attribute.name("title"),
               attribute.required(True),
+              attribute.placeholder("Enter meeting title"),
             ]),
           ]),
           html.div([class("form-group")], [
             html.label([attribute.for("description")], [
               html.text("Description"),
             ]),
-            html.textarea([attribute.name("description")], ""),
+            html.textarea(
+              [
+                attribute.name("description"),
+                attribute.placeholder("Enter meeting description"),
+              ],
+              "",
+            ),
           ]),
           html.div([class("form-group")], [
             html.label([attribute.for("attendees")], [
@@ -348,6 +465,40 @@ fn view_scheduling_modal(model: Model) -> Element(Msg) {
               attribute.type_("text"),
               attribute.name("attendees"),
               attribute.required(True),
+              attribute.placeholder("email1@example.com, email2@example.com"),
+            ]),
+          ]),
+          html.div([class("form-group")], [
+            html.label([attribute.for("duration")], [html.text("Duration")]),
+            html.select([attribute.name("duration")], [
+              html.option(
+                [attribute.value("15"), attribute.content("15 minutes")],
+                "",
+              ),
+              html.option(
+                [
+                  attribute.value("30"),
+                  attribute.content("30 minutes"),
+                  attribute.selected(True),
+                ],
+                "",
+              ),
+              html.option(
+                [attribute.value("45"), attribute.content("45 minutes")],
+                "",
+              ),
+              html.option(
+                [attribute.value("60"), attribute.content("1 hour")],
+                "",
+              ),
+              html.option(
+                [attribute.value("90"), attribute.content("1 hour 30 minutes")],
+                "",
+              ),
+              html.option(
+                [attribute.value("120"), attribute.content("2 hours")],
+                "",
+              ),
             ]),
           ]),
           html.div([class("time-info")], [
@@ -365,7 +516,7 @@ fn view_scheduling_modal(model: Model) -> Element(Msg) {
               ),
             ]),
           ]),
-          html.div([class("form-actions")], [
+          html.div([class("scheduler-actions")], [
             html.button(
               [class("cancel-btn"), event.on_click(CancelScheduling)],
               [html.text("Cancel")],
@@ -401,14 +552,15 @@ fn view_calendar(model: Model) -> Element(Msg) {
 }
 
 fn view_weekdays(system: CalendarSystem) -> Element(Msg) {
-  let weekdays = ["A", "B", "C", "D", "E", "F", "G"]
+  let weekdays =
+    list.range(0, system.week_length - 1)
+    |> list.map(fn(i) { get_day_letter(i) })
 
-  // Rotate weekdays based on first_day_of_week
-  let rotated_weekdays = case system.first_day_of_week {
+  // Rotate weekdays based on week_offset
+  let rotated_weekdays = case system.week_offset {
     0 -> weekdays
     n -> {
-      let index = n
-      list.append(list.drop(weekdays, index), list.take(weekdays, index))
+      list.append(list.drop(weekdays, n), list.take(weekdays, n))
     }
   }
 
@@ -452,6 +604,16 @@ fn view_day(
     ],
     [
       html.div([class("day-number")], [html.text(get_day_number(day.date))]),
+      html.div([class("day-actions")], [
+        html.button(
+          [
+            class("day-action-btn"),
+            attribute.title("Schedule Event"),
+            event.on_click(StartScheduling(day.date)),
+          ],
+          [html.text("+")],
+        ),
+      ]),
       view_day_events(day.events),
       view_day_reminders(day.reminders),
       view_day_meetings(day.date, meetings),
@@ -535,7 +697,7 @@ fn get_month_data(
   month: Int,
   system: CalendarSystem,
 ) -> CalendarData {
-  let days = get_month_data_ffi(year, month)
+  let days = get_month_data_ffi(year, month, system)
 
   CalendarData(
     calendar_system: system,
@@ -561,7 +723,11 @@ fn get_day_number_ffi(date: String) -> Int
 fn get_weekday_ffi(date: String) -> Int
 
 @external(javascript, "./calendar_ffi.js", "getMonthData")
-fn get_month_data_ffi(year: Int, month: Int) -> List(DayData)
+fn get_month_data_ffi(
+  year: Int,
+  month: Int,
+  system: CalendarSystem,
+) -> List(DayData)
 
 @external(javascript, "./calendar_ffi.js", "generateId")
 fn generate_id() -> String
@@ -586,3 +752,19 @@ fn schedule_meeting(meeting: Meeting) -> Effect(Msg)
 
 @external(javascript, "./calendar_ffi.js", "getTodayDate")
 fn get_today_date() -> String
+
+fn get_day_letter(index: Int) -> String {
+  case index {
+    0 -> "A"
+    1 -> "B"
+    2 -> "C"
+    3 -> "D"
+    4 -> "E"
+    5 -> "F"
+    6 -> "G"
+    7 -> "H"
+    8 -> "I"
+    9 -> "J"
+    _ -> "?"
+  }
+}

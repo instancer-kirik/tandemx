@@ -408,4 +408,90 @@ body {
     width: 100%;
     text-align: center;
   }
+}
+
+.payment-section {
+  background: var(--background-alt);
+  padding: 4rem 2rem;
+  margin-top: 4rem;
+  text-align: center;
+}
+
+.payment-content {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.payment-title {
+  font-size: 2.5rem;
+  color: var(--text-color);
+  margin-bottom: 2rem;
+}
+
+.payment-options {
+  display: flex;
+  justify-content: center;
+  gap: 3rem;
+  flex-wrap: wrap;
+}
+
+.payment-option {
+  flex: 1;
+  min-width: 300px;
+  max-width: 400px;
+  padding: 2rem;
+  background: var(--background-color);
+  border-radius: 1rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.payment-option h3 {
+  font-size: 1.5rem;
+  margin-bottom: 1.5rem;
+  color: var(--text-color);
+}
+
+.cashapp-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 2rem;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: white;
+  background: #00D632;
+  border-radius: 0.75rem;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.cashapp-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 214, 50, 0.3);
+}
+
+.cashapp-icon {
+  font-size: 1.5rem;
+}
+
+.email-link {
+  color: var(--primary-color);
+  text-decoration: none;
+  font-weight: 500;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s ease;
+}
+
+.email-link:hover {
+  border-bottom-color: var(--primary-color);
+}
+
+@media (max-width: 768px) {
+  .payment-section {
+    padding: 3rem 1rem;
+  }
+  
+  .payment-option {
+    min-width: 100%;
+  }
 } 

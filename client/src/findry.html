@@ -4,16 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Findry - Creative Space Matching</title>
-    <link rel="stylesheet" href="findry.css">
-    <script type="module" src="findry.js"></script>
+    <link rel="stylesheet" href="findry/findry.css">
+    <script type="module" src="findry/findry.js"></script>
 </head>
 <body>
     <nav class="findry-nav">
         <div class="logo">Findry</div>
         <div class="nav-links">
-            <a href="/findry/spaces" class="nav-link">Spaces</a>
-            <a href="/findry/artists" class="nav-link">Artists</a>
-            <a href="/findry/matches" class="nav-link">Matches</a>
+            <a href="/findry/spaces" class="nav-link active" data-view="spaces">Spaces</a>
+            <a href="/findry/artists" class="nav-link" data-view="artists">Artists</a>
+            <a href="/findry/matches" class="nav-link" data-view="matches">Matches</a>
         </div>
         <div class="user-menu">
             <button class="profile-btn">Profile</button>
@@ -21,13 +21,48 @@
     </nav>
 
     <main class="findry-main">
-        <div class="card-stack">
-            <!-- Cards will be dynamically inserted here -->
+        <div class="view-toggle">
+            <button class="toggle-btn active" data-mode="card">Card View</button>
+            <button class="toggle-btn" data-mode="list">List View</button>
         </div>
 
-        <div class="swipe-controls">
-            <button class="swipe-btn pass">✕</button>
-            <button class="swipe-btn like">♥</button>
+        <!-- Card View -->
+        <div class="view-container card-view active">
+            <div class="card-stack">
+                <!-- Cards will be dynamically inserted here -->
+            </div>
+
+            <div class="swipe-controls">
+                <button class="swipe-btn pass">✕</button>
+                <button class="swipe-btn like">♥</button>
+            </div>
+        </div>
+
+        <!-- List View -->
+        <div class="view-container list-view">
+            <!-- Spaces List View -->
+            <div class="spaces-list-container view-section active">
+                <h2>Available Spaces</h2>
+                <div class="spaces-list">
+                    <!-- Spaces will be dynamically inserted here -->
+                </div>
+            </div>
+
+            <!-- Artists List View -->
+            <div class="artists-list-container view-section">
+                <h2>Artists</h2>
+                <div class="artists-list">
+                    <!-- Artists will be dynamically inserted here -->
+                </div>
+            </div>
+
+            <!-- Matches List View -->
+            <div class="matches-list-container view-section">
+                <h2>Your Matches</h2>
+                <div class="matches-list">
+                    <!-- Matches will be dynamically inserted here -->
+                </div>
+            </div>
         </div>
 
         <div class="filters-panel">
@@ -63,6 +98,7 @@
             <div class="filter-group">
                 <label>Acoustics Rating</label>
                 <input type="range" id="acoustics" min="0" max="10" step="1">
+                <span class="range-value">5</span>
             </div>
 
             <div class="filter-group">
@@ -73,46 +109,6 @@
             <button class="apply-filters">Apply Filters</button>
         </div>
     </main>
-
-    <div class="space-details modal" hidden>
-        <div class="modal-content">
-            <button class="close-modal">×</button>
-            <div class="space-gallery">
-                <!-- Photos will be dynamically inserted here -->
-            </div>
-            <div class="space-info">
-                <h2 class="space-name"></h2>
-                <p class="space-type"></p>
-                <div class="space-details-grid">
-                    <div class="detail-item">
-                        <span class="label">Square Footage</span>
-                        <span class="value square-footage"></span>
-                    </div>
-                    <div class="detail-item">
-                        <span class="label">Acoustics</span>
-                        <span class="value acoustics"></span>
-                    </div>
-                    <div class="detail-item">
-                        <span class="label">Lighting</span>
-                        <span class="value lighting"></span>
-                    </div>
-                    <div class="detail-item">
-                        <span class="label">Rate</span>
-                        <span class="value rate"></span>
-                    </div>
-                </div>
-                <div class="equipment-list">
-                    <h3>Equipment & Amenities</h3>
-                    <ul></ul>
-                </div>
-                <div class="availability">
-                    <h3>Availability</h3>
-                    <div class="calendar"></div>
-                </div>
-                <button class="book-space">Book Space</button>
-            </div>
-        </div>
-    </div>
 
     <template id="space-card-template">
         <div class="space-card">
@@ -126,6 +122,51 @@
                 <div class="space-features">
                     <!-- Features will be dynamically inserted here -->
                 </div>
+            </div>
+        </div>
+    </template>
+
+    <template id="empty-state-template">
+        <div class="empty-state">
+            <h3>No More Spaces</h3>
+            <p>Try adjusting your filters to see more spaces</p>
+        </div>
+    </template>
+
+    <template id="space-list-item-template">
+        <div class="space-list-item">
+            <div class="space-list-photo">
+                <!-- Photo will be inserted here -->
+            </div>
+            <div class="space-list-info">
+                <h3 class="space-name"></h3>
+                <p class="space-type"></p>
+                <p class="space-price"></p>
+                <div class="space-features">
+                    <!-- Features will be inserted here -->
+                </div>
+            </div>
+            <div class="space-list-actions">
+                <button class="view-details-btn">View Details</button>
+                <button class="like-btn">Like</button>
+            </div>
+        </div>
+    </template>
+
+    <template id="artist-list-item-template">
+        <div class="artist-list-item">
+            <div class="artist-list-photo">
+                <!-- Photo will be inserted here -->
+            </div>
+            <div class="artist-list-info">
+                <h3 class="artist-name"></h3>
+                <p class="artist-discipline"></p>
+                <div class="artist-tags">
+                    <!-- Tags will be inserted here -->
+                </div>
+            </div>
+            <div class="artist-list-actions">
+                <button class="view-profile-btn">View Profile</button>
             </div>
         </div>
     </template>

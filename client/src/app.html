@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TandemX - Artist Collaboration Platform</title>
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/app.css">
+  <link rel="stylesheet" href="/landing.css">
+  <link rel="stylesheet" href="/events/events.css">
+  <link rel="stylesheet" href="/calendar.css">
+  <script type="module" src="/app_ffi.js"></script>
+  <script type="module" src="/events/events_ffi.js"></script>
+  <script type="module" src="/calendar_ffi.js"></script>
+  <script type="module" src="/findry_ffi.js"></script>
+</head>
+<body>
+  <div id="app"></div>
+  <div id="toast-container"></div>
+  <div id="map-container" style="display: none;"></div>
+  
+  <script type="module">
+    import { main } from "/build/dev/javascript/tandemx_client/app.mjs";
+    main();
+  </script>
+</body>
+</html> 

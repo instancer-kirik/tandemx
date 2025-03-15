@@ -29,21 +29,85 @@ fn init(_) -> #(Model, Effect(Msg)) {
 fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
   case msg {
     NavigateTo(path) -> {
-      let _ = set_window_location(path)
+      let _ = navigate(path)
       #(model, effect.none())
     }
   }
 }
 
-@external(javascript, "./landing_ffi.js", "setWindowLocation")
-fn set_window_location(path: String) -> Nil
+@external(javascript, "./app_ffi.js", "navigate")
+fn navigate(path: String) -> Nil
 
-fn view(_model: Model) -> Element(Msg) {
+fn view_payment_section() -> Element(Msg) {
+  html.div([class("payment-section")], [
+    html.div([class("payment-content")], [
+      html.h2([class("payment-title")], [html.text("Support/Sponsor")]),
+      html.p([class("payment-subtitle")], [
+        html.text(
+          "Also I am taking the hunter exam on March 29th, and still have software and gadgets to prepare. ",
+        ),
+        html.a([attribute.href("https://thehuntersassociation.com")], [
+          html.text("https://thehuntersassociation.com"),
+        ]),
+      ]),
+      html.div([class("payment-options")], [
+        html.div([class("payment-option cashapp")], [
+          html.h3([], [html.text("Quick Support via Cash App")]),
+          html.a(
+            [
+              class("cashapp-button"),
+              attribute.href("https://cash.app/$Instancer"),
+              attribute.target("_blank"),
+            ],
+            [
+              html.span([class("cashapp-icon")], [html.text("")]),
+              html.text("Support via $Instancer"),
+            ],
+          ),
+        ]),
+        html.div([class("payment-option contact")], [
+          html.h3([], [html.text("Get in Touch")]),
+          html.p([], [
+            html.text("For business inquiries: "),
+            html.a(
+              [
+                class("email-link"),
+                attribute.href("mailto:kirik@instance.select"),
+              ],
+              [html.text("kirik@instance.select")],
+            ),
+            html.text(" or "),
+            html.a(
+              [
+                attribute.href(
+                  "https://bsky.app/profile/instancer-kirik.bsky.social",
+                ),
+              ],
+              [html.text("instancer-kirik.bsky.social")],
+            ),
+            html.text(" or "),
+            html.a([attribute.href("https://x.com/instance_select")], [
+              html.text("https://x.com/instance_select"),
+            ]),
+            html.text(" or "),
+            html.a(
+              [attribute.href("https://www.tiktok.com/@ultimate.starter.kit")],
+              [html.text("https://www.tiktok.com/@ultimate.starter.kit")],
+            ),
+          ]),
+        ]),
+      ]),
+    ]),
+  ])
+}
+
+pub fn view(model: Model) -> Element(Msg) {
   html.div([class("landing-page")], [
     view_nav(),
     view_hero(),
     view_products(),
     view_features(),
+    view_payment_section(),
     view_footer(),
   ])
 }
@@ -51,29 +115,28 @@ fn view(_model: Model) -> Element(Msg) {
 fn view_nav() -> Element(Msg) {
   html.nav([class("main-nav")], [
     html.div([class("nav-content")], [
-      html.a([class("logo")], [html.text("TandemX")]),
+      html.a([class("logo"), attribute.href("/")], [html.text("TandemX")]),
       html.div([class("nav-links")], [
-        html.a([class("nav-link"), event.on_click(NavigateTo("/findry"))], [
+        html.a([class("nav-link"), attribute.href("/findry")], [
           html.text("Findry"),
         ]),
-        html.a([class("nav-link"), event.on_click(NavigateTo("/divvyqueue"))], [
+        html.a([class("nav-link"), attribute.href("/divvyqueue")], [
           html.text("DivvyQueue"),
         ]),
-        html.a([class("nav-link"), event.on_click(NavigateTo("/bizpay"))], [
+        html.a([class("nav-link"), attribute.href("/bizpay")], [
           html.text("BizPay"),
         ]),
-        html.a([class("nav-link"), event.on_click(NavigateTo("/projects"))], [
+        html.a([class("nav-link"), attribute.href("/projects")], [
           html.text("Projects"),
         ]),
       ]),
       html.div([class("nav-actions")], [
-        html.a([class("nav-btn login"), event.on_click(NavigateTo("/login"))], [
-          html.text("Log In"),
+        html.a([class("nav-btn login"), attribute.href("/login")], [
+          html.text("Log In(NOT IMPLEMENTED YET)"),
         ]),
-        html.a(
-          [class("nav-btn signup"), event.on_click(NavigateTo("/signup"))],
-          [html.text("Sign Up")],
-        ),
+        html.a([class("nav-btn signup"), attribute.href("/signup")], [
+          html.text("Sign Up(NOT IMPLEMENTED YET)"),
+        ]),
       ]),
     ]),
   ])
@@ -89,18 +152,16 @@ fn view_hero() -> Element(Msg) {
       ]),
       html.p([class("hero-subtitle")], [
         html.text(
-          "From development tools to creative spaces, TandemX provides a comprehensive suite of solutions. Connect, collaborate, and grow with our integrated platform ecosystem.",
+          "From development tools to creative spaces, instance.select's tandemx provides a comprehensive suite of solutions. Connect, collaborate, and grow with our integrated platform ecosystem.",
         ),
       ]),
       html.div([class("hero-cta")], [
-        html.button(
-          [class("cta-btn primary"), event.on_click(NavigateTo("/signup"))],
-          [html.text("Get Started")],
-        ),
-        html.button(
-          [class("cta-btn secondary"), event.on_click(NavigateTo("/projects"))],
-          [html.text("Explore Projects")],
-        ),
+        html.a([class("cta-btn primary"), attribute.href("/signup")], [
+          html.text("Get Started"),
+        ]),
+        html.a([class("cta-btn secondary"), attribute.href("/projects")], [
+          html.text("Explore Projects"),
+        ]),
       ]),
     ]),
   ])
@@ -110,8 +171,10 @@ fn view_products() -> Element(Msg) {
   html.div([class("products-section")], [
     html.div([class("section-header")], [
       html.h2([class("section-title")], [html.text("Featured Projects")]),
-      html.a([class("view-all-btn"), event.on_click(NavigateTo("/projects"))], [
-        html.text("View All Projects →"),
+      html.a([class("view-all-btn"), attribute.href("/projects")], [
+        html.text(
+          "View All Projects →(also I don't think the express interest buttons work yet - no db)",
+        ),
       ]),
     ]),
     html.div([class("products-grid")], [
@@ -177,13 +240,12 @@ fn view_product_card(
       }),
     ),
     html.div([class("product-actions")], [
-      html.a([class("product-link"), event.on_click(NavigateTo(path))], [
+      html.a([class("product-link"), attribute.href(path)], [
         html.text("Learn More"),
       ]),
-      html.button(
-        [class("interest-btn"), event.on_click(NavigateTo(path <> "/interest"))],
-        [html.text("Express Interest")],
-      ),
+      html.a([class("interest-btn"), attribute.href(path <> "/interest")], [
+        html.text("Express Interest"),
+      ]),
     ]),
   ])
 }
@@ -257,6 +319,9 @@ fn view_footer() -> Element(Msg) {
           #("Documentation", "/docs"),
           #("Support", "/support"),
           #("Status", "/status"),
+          #("Calendar", "/calendar"),
+          #("Projects", "/projects"),
+          #("About", "/about"),
         ]),
       ]),
     ]),
@@ -277,9 +342,7 @@ fn view_footer_column(
       list.map(links, fn(link) {
         let #(text, path) = link
         html.li([], [
-          html.a([class("footer-link"), event.on_click(NavigateTo(path))], [
-            html.text(text),
-          ]),
+          html.a([class("footer-link"), attribute.href(path)], [html.text(text)]),
         ])
       }),
     ),

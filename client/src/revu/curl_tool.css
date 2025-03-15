@@ -1,0 +1,176 @@
+.curl-tool {
+  display: flex;
+  gap: 2rem;
+  padding: 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.request-panel,
+.response-panel {
+  flex: 1;
+  background: white;
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.method-url {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.method-select {
+  padding: 0.5rem;
+  border: 1px solid var(--gray-200);
+  border-radius: 4px;
+  background: white;
+  font-family: monospace;
+}
+
+.url-input {
+  flex: 1;
+  padding: 0.5rem;
+  border: 1px solid var(--gray-200);
+  border-radius: 4px;
+  font-family: monospace;
+}
+
+.headers-section,
+.body-section {
+  margin-bottom: 1.5rem;
+}
+
+.headers-list {
+  margin-bottom: 1rem;
+}
+
+.header-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  background: var(--gray-50);
+  border-radius: 4px;
+  margin-bottom: 0.5rem;
+}
+
+.header-key {
+  font-weight: 500;
+  color: var(--gray-700);
+}
+
+.header-value {
+  color: var(--gray-600);
+  font-family: monospace;
+}
+
+.remove-header {
+  margin-left: auto;
+  padding: 0.25rem 0.5rem;
+  border: none;
+  background: none;
+  color: var(--gray-500);
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.remove-header:hover {
+  background: var(--gray-100);
+  color: var(--gray-700);
+}
+
+.add-header {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.header-key-input,
+.header-value-input {
+  padding: 0.5rem;
+  border: 1px solid var(--gray-200);
+  border-radius: 4px;
+}
+
+.header-key-input {
+  width: 200px;
+}
+
+.header-value-input {
+  flex: 1;
+}
+
+.body-input {
+  width: 100%;
+  min-height: 200px;
+  padding: 0.75rem;
+  border: 1px solid var(--gray-200);
+  border-radius: 4px;
+  font-family: monospace;
+  resize: vertical;
+}
+
+.send-button {
+  width: 100%;
+  padding: 0.75rem;
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.send-button:hover {
+  background: var(--primary-dark);
+}
+
+.response-status {
+  padding: 0.75rem;
+  background: var(--gray-50);
+  border-radius: 4px;
+  margin-bottom: 1.5rem;
+  font-family: monospace;
+}
+
+.response-headers {
+  margin-bottom: 1.5rem;
+}
+
+.response-body {
+  background: var(--gray-50);
+  border-radius: 4px;
+  padding: 1rem;
+}
+
+.response-body pre {
+  margin: 0;
+  white-space: pre-wrap;
+  font-family: monospace;
+  color: var(--gray-800);
+}
+
+.error-message {
+  padding: 1rem;
+  background: #fee2e2;
+  color: #991b1b;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+}
+
+.add-header-btn {
+  padding: 0.5rem 1rem;
+  background: var(--gray-100);
+  border: 1px solid var(--gray-200);
+  border-radius: 4px;
+  color: var(--gray-700);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.add-header-btn:hover {
+  background: var(--gray-200);
+  color: var(--gray-800);
+} 

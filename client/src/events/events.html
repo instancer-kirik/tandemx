@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Events - TandemX</title>
+    <link rel="stylesheet" href="events.css">
+    <!-- Add any additional CSS frameworks or libraries here -->
+</head>
+<body>
+    <div id="app"></div>
+
+    <!-- Toast notification container -->
+    <div id="toast-container"></div>
+
+    <!-- Map container (hidden by default) -->
+    <div id="map-container" style="display: none;"></div>
+
+    <!-- Load the Gleam application -->
+    <script type="module">
+        import { init } from './events_ffi.js';
+        
+        // Initialize the events module
+        init();
+    </script>
+</body>
+</html> 

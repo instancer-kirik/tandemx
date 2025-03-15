@@ -1,3 +1,9 @@
+import ambigunector/component.{type Msg as AmbiGuMsg}
+import ambigunector/types.{
+  type AmbiguityQuery, type AmbiguityResponse, type AmbiguityStatus,
+  type Selection, type TextSelection, AmbiguityQuery, AmbiguityResponse,
+  TextSelection,
+}
 import components/nav
 import gleam/dict.{type Dict}
 import gleam/float
@@ -22,6 +28,9 @@ pub type Model {
     show_templates: Bool,
     marketplace_items: Dict(Int, MarketplaceItem),
     selected_item: Option(Int),
+    ambiguity_queries: Dict(Int, AmbiguityQuery),
+    selected_query: Option(Int),
+    last_query_id: Int,
   )
 }
 
@@ -248,13 +257,23 @@ pub type ItemStatus {
   ItemUnavailable
 }
 
+pub type Page {
+  ContractsPage
+  MarketplacePage
+  TemplatesPage
+  ItemDetailPage
+}
+
 pub type Msg {
+  NoOp
+  NavigateTo(Page)
+  AmbiGuMsg(component.Msg)
   UserClickedAcceptContract(Int)
   UserClickedRejectContract(Int)
   UserSelectedContract(Int)
   UserClickedBack
   UserClickedNewContract
-  UserSelectedTemplate(String)
+  UserSelectedTemplate(Int)
   UserSelectedItem(Int)
   UserClickedBookItem(Int)
   UserClickedAddToCart(Int)
@@ -731,6 +750,9 @@ fn init(_) {
       show_templates: False,
       marketplace_items: sample_marketplace_items,
       selected_item: None,
+      ambiguity_queries: dict.from_list([]),
+      selected_query: None,
+      last_query_id: 0,
     ),
     effect.none(),
   )
@@ -738,6 +760,112 @@ fn init(_) {
 
 fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
   case msg {
+    NoOp -> #(model, effect.none())
+
+    NavigateTo(page) -> {
+      // TODO: Implement navigation
+      #(model, effect.none())
+    }
+
+    AmbiGuMsg(ambigu_msg) -> {
+      case ambigu_msg {
+        component.UserCreatedQuery(query, section) -> {
+          let query_id = model.last_query_id + 1
+          let new_query =
+            AmbiguityQuery(
+              query_id,
+              section,
+              query,
+              types.Open,
+              1,
+              "2024-03-20",
+              [],
+              [],
+              None,
+              types.ContractConversation,
+              [],
+            )
+          let queries =
+            dict.insert(model.ambiguity_queries, query_id, new_query)
+          #(
+            Model(..model, ambiguity_queries: queries, last_query_id: query_id),
+            effect.none(),
+          )
+        }
+        component.UserResolvedQuery(id) -> {
+          let queries = case dict.get(model.ambiguity_queries, id) {
+            Ok(query) ->
+              dict.insert(
+                model.ambiguity_queries,
+                id,
+                AmbiguityQuery(..query, status: types.Resolved),
+              )
+            Error(_) -> model.ambiguity_queries
+          }
+          #(Model(..model, ambiguity_queries: queries), effect.none())
+        }
+        component.UserEscalatedQuery(id) -> {
+          let queries = case dict.get(model.ambiguity_queries, id) {
+            Ok(query) ->
+              dict.insert(
+                model.ambiguity_queries,
+                id,
+                AmbiguityQuery(..query, status: types.Escalated),
+              )
+            Error(_) -> model.ambiguity_queries
+          }
+          #(Model(..model, ambiguity_queries: queries), effect.none())
+        }
+        component.UserAddedResponse(query_id, response) -> {
+          let queries = case dict.get(model.ambiguity_queries, query_id) {
+            Ok(query) ->
+              dict.insert(
+                model.ambiguity_queries,
+                query_id,
+                AmbiguityQuery(..query, responses: [
+                  AmbiguityResponse(
+                    1,
+                    query_id,
+                    1,
+                    response,
+                    "2024-03-20",
+                    [],
+                    [],
+                    [],
+                    None,
+                  ),
+                  ..query.responses
+                ]),
+              )
+            Error(_) -> model.ambiguity_queries
+          }
+          #(Model(..model, ambiguity_queries: queries), effect.none())
+        }
+        component.UserUpdatedTags(id, tags) -> {
+          let queries = case dict.get(model.ambiguity_queries, id) {
+            Ok(query) ->
+              dict.insert(
+                model.ambiguity_queries,
+                id,
+                AmbiguityQuery(..query, tags: tags),
+              )
+            Error(_) -> model.ambiguity_queries
+          }
+          #(Model(..model, ambiguity_queries: queries), effect.none())
+        }
+        component.AddParticipant(_, _) -> #(model, effect.none())
+        component.AddReaction(_, _) -> #(model, effect.none())
+        component.AddResponse(_, _) -> #(model, effect.none())
+        component.CreateQuery(_, _) -> #(model, effect.none())
+        component.RemoveParticipant(_) -> #(model, effect.none())
+        component.RemoveReaction(_, _) -> #(model, effect.none())
+        component.SelectQuery(_) -> #(model, effect.none())
+        component.UpdateStatus(_, _) -> #(model, effect.none())
+        component.UpdateTags(_, _) -> #(model, effect.none())
+        component.UserWithdrawnQuery(_) -> #(model, effect.none())
+      }
+    }
+
     UserClickedAcceptContract(id) -> {
       let contracts = case dict.get(model.contracts, id) {
         Ok(contract) ->
@@ -782,7 +910,7 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
       #(Model(..model, view_mode: ViewTemplates), effect.none())
     }
 
-    UserSelectedTemplate(_template_id) -> {
+    UserSelectedTemplate(id) -> {
       // TODO: Implement template selection and contract creation
       #(Model(..model, view_mode: ViewList), effect.none())
     }
@@ -849,7 +977,7 @@ pub fn view(model: Model) -> Element(Msg) {
           case model.selected_contract {
             Some(id) ->
               case dict.get(model.contracts, id) {
-                Ok(contract) -> [view_contract_detail(contract)]
+                Ok(contract) -> [view_contract_detail(contract, model)]
                 Error(_) -> [html.text("Contract not found")]
               }
             None -> [html.text("No contract selected")]
@@ -982,7 +1110,7 @@ fn view_contract(contract: Contract) -> Element(Msg) {
   ])
 }
 
-fn view_contract_detail(contract: Contract) -> Element(Msg) {
+fn view_contract_detail(contract: Contract, model: Model) -> Element(Msg) {
   html.div([attribute.class("contract-detail")], [
     html.div([attribute.class("detail-header")], [
       html.button(
@@ -1075,13 +1203,40 @@ fn view_contract_detail(contract: Contract) -> Element(Msg) {
             )
         },
       ]),
-      // Terms Section
-      html.div([attribute.class("detail-section")], [
-        html.h3([], [html.text("Terms")]),
-        html.div([attribute.class("terms-content")], [
-          html.pre([], [html.text(contract.terms)]),
+      // Terms Section with AmbiGuNector
+      element.map(
+        html.div([attribute.class("detail-section")], [
+          html.h3([], [html.text("Terms")]),
+          html.div([attribute.class("terms-content")], [
+            html.div([attribute.class("terms-container")], [
+              html.pre(
+                [
+                  attribute.class("terms-text"),
+                  event.on("mouseup", fn(_) {
+                    case window_get_selection() {
+                      Ok(selection) ->
+                        Ok(component.UserCreatedQuery(
+                          selection.text,
+                          TextSelection(
+                            int.to_string(contract.id),
+                            selection.start,
+                            selection.end,
+                            selection.text,
+                            get_surrounding_context(contract.terms, selection),
+                          ),
+                        ))
+                      Error(_) -> Error([])
+                    }
+                  }),
+                ],
+                [html.text(contract.terms)],
+              ),
+            ]),
+            component.view_queries(contract.id, model.ambiguity_queries),
+          ]),
         ]),
-      ]),
+        AmbiGuMsg,
+      ),
       // Documents Section with Enhanced UI
       html.div([attribute.class("detail-section")], [
         html.h3([], [html.text("Documents & Attachments")]),
@@ -1093,77 +1248,6 @@ fn view_contract_detail(contract: Contract) -> Element(Msg) {
                 html.strong([], [html.text("Upload Documents")]),
                 html.p([], [
                   html.text("Drag and drop files here or click to upload"),
-                ]),
-              ]),
-            ]),
-          ]),
-          html.div([attribute.class("document-categories")], [
-            html.div([attribute.class("document-category")], [
-              html.h4([], [html.text("Contract Documents")]),
-              html.div([attribute.class("document-list")], [
-                view_document("contract_draft.pdf", "Mar 20, 2024"),
-                view_document("terms_signed.pdf", "Mar 21, 2024"),
-              ]),
-            ]),
-            html.div([attribute.class("document-category")], [
-              html.h4([], [html.text("Supporting Documents")]),
-              html.div([attribute.class("document-list")], [
-                view_document("financial_statement.pdf", "Mar 19, 2024"),
-              ]),
-            ]),
-          ]),
-        ]),
-      ]),
-      // Activity Timeline
-      html.div([attribute.class("detail-section")], [
-        html.h3([], [html.text("Activity Timeline")]),
-        html.div(
-          [attribute.class("activity-timeline")],
-          list.map(contract.activity_log, fn(activity) {
-            html.div([attribute.class("activity-item")], [
-              html.div([attribute.class("activity-content")], [
-                html.span([attribute.class("activity-action")], [
-                  html.text(activity.action),
-                ]),
-                html.p([attribute.class("activity-details")], [
-                  html.text(activity.details),
-                ]),
-              ]),
-              html.span([attribute.class("activity-date")], [
-                html.text(activity.timestamp),
-              ]),
-            ])
-          }),
-        ),
-      ]),
-      // Findry Integration Section
-      html.div([attribute.class("detail-section findry-integration")], [
-        html.h3([], [html.text("Artist/Offerer Profiles")]),
-        html.div([attribute.class("findry-profiles")], [
-          html.div([attribute.class("findry-connection")], [
-            html.p([attribute.class("findry-info")], [
-              html.text(
-                "Connect with verified artists and service providers from Findry",
-              ),
-            ]),
-            html.button([attribute.class("btn-secondary")], [
-              html.text("Link Findry Profile"),
-            ]),
-          ]),
-          html.div([attribute.class("suggested-profiles")], [
-            html.h4([], [html.text("Suggested Matches")]),
-            html.div([attribute.class("profile-grid")], [
-              // Placeholder for Findry profile matches
-              html.div([attribute.class("profile-card")], [
-                html.div([attribute.class("profile-header")], [
-                  html.h5([], [html.text("Creative Studio X")]),
-                  html.span([attribute.class("profile-type")], [
-                    html.text("Digital Art Studio"),
-                  ]),
-                ]),
-                html.div([attribute.class("profile-stats")], [
-                  html.span([], [html.text("Rating: 4.8/5")]),
-                  html.span([], [html.text("Projects: 124")]),
                 ]),
               ]),
             ]),
@@ -1341,7 +1425,12 @@ fn view_template(template: ContractTemplate) -> Element(Msg) {
       html.button(
         [
           attribute.class("btn-primary"),
-          event.on_click(UserSelectedTemplate(template.id)),
+          event.on_click(
+            UserSelectedTemplate(case int.parse(template.id) {
+              Ok(id) -> id
+              Error(_) -> 0
+            }),
+          ),
         ],
         [html.text("Use Template")],
       ),
@@ -1582,51 +1671,6 @@ fn view_item_detail(
                   ]),
                 ]),
               ]),
-              html.div([attribute.class("detail-section")], [
-                html.h3([], [html.text("Availability")]),
-                html.div([attribute.class("availability-grid")], [
-                  html.div([attribute.class("availability-item")], [
-                    html.span([attribute.class("availability-label")], [
-                      html.text("Available"),
-                    ]),
-                    html.span([attribute.class("availability-value")], [
-                      html.text(item_status_text(item.status)),
-                    ]),
-                  ]),
-                  html.div([attribute.class("availability-item")], [
-                    html.span([attribute.class("availability-label")], [
-                      html.text("Location"),
-                    ]),
-                    html.span([attribute.class("availability-value")], [
-                      html.text(
-                        item.location.address
-                        <> ", "
-                        <> item.location.city
-                        <> ", "
-                        <> item.location.state,
-                      ),
-                    ]),
-                  ]),
-                ]),
-              ]),
-              html.div([attribute.class("detail-section")], [
-                html.h3([], [html.text("Documents & Attachments")]),
-                html.div([attribute.class("document-section")], [
-                  html.div([attribute.class("document-upload")], [
-                    html.div([attribute.class("upload-placeholder")], [
-                      html.i([attribute.class("upload-icon")], []),
-                      html.div([attribute.class("upload-text")], [
-                        html.strong([], [html.text("Upload Documents")]),
-                        html.p([], [
-                          html.text(
-                            "Drag and drop files here or click to upload",
-                          ),
-                        ]),
-                      ]),
-                    ]),
-                  ]),
-                ]),
-              ]),
             ]),
           ])
         Error(_) -> html.text("Item not found")
@@ -1641,4 +1685,19 @@ fn item_status_text(status: ItemStatus) -> String {
     ItemMaintenance -> "Maintenance"
     ItemUnavailable -> "Unavailable"
   }
+}
+
+@external(javascript, "./contracts_ffi.js", "getWindowSelection")
+fn window_get_selection() -> Result(Selection, String)
+
+@external(javascript, "./contracts_ffi.js", "getSurroundingContext")
+fn get_surrounding_context(text: String, selection: Selection) -> String
+
+fn wrap_ambiguity_component(
+  contract_id: Int,
+  queries: Dict(Int, AmbiguityQuery),
+) -> Element(Msg) {
+  html.div([attribute.class("ambiguity-queries")], [
+    element.map(component.view_queries(contract_id, queries), AmbiGuMsg),
+  ])
 }

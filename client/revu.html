@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>REVU API Testing - TandemX</title>
+    <link rel="stylesheet" href="/styles.css">
+    <link rel="stylesheet" href="/revu/curl_tool.css">
+    <style>
+        .revu-app {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .app-header {
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        .header-subtitle {
+            color: var(--gray-600);
+            margin-top: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div id="app"></div>
+    <script type="module">
+        import { main } from "/build/dev/javascript/tandemx_client/revu.mjs";
+        main();
+    </script>
+</body>
+</html> 

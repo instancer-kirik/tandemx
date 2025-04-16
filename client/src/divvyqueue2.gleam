@@ -1,4 +1,5 @@
 //import components/background
+import components/nav
 import gleam/list
 import lustre
 import lustre/attribute.{class}
@@ -8,13 +9,14 @@ import lustre/element/html
 import lustre/event
 
 pub type Model {
-  Model(selected_feature: Option(String))
+  Model(selected_feature: Option(String), nav_open: Bool)
 }
 
 pub type Msg {
   SelectFeature(String)
   NavigateTo(String)
   ExpressInterest
+  NavMsg(nav.Msg)
 }
 
 pub type Option(a) {
@@ -29,13 +31,13 @@ pub fn main() {
 }
 
 fn init(_: Nil) -> #(Model, Effect(Msg)) {
-  #(Model(selected_feature: None), effect.none())
+  #(Model(selected_feature: None, nav_open: False), effect.none())
 }
 
 fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
   case msg {
     SelectFeature(feature) -> #(
-      Model(selected_feature: Some(feature)),
+      Model(selected_feature: Some(feature), nav_open: model.nav_open),
       effect.none(),
     )
     NavigateTo(path) -> {
@@ -43,24 +45,43 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
       #(model, effect.none())
     }
     ExpressInterest -> {
-      let _ = set_window_location("/bizpay/interest")
+      let _ = set_window_location("/divvyqueue2/interest")
       #(model, effect.none())
+    }
+    NavMsg(nav_msg) -> {
+      case nav_msg {
+        nav.ToggleNav -> #(
+          Model(
+            selected_feature: model.selected_feature,
+            nav_open: !model.nav_open,
+          ),
+          effect.none(),
+        )
+      }
     }
   }
 }
 
-@external(javascript, "./bizpay_ffi.js", "setWindowLocation")
+@external(javascript, "./divvyqueue2_ffi.js", "setWindowLocation")
 fn set_window_location(path: String) -> Nil
 
 fn view(model: Model) -> Element(Msg) {
-  html.div([class("bizpay-landing")], [
-    //  background.view(),
-    view_header(),
-    view_hero(),
-    view_features(model.selected_feature),
-    view_pricing(),
-    view_testimonials(),
-    view_cta(),
+  let container_class = case model.nav_open {
+    True -> "app-container nav-open"
+    False -> "app-container"
+  }
+
+  html.div([class(container_class)], [
+    element.map(nav.view(), NavMsg),
+    html.div([class("main-content")], [
+      //  background.view(),
+      view_header(),
+      view_hero(),
+      view_features(model.selected_feature),
+      view_pricing(),
+      view_testimonials(),
+      view_cta(),
+    ]),
   ])
 }
 
@@ -68,20 +89,27 @@ fn view_header() -> Element(Msg) {
   html.header([class("main-header")], [
     html.div([class("header-content")], [
       html.a([class("logo"), event.on_click(NavigateTo("/"))], [
-        html.text("BizPay"),
+        html.text("DivvyQueue2"),
       ]),
       html.nav([class("main-nav")], [
         html.a(
-          [class("nav-link"), event.on_click(NavigateTo("/bizpay/features"))],
+          [
+            class("nav-link"),
+            event.on_click(NavigateTo("/divvyqueue2/features")),
+          ],
           [html.text("Features")],
         ),
         html.a(
-          [class("nav-link"), event.on_click(NavigateTo("/bizpay/pricing"))],
+          [
+            class("nav-link"),
+            event.on_click(NavigateTo("/divvyqueue2/pricing")),
+          ],
           [html.text("Pricing")],
         ),
-        html.a([class("nav-link"), event.on_click(NavigateTo("/bizpay/docs"))], [
-          html.text("Documentation"),
-        ]),
+        html.a(
+          [class("nav-link"), event.on_click(NavigateTo("/divvyqueue2/docs"))],
+          [html.text("Documentation")],
+        ),
         html.button([class("cta-button"), event.on_click(ExpressInterest)], [
           html.text("Get Started"),
         ]),
@@ -114,7 +142,7 @@ fn view_hero() -> Element(Msg) {
         html.button(
           [
             class("secondary-button"),
-            event.on_click(NavigateTo("/bizpay/features")),
+            event.on_click(NavigateTo("/divvyqueue2/features")),
           ],
           [html.text("Share Feature Ideas 💡")],
         ),
@@ -244,7 +272,7 @@ fn view_features(selected: Option(String)) -> Element(Msg) {
       html.h3([class("categories-title")], [html.text("Ecosystem Integration")]),
       html.p([class("categories-description")], [
         html.text(
-          "BizPay is part of a larger ecosystem of business tools. Seamlessly integrate with:",
+          "DivvyQueue2 is part of a larger ecosystem of business tools. Seamlessly integrate with:",
         ),
       ]),
       html.div([class("categories-grid")], [
@@ -280,7 +308,7 @@ fn view_features(selected: Option(String)) -> Element(Msg) {
         html.button(
           [
             class("request-button secondary"),
-            event.on_click(NavigateTo("/bizpay/roadmap")),
+            event.on_click(NavigateTo("/divvyqueue2/roadmap")),
           ],
           [html.text("View Public Roadmap")],
         ),
@@ -415,7 +443,7 @@ fn view_testimonials() -> Element(Msg) {
       view_testimonial(
         "Sarah from PixelPerfect",
         "Digital Art Marketplace",
-        "BizPay turned our payment chaos into a beautiful symphony. Our artists get paid faster than their art loads! 🎨",
+        "DivvyQueue2 turned our payment chaos into a beautiful symphony. Our artists get paid faster than their art loads! 🎨",
       ),
       view_testimonial(
         "Mike's Global Goodies",
@@ -475,7 +503,7 @@ fn view_cta() -> Element(Msg) {
           html.button(
             [
               class("secondary-button"),
-              event.on_click(NavigateTo("/bizpay/contact")),
+              event.on_click(NavigateTo("/divvyqueue2/contact")),
             ],
             [html.text("Let's Talk")],
           ),

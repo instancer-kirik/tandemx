@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checkout - TandemX</title>
+    <link rel="stylesheet" href="/styles.css">
+    <link rel="stylesheet" href="/app.css">
+    <link rel="stylesheet" href="/landing.css">
+    <!-- HTMX -->
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <style>
+        /* App container structure */
+        .app-container {
+            display: flex;
+            min-height: 100vh;
+        }
+        
+        .main-content {
+            flex: 1;
+            padding-top: 1rem;
+        }
+        
+        /* Nav menu */
+        #manual-navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 250px;
+            height: 100vh;
+            background: white;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+            transform: translateX(-100%);
+            transition: transform 0.3s ease;
+            z-index: 1500;
+            padding-top: 4rem;
+            overflow-y: auto;
+        }
+        
+        body.hamburger-open #manual-navbar {
+            transform: translateX(0);
+        }
+        
+        #manual-navbar .nav-brand {
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+        
+        #manual-navbar .nav-brand a {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #1b1eb4;
+            text-decoration: none;
+        }
+        
+        #manual-navbar .nav-links {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            padding: 0 1rem;
+        }
+        
+        #manual-navbar .nav-links a {
+            display: block;
+            padding: 0.75rem 1rem;
+            color: #1f2937;
+            text-decoration: none;
+            border-radius: 4px;
+            transition: background-color 0.2s;
+        }
+        
+        #manual-navbar .nav-links a:hover {
+            background-color: #f8f9fa;
+            color: #1b1eb4;
+        }
+        
+        /* Hamburger button */
+        .nav-toggle {
+            position: fixed;
+            top: 1rem;
+            left: 1rem;
+            z-index: 2000;
+            width: 40px;
+            height: 40px;
+            background: white;
+            border: none;
+            border-radius: 4px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        /* Cart Icon Link */
+        .cart-icon-link {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            z-index: 2000;
+            width: 40px;
+            height: 40px;
+            background: white;
+            border: none;
+            border-radius: 4px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            cursor: pointer;
+            text-decoration: none;
+            color: #1f2937;
+        }
+        
+        /* Checkout styles */
+        .checkout-page {
+            max-width: 1000px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+        
+        .checkout-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        
+        .checkout-header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            color: #1b1eb4;
+        }
+        
+        .checkout-header p {
+            color: #666;
+            font-size: 1.1rem;
+        }
+        
+        .checkout-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 2rem;
+        }
+        
+        .product-summary {
+            flex: 1;
+            min-width: 300px;
+            background: #f9fafb;
+            border-radius: 8px;
+            padding: 1.5rem;
+        }
+        
+        .checkout-form {
+            flex: 2;
+            min-width: 400px;
+        }
+        
+        .summary-header {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: #1f2937;
+        }
+        
+        .product-details {
+            padding: 1rem 0;
+            border-bottom: 1px solid #eaeaea;
+        }
+        
+        .product-image {
+            width: 100%;
+            height: 200px;
+            background-color: #eee;
+            border-radius: 6px;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        
+        .product-image img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+        
+        .product-name {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        
+        .product-price {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #1b1eb4;
+            margin: 1rem 0;
+        }
+        
+        .price-details {
+            margin-top: 1rem;
+        }
+        
+        .price-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+        }
+        
+        .total-row {
+            display: flex;
+            justify-content: space-between;
+            font-weight: 700;
+            font-size: 1.2rem;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid #eaeaea;
+        }
+        
+        .checkout-btn {
+            display: block;
+            width: 100%;
+            padding: 1rem;
+            background-color: #1b1eb4;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 1.5rem;
+            transition: background-color 0.2s;
+        }
+        
+        .checkout-btn:hover {
+            background-color: #151c7e;
+        }
+        
+        .licensing-options {
+            margin-bottom: 1.5rem;
+        }
+        
+        .license-option {
+            border: 1px solid #eaeaea;
+            border-radius: 6px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            cursor: pointer;
+            transition: border-color 0.2s, background-color 0.2s;
+        }
+        
+        .license-option:hover {
+            border-color: #1b1eb4;
+            background-color: #f9fafb;
+        }
+        
+        .license-option.selected {
+            border-color: #1b1eb4;
+            background-color: #eef2ff;
+        }
+        
+        .license-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+        }
+        
+        .license-name {
+            font-weight: 600;
+            color: #1f2937;
+        }
+        
+        .license-price {
+            font-weight: 700;
+            color: #1b1eb4;
+        }
+        
+        .license-description {
+            color: #6b7280;
+            font-size: 0.9rem;
+        }
+        
+        .license-features {
+            margin-top: 0.5rem;
+            font-size: 0.9rem;
+        }
+        
+        .license-feature {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 0.25rem;
+        }
+        
+        .feature-icon {
+            color: #10b981;
+            margin-right: 0.5rem;
+        }
+        
+        /* Plans with toggle */
+        .plan-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 2rem;
+            gap: 1rem;
+        }
+        
+        .toggle-label {
+            font-weight: 600;
+            color: #6b7280;
+        }
+        
+        .toggle-label.active {
+            color: #1b1eb4;
+        }
+        
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+        
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: 0.4s;
+            border-radius: 34px;
+        }
+        
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: 0.4s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .toggle-slider {
+            background-color: #1b1eb4;
+        }
+        
+        input:checked + .toggle-slider:before {
+            transform: translateX(26px);
+        }
+    </style>
+</head>
+<body>
+    <!-- Hamburger button -->
+    <button class="nav-toggle" id="hamburger-button">☰</button>
+    
+    <!-- Cart Icon Link -->
+    <a href="/cart" class="cart-icon-link">🛒</a>
+    
+    <!-- Navigation menu -->
+    <div id="manual-navbar">
+        <div class="nav-brand">
+            <a href="/">TandemX</a>
+        </div>
+        <div class="nav-links">
+            <a href="/">Home</a>
+            <a href="/events">Events</a>
+            <a href="/findry">Findry</a>
+            <a href="/divvyqueue">DivvyQueue</a>
+            <a href="/divvyqueue2">DivvyQueue2</a>
+            <a href="/projects">Projects</a>
+            <a href="/calendar">Calendar</a>
+            <a href="/mt-clipboards">MT Clipboards</a>
+            <a href="/store">Store</a>
+            <a href="/cart">Cart</a>
+            <a href="/about">About</a>
+        </div>
+    </div>
+    
+    <!-- Main content -->
+    <div class="app-container">
+        <div class="main-content">
+            <div class="checkout-page">
+                <div class="checkout-header">
+                    <h1>Checkout</h1>
+                    <p>Complete your purchase</p>
+                </div>
+                
+                <div class="checkout-container">
+                    <div class="product-summary">
+                        <h2 class="summary-header">Order Summary</h2>
+                        <div class="product-details">
+                            <div class="product-image">
+                                <img id="product-image" src="/images/clipboards/placeholder.jpg" alt="Product Image">
+                            </div>
+                            <div class="product-name" id="product-name">Product Name</div>
+                            <div class="product-description" id="product-description">Product description will appear here.</div>
+                            <div class="product-price" id="product-price">$0.00</div>
+                        </div>
+                        
+                        <div class="price-details">
+                            <div class="price-row">
+                                <span>Base Price</span>
+                                <span id="base-price">$0.00</span>
+                            </div>
+                            <div class="price-row" id="discount-row" style="display: none;">
+                                <span>Discount</span>
+                                <span id="discount-amount">-$0.00</span>
+                            </div>
+                            <div class="total-row">
+                                <span>Total</span>
+                                <span id="total-price">$0.00</span>
+                            </div>
+                        </div>
+                        
+                        <button class="checkout-btn" id="checkout-btn">Proceed to Checkout</button>
+                    </div>
+                    
+                    <div class="checkout-form">
+                        <div class="plan-toggle">
+                            <span class="toggle-label active" id="monthly-label">Monthly</span>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="billing-toggle">
+                                <span class="toggle-slider"></span>
+                            </label>
+                            <span class="toggle-label" id="annual-label">Annual (Save 20%)</span>
+                        </div>
+                        
+                        <div class="licensing-options">
+                            <h3>Choose License</h3>
+                            <div class="license-option" data-plan="basic" data-monthly="9.99" data-annual="95.88" data-variant-id="6123">
+                                <div class="license-header">
+                                    <span class="license-name">Basic License</span>
+                                    <span class="license-price">$9.99/month</span>
+                                </div>
+                                <div class="license-description">Perfect for individual users and small projects</div>
+                                <div class="license-features">
+                                    <div class="license-feature">
+                                        <span class="feature-icon">✓</span>
+                                        <span>Single user</span>
+                                    </div>
+                                    <div class="license-feature">
+                                        <span class="feature-icon">✓</span>
+                                        <span>Core features</span>
+                                    </div>
+                                    <div class="license-feature">
+                                        <span class="feature-icon">✓</span>
+                                        <span>Email support</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="license-option selected" data-plan="pro" data-monthly="29.99" data-annual="287.88" data-variant-id="6124">
+                                <div class="license-header">
+                                    <span class="license-name">Pro License</span>
+                                    <span class="license-price">$29.99/month</span>
+                                </div>
+                                <div class="license-description">Best for professionals and businesses</div>
+                                <div class="license-features">
+                                    <div class="license-feature">
+                                        <span class="feature-icon">✓</span>
+                                        <span>Up to 5 users</span>
+                                    </div>
+                                    <div class="license-feature">
+                                        <span class="feature-icon">✓</span>
+                                        <span>All features</span>
+                                    </div>
+                                    <div class="license-feature">
+                                        <span class="feature-icon">✓</span>
+                                        <span>Priority support</span>
+                                    </div>
+                                    <div class="license-feature">
+                                        <span class="feature-icon">✓</span>
+                                        <span>Advanced analytics</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="license-option" data-plan="enterprise" data-monthly="99.99" data-annual="959.88" data-variant-id="6125">
+                                <div class="license-header">
+                                    <span class="license-name">Enterprise License</span>
+                                    <span class="license-price">$99.99/month</span>
+                                </div>
+                                <div class="license-description">Complete solution for large organizations</div>
+                                <div class="license-features">
+                                    <div class="license-feature">
+                                        <span class="feature-icon">✓</span>
+                                        <span>Unlimited users</span>
+                                    </div>
+                                    <div class="license-feature">
+                                        <span class="feature-icon">✓</span>
+                                        <span>All features + exclusive enterprise features</span>
+                                    </div>
+                                    <div class="license-feature">
+                                        <span class="feature-icon">✓</span>
+                                        <span>24/7 dedicated support</span>
+                                    </div>
+                                    <div class="license-feature">
+                                        <span class="feature-icon">✓</span>
+                                        <span>Custom integrations</span>
+                                    </div>
+                                    <div class="license-feature">
+                                        <span class="feature-icon">✓</span>
+                                        <span>On-boarding assistance</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Handle hamburger menu toggle
+            document.getElementById('hamburger-button').addEventListener('click', function() {
+                document.body.classList.toggle('hamburger-open');
+            });
+            
+            // Get product information from URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const productId = urlParams.get('product') || 'default';
+            
+            // Product database (simplified)
+            const products = {
+                'sledge': {
+                    name: 'Sledge Browser',
+                    description: 'A web browser made by developers, for developers, with advanced privacy features and developer tools.',
+                    basePrice: 29.99,
+                    image: '/images/projects/sledge.jpg',
+                    storeId: 'tandemx',  // Your Lemon Squeezy store ID
+                    productId: 'prod_01234' // Replace with actual Lemon Squeezy product ID
+                },
+                'findry': {
+                    name: 'Findry Platform',
+                    description: 'Art and resource discovery platform connecting creative spaces with artists.',
+                    basePrice: 39.99,
+                    image: '/images/projects/findry.jpg',
+                    storeId: 'tandemx',
+                    productId: 'prod_56789'
+                },
+                'clipboard-executive-pro': {
+                    name: 'Executive Pro Clipboard',
+                    description: 'Premium aluminum clipboard with leather finish.',
+                    basePrice: 49.99,
+                    image: '/images/clipboards/executive-pro.jpg',
+                    storeId: 'tandemx',
+                    productId: 'prod_abcde'
+                },
+                'default': {
+                    name: 'TandemX Pro License',
+                    description: 'Complete creative collaboration platform suite.',
+                    basePrice: 99.99,
+                    image: '/images/projects/tandemx.jpg',
+                    storeId: 'tandemx',
+                    productId: 'prod_12345'
+                }
+            };
+            
+            // Get the product
+            const product = products[productId] || products.default;
+            
+            // Set initial product details
+            document.getElementById('product-name').textContent = product.name;
+            document.getElementById('product-description').textContent = product.description;
+            document.getElementById('product-image').src = product.image;
+            document.getElementById('product-image').onerror = function() {
+                this.src = '/images/clipboards/placeholder.jpg';
+                this.onerror = null;
+            };
+            
+            // License options
+            const licenseOptions = document.querySelectorAll('.license-option');
+            let selectedLicense = document.querySelector('.license-option.selected');
+            let isAnnual = false;
+            
+            // Toggle between monthly and annual billing
+            const billingToggle = document.getElementById('billing-toggle');
+            const monthlyLabel = document.getElementById('monthly-label');
+            const annualLabel = document.getElementById('annual-label');
+            
+            // Update pricing function
+            function updatePricing() {
+                // Get selected plan
+                const plan = selectedLicense.getAttribute('data-plan');
+                let price = parseFloat(selectedLicense.getAttribute(isAnnual ? 'data-annual' : 'data-monthly'));
+                
+                // Update license price display
+                licenseOptions.forEach(option => {
+                    const optionPrice = parseFloat(option.getAttribute(isAnnual ? 'data-annual' : 'data-monthly'));
+                    const monthlyPrice = parseFloat(option.getAttribute('data-monthly'));
+                    
+                    // Update price display
+                    const priceEl = option.querySelector('.license-price');
+                    if (isAnnual) {
+                        priceEl.textContent = `$${optionPrice.toFixed(2)}/year`;
+                    } else {
+                        priceEl.textContent = `$${monthlyPrice.toFixed(2)}/month`;
+                    }
+                });
+                
+                // Update summary
+                document.getElementById('base-price').textContent = `$${price.toFixed(2)}`;
+                
+                // Calculate discount if any
+                let discount = 0;
+                let discountRow = document.getElementById('discount-row');
+                
+                if (isAnnual) {
+                    // 20% off for annual billing
+                    discount = price * 0.2;
+                    discountRow.style.display = 'flex';
+                    document.getElementById('discount-amount').textContent = `-$${discount.toFixed(2)}`;
+                    price = price - discount;
+                } else {
+                    discountRow.style.display = 'none';
+                }
+                
+                // Update total price
+                document.getElementById('product-price').textContent = `$${price.toFixed(2)}`;
+                document.getElementById('total-price').textContent = `$${price.toFixed(2)}`;
+            }
+            
+            // Initialize Lemon Squeezy checkout 
+            function initLemonSqueezyCheckout() {
+                // Get the variant ID based on license plan and billing period
+                const selectedVariantId = selectedLicense.getAttribute('data-variant-id');
+                
+                // REPLACE WITH YOUR ACTUAL LEMON SQUEEZY STORE AND PRODUCT INFO
+                const storeId = product.storeId || 'tandemx'; // Your Lemon Squeezy store ID
+                const productId = product.productId; // The Lemon Squeezy product ID
+                
+                // Get cart from localStorage
+                const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+                
+                // Open Lemon Squeezy checkout when the button is clicked
+                document.getElementById('checkout-btn').addEventListener('click', function() {
+                    // Construct the checkout URL
+                    const checkoutUrl = `https://${storeId}.lemonsqueezy.com/checkout/buy/${productId}?variant=${selectedVariantId}`;
+                    
+                    // Optional: Clear the cart after redirecting to checkout
+                    // localStorage.setItem('cart', '[]');
+                    
+                    // Redirect to the Lemon Squeezy checkout
+                    window.location.href = checkoutUrl;
+                });
+            }
+            
+            // Handle billing toggle
+            billingToggle.addEventListener('change', function() {
+                isAnnual = this.checked;
+                
+                // Update toggle labels
+                if (isAnnual) {
+                    monthlyLabel.classList.remove('active');
+                    annualLabel.classList.add('active');
+                } else {
+                    monthlyLabel.classList.add('active');
+                    annualLabel.classList.remove('active');
+                }
+                
+                updatePricing();
+            });
+            
+            // Handle license option selection
+            licenseOptions.forEach(option => {
+                option.addEventListener('click', function() {
+                    // Remove selected class from all options
+                    licenseOptions.forEach(opt => opt.classList.remove('selected'));
+                    
+                    // Add selected class to clicked option
+                    this.classList.add('selected');
+                    selectedLicense = this;
+                    
+                    updatePricing();
+                });
+            });
+            
+            // Initial price update
+            updatePricing();
+            
+            // Initialize Lemon Squeezy checkout
+            initLemonSqueezyCheckout();
+        });
+    </script>
+</body>
+</html> 

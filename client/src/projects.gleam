@@ -169,6 +169,8 @@ pub type Filters {
 }
 
 pub type Msg {
+  NavigateTo(String)
+  ExpressInterest(String)
   NavMsg(nav.Msg)
   SelectTab(Tab)
   CreateProject(Project)
@@ -183,8 +185,6 @@ pub type Msg {
   CreateWork(Work)
   UpdateWork(Work)
   DeleteWork(String)
-  NavigateTo(String)
-  ExpressInterest(String)
   UpdateFilters(Filters)
 }
 
@@ -302,6 +302,14 @@ fn init(_: Nil) -> #(Model, effect.Effect(Msg)) {
 
 fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
   case msg {
+    NavigateTo(path) -> {
+      let _ = set_window_location(path)
+      #(model, effect.none())
+    }
+    ExpressInterest(project) -> {
+      let _ = set_window_location("/" <> project <> "/interest")
+      #(model, effect.none())
+    }
     NavMsg(nav_msg) -> {
       case nav_msg {
         nav.ToggleNav -> #(
@@ -395,14 +403,6 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
       effect.none(),
     )
     UpdateFilters(filters) -> #(Model(..model, filters: filters), effect.none())
-    NavigateTo(path) -> {
-      let _ = set_window_location(path)
-      #(model, effect.none())
-    }
-    ExpressInterest(project) -> {
-      let _ = set_window_location("/" <> project <> "/interest")
-      #(model, effect.none())
-    }
   }
 }
 
@@ -410,17 +410,28 @@ fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
 fn set_window_location(path: String) -> Nil
 
 pub fn view(model: Model) -> Element(Msg) {
-  html.div([class("projects-page")], [
-    view_header(),
-    ..list.map(project_catalog.get_domains(), fn(domain) {
-      let #(title, description) = domain
-      view_domain_section(
-        title,
-        description,
-        project_catalog.get_projects_by_domain(title)
-          |> list.map(view_project_card),
-      )
-    })
+  let container_class = case model.nav_open {
+    True -> "app-container nav-open"
+    False -> "app-container"
+  }
+
+  html.div([class(container_class)], [
+    element.map(nav.view(), NavMsg),
+    html.div([class("main-content")], [
+      view_header(),
+      html.div(
+        [class("projects-page")],
+        list.map(project_catalog.get_domains(), fn(domain) {
+          let #(title, description) = domain
+          view_domain_section(
+            title,
+            description,
+            project_catalog.get_projects_by_domain(title)
+              |> list.map(view_project_card),
+          )
+        }),
+      ),
+    ]),
   ])
 }
 

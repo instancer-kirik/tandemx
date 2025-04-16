@@ -1,4 +1,5 @@
 import gleam/dynamic
+import gleam/float
 import gleam/list
 import gleam/result
 import lustre
@@ -10,26 +11,30 @@ import lustre/event
 
 pub type Msg {
   NavigateTo(String)
+  AddToCart(String)
+  NavigateToVendure(String)
 }
 
 pub type Model {
   Model
 }
 
-pub fn main() {
-  let app = lustre.application(init, update, view)
-  let assert Ok(_) = lustre.start(app, "#app", Nil)
-  Nil
-}
-
-fn init(_) -> #(Model, Effect(Msg)) {
+pub fn init(_) -> #(Model, Effect(Msg)) {
   #(Model, effect.none())
 }
 
-fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
+pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
   case msg {
     NavigateTo(path) -> {
       let _ = navigate(path)
+      #(model, effect.none())
+    }
+    AddToCart(product_id) -> {
+      let _ = add_to_cart(product_id)
+      #(model, effect.none())
+    }
+    NavigateToVendure(path) -> {
+      let _ = navigate_to_vendure(path)
       #(model, effect.none())
     }
   }
@@ -37,6 +42,12 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
 
 @external(javascript, "./app_ffi.js", "navigate")
 fn navigate(path: String) -> Nil
+
+@external(javascript, "./app_ffi.js", "addToCart")
+fn add_to_cart(product_id: String) -> Nil
+
+@external(javascript, "./app_ffi.js", "navigateToVendure")
+fn navigate_to_vendure(path: String) -> Nil
 
 fn view_payment_section() -> Element(Msg) {
   html.div([class("payment-section")], [
@@ -106,6 +117,19 @@ pub fn view(model: Model) -> Element(Msg) {
     view_nav(),
     view_hero(),
     view_products(),
+    view_clipboard_listings(),
+    view_features(),
+    view_payment_section(),
+    view_footer(),
+  ])
+}
+
+// New function that renders the landing page without its own navigation
+pub fn view_without_nav(model: Model) -> Element(Msg) {
+  html.div([class("landing-page")], [
+    view_hero(),
+    view_products(),
+    view_clipboard_listings(),
     view_features(),
     view_payment_section(),
     view_footer(),
@@ -123,8 +147,8 @@ fn view_nav() -> Element(Msg) {
         html.a([class("nav-link"), attribute.href("/divvyqueue")], [
           html.text("DivvyQueue"),
         ]),
-        html.a([class("nav-link"), attribute.href("/bizpay")], [
-          html.text("BizPay"),
+        html.a([class("nav-link"), attribute.href("/divvyqueue2")], [
+          html.text("DivvyQueue2"),
         ]),
         html.a([class("nav-link"), attribute.href("/projects")], [
           html.text("Projects"),
@@ -145,11 +169,7 @@ fn view_nav() -> Element(Msg) {
 fn view_hero() -> Element(Msg) {
   html.div([class("hero-section")], [
     html.div([class("hero-content")], [
-      html.h1([class("hero-title")], [
-        html.text(
-          "Empowered Multiparty Contact, Contract, Business Operations and Creative Collaborationator",
-        ),
-      ]),
+      html.h1([class("hero-title")], [html.text("Multiplayer interfaces")]),
       html.p([class("hero-subtitle")], [
         html.text(
           "From development tools to creative spaces, instance.select's tandemx provides a comprehensive suite of solutions. Connect, collaborate, and grow with our integrated platform ecosystem.",
@@ -178,6 +198,17 @@ fn view_products() -> Element(Msg) {
       ]),
     ]),
     html.div([class("products-grid")], [
+      view_product_card(
+        "MT Clipboards",
+        "📋",
+        "Professional clipboard solutions for businesses and individuals",
+        "/mt-clipboards",
+        [
+          "Premium quality materials", "Custom branding options",
+          "Bulk ordering available", "Corporate gift solutions",
+          "Eco-friendly options",
+        ],
+      ),
       view_product_card(
         "Sledge",
         "🌐",
@@ -213,6 +244,150 @@ fn view_products() -> Element(Msg) {
           "Cross-discipline project tools", "Real-time collaboration",
         ],
       ),
+    ]),
+  ])
+}
+
+fn view_clipboard_listings() -> Element(Msg) {
+  html.div([class("clipboard-listings")], [
+    html.div([class("section-header")], [
+      html.h2([class("section-title")], [html.text("MT Clipboards Collection")]),
+      html.p([class("section-subtitle")], [
+        html.text("Discover our range of professional clipboard solutions"),
+      ]),
+    ]),
+    html.div([class("listings-grid")], [
+      view_clipboard_item(
+        "Executive Pro",
+        "Premium aluminum clipboard with leather finish",
+        49.99,
+        "executive-pro",
+        [
+          "Aluminum construction", "Genuine leather finish",
+          "Built-in storage compartment", "Magnetic closure",
+          "Personalization available",
+        ],
+      ),
+      view_clipboard_item(
+        "Heavy-Duty Clamp",
+        "Industrial-strength clipboard with reinforced clamp",
+        59.99,
+        "heavy-duty-clamp",
+        [
+          "Extra-wide 2-inch clamp", "Reinforced steel construction",
+          "Anti-slip grip surface", "Weather-resistant coating",
+          "Heavy-duty spring mechanism",
+        ],
+      ),
+      view_clipboard_item(
+        "Multi-Clip Pro",
+        "Versatile clipboard with multiple clip positions",
+        44.99,
+        "multi-clip-pro",
+        [
+          "Adjustable clip positions", "360-degree rotation",
+          "Quick-release mechanism", "Ergonomic grip",
+          "Compatible with various paper sizes",
+        ],
+      ),
+      view_clipboard_item(
+        "Eco-Friendly",
+        "Sustainable bamboo clipboard with recycled materials",
+        39.99,
+        "eco-friendly",
+        [
+          "Bamboo construction", "Recycled materials", "Low carbon footprint",
+          "Natural finish", "Biodegradable packaging",
+        ],
+      ),
+      view_clipboard_item(
+        "Giant Clamp XL",
+        "Oversized clipboard for large documents and blueprints",
+        69.99,
+        "giant-clamp-xl",
+        [
+          "3-inch wide clamp", "A3 size support", "Reinforced aluminum frame",
+          "Non-slip surface", "Heavy-duty carrying handle",
+        ],
+      ),
+      view_clipboard_item(
+        "Corporate Bundle",
+        "Bulk order solution for businesses",
+        29.99,
+        "corporate-bundle",
+        [
+          "Custom branding options", "Minimum order: 50 units",
+          "Bulk pricing available", "Priority shipping",
+          "Corporate gift packaging",
+        ],
+      ),
+      view_clipboard_item(
+        "Quick-Clip Elite",
+        "Professional clipboard with rapid-release mechanism",
+        54.99,
+        "quick-clip-elite",
+        [
+          "One-handed operation", "Silent clip mechanism", "Adjustable pressure",
+          "Anti-rust coating", "Built-in ruler",
+        ],
+      ),
+      view_clipboard_item(
+        "Compact Traveler",
+        "Portable clipboard for professionals on the go",
+        34.99,
+        "compact-traveler",
+        [
+          "Lightweight design", "Folding mechanism", "Water-resistant",
+          "Pen holder", "Clip storage",
+        ],
+      ),
+    ]),
+  ])
+}
+
+fn view_clipboard_item(
+  name: String,
+  description: String,
+  price: Float,
+  id: String,
+  features: List(String),
+) -> Element(Msg) {
+  let product_id = "clipboard-" <> id
+  html.div([class("clipboard-item")], [
+    html.div([class("clipboard-image")], [
+      html.img([
+        attribute.src("/images/clipboards/" <> id <> ".jpg"),
+        attribute.alt(name),
+      ]),
+    ]),
+    html.div([class("clipboard-details")], [
+      html.h3([], [html.text(name)]),
+      html.p([class("clipboard-description")], [html.text(description)]),
+      html.div([class("clipboard-price")], [
+        html.text("$" <> float.to_string(price)),
+      ]),
+      html.ul(
+        [class("clipboard-features")],
+        list.map(features, fn(feature) {
+          html.li([], [
+            html.span([class("feature-check")], [html.text("✓")]),
+            html.text(feature),
+          ])
+        }),
+      ),
+      html.div([class("clipboard-actions")], [
+        html.a(
+          [
+            class("view-details-btn"),
+            attribute.href("/products/" <> product_id),
+          ],
+          [html.text("View Details")],
+        ),
+        html.button(
+          [class("add-to-cart-btn"), event.on_click(AddToCart(product_id))],
+          [html.text("Add to Cart")],
+        ),
+      ]),
     ]),
   ])
 }
@@ -300,6 +475,12 @@ fn view_footer() -> Element(Msg) {
         ]),
       ]),
       html.div([class("footer-links")], [
+        view_footer_column("Products", [
+          #("MT Clipboards", "/mt-clipboards"),
+          #("Sledge", "/sledge"),
+          #("D.d", "/ddew"),
+          #("Shiny", "/shiny"),
+        ]),
         view_footer_column("Development", [
           #("Sledge", "/sledge"),
           #("D.d", "/ddew"),
@@ -311,7 +492,7 @@ fn view_footer() -> Element(Msg) {
           #("ChartSpace", "/chartspace"),
         ]),
         view_footer_column("Business", [
-          #("BizPay", "/bizpay"),
+          #("DivvyQueue2", "/divvyqueue2"),
           #("CardCard", "/cards"),
           #("Cumpliers", "/compliance"),
         ]),

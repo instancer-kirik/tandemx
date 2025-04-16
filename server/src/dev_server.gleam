@@ -1,12 +1,15 @@
 import argv
-import chartspace_server
+import db_init
+import dot_env
 import findry_server
 import gleam/bytes_tree
 import gleam/dynamic
 import gleam/erlang/process
-import gleam/http.{Get, Post}
+import gleam/float
+import gleam/http.{Delete, Get, Post}
 import gleam/http/request.{type Request}
 import gleam/http/response.{type Response}
+import gleam/http/service
 import gleam/int
 import gleam/io
 import gleam/json
@@ -15,19 +18,34 @@ import gleam/option.{type Option, None, Some}
 import gleam/otp/actor
 import gleam/result
 import gleam/string
-import mist.{
-  type Connection, type ResponseData, type WebsocketConnection,
-  type WebsocketMessage, Bytes, Text, websocket,
-}
+import mist
+
+import chartspace_server
+import meeting_server
 import simplifile
+import wishlist_api.{get_mock_products, get_mock_specs}
+
+// Temporarily commented out due to module issues
+// import tandemx_server/cart
+// import tandemx_server/cart_actor
+// import tandemx_server/chartspace
+// import tandemx_server/findry
+// import tandemx_server/wishlist_api
 
 //add gravatar (glevatar)for easy multiprofiles with links and payment opts
+pub type CartMessage {
+  AddItem(Int, String, Float)
+  RemoveItem(Int)
+  UpdateQuantity(Int, Int)
+  SyncState(String)
+}
+
 pub type CartState {
   CartState(items: String)
 }
 
 pub type CartActor {
-  CartActor(state: CartState, connections: List(Connection))
+  CartActor(state: CartState, connections: List(String))
 }
 
 pub type Meeting {
@@ -40,11 +58,13 @@ pub type Meeting {
     duration_minutes: Int,
     attendees: List(String),
     timezone: String,
+    location_type: String,
+    location: String,
   )
 }
 
 pub type EmailNotification {
-  EmailNotification(to: String, subject: String, body: String)
+  EmailNotification(to: String, subject: String, body: String, from: String)
 }
 
 pub type InterestSubmission {
@@ -57,18 +77,46 @@ pub type InterestSubmission {
   )
 }
 
+// Define missing types
+pub type ResponseData {
+  Bytes(bytes_tree.BytesTree)
+  String(String)
+}
+
+pub type WebsocketConnection {
+  WebsocketConnection
+}
+
+pub type WebsocketMessage(a) {
+  Text(a)
+  Binary(String)
+}
+
 fn try_serve_static_file(path: String) -> Result(Response(ResponseData), Nil) {
   let paths = [
-    string.concat(["../client/", path]),
+    // Client source files - try these first for faster development
     string.concat(["../client/src/", path]),
-    string.concat(["../client/build/", path]),
-    string.concat(["../client/build/dev/", path]),
-    string.concat(["../client/build/dev/javascript/", path]),
+    string.concat(["../client/", path]),
+    // Module-specific paths
+    string.concat(["../client/src/events/", path]),
+    string.concat(["../client/src/findry/", path]),
+    string.concat(["../client/src/divvyqueue/", path]),
+    string.concat(["../client/src/divvyqueue2/", path]),
+    string.concat(["../client/src/projects/", path]),
+    string.concat(["../client/src/components/", path]),
+    string.concat(["../client/src/assets/", path]),
+    string.concat(["../client/src/styles/", path]),
+    // Build artifacts
     string.concat(["../client/build/dev/javascript/tandemx_client/", path]),
+    string.concat(["../client/build/dev/javascript/", path]),
+    // FFI files
+    string.concat(["../client/src/findry/findry_ffi.js"]),
+    string.concat(["../client/src/events/events_ffi.js"]),
+    string.concat(["../client/src/calendar_ffi.js"]),
+    // Dependencies
     string.concat(["../client/build/dev/javascript/gleam_stdlib/gleam/", path]),
     string.concat(["../client/build/dev/javascript/lustre/", path]),
     string.concat(["../client/build/dev/javascript/lustre/lustre/", path]),
-    string.concat(["../client/node_modules/", path]),
   ]
 
   io.println("\nTrying to serve: " <> path)
@@ -84,7 +132,7 @@ fn try_serve_static_file(path: String) -> Result(Response(ResponseData), Nil) {
       io.println("  Found at: " <> file_path)
       let assert Ok(content) = simplifile.read(file_path)
       let content_type = case string.split(path, ".") |> list.last {
-        Ok("js") | Ok("mjs") | Ok("jsx") -> "text/javascript"
+        Ok("js") | Ok("mjs") | Ok("jsx") -> "application/javascript"
         Ok("css") -> "text/css"
         Ok("html") -> "text/html"
         Ok("ico") -> "image/x-icon"
@@ -109,270 +157,26 @@ fn try_serve_static_file(path: String) -> Result(Response(ResponseData), Nil) {
 }
 
 pub fn main() {
-  // Get port from arguments, default to 8000
-  io.println("\nArguments: " <> string.join(argv.load().arguments, ", "))
-  let port = case argv.load().arguments {
-    ["--port", port_str, ..] -> {
-      io.println("Found port argument: " <> port_str)
-      case int.parse(port_str) {
-        Ok(port) -> {
-          io.println("Using port: " <> int.to_string(port))
-          port
-        }
-        Error(_) -> {
-          io.println("Invalid port, using default: 8000")
-          8000
-        }
-      }
-    }
-    _ -> {
-      io.println("No port argument, using default: 8000")
-      8000
-    }
-  }
+  let assert Ok(_) = dot_env.load()
 
-  let cart_state = CartState(items: "[]")
-  let _cart_actor = CartActor(state: cart_state, connections: [])
+  // Commented out due to missing modules
+  // let assert Ok(port) = env.get("PORT")
+  // let assert Ok(port) = string.to_int(port)
+  let port = 8000
+  // Default port
 
-  // Initialize chartspace
-  let chartspace_state = chartspace_server.init()
-  let assert Ok(chartspace_actor) = chartspace_server.start()
+  // Commented out due to missing modules
+  // let assert Ok(_) = cart_actor.start()
+  // let assert Ok(_) = chartspace.start()
+  // let assert Ok(_) = findry.start()
 
-  // Initialize findry
-  let findry_state = findry_server.init()
-  let assert Ok(findry_actor) = findry_server.start()
+  // let handler = wisp_mist.handler(fn(req) { handle_request(req) })
+  let handler = fn(req) { handle_request(req) }
 
-  let handler = fn(req: Request(Connection)) {
-    case request.path_segments(req) {
-      [] -> serve_html("app.html")
-      ["ws", "cart"] -> {
-        let selector = process.new_selector()
-        websocket(
-          request: req,
-          on_init: fn(_conn) { #(cart_state, Some(selector)) },
-          on_close: fn(_state) { io.println("Cart WebSocket closed") },
-          handler: fn(state, conn, msg) {
-            case msg {
-              Text(text) -> {
-                let assert Ok(_) = mist.send_text_frame(conn, text)
-                actor.continue(state)
-              }
-              _ -> actor.continue(state)
-            }
-          },
-        )
-      }
+  let assert Ok(_) = mist.new()
+  let assert Ok(_) = mist.start(handler, port)
 
-      ["ws", "chartspace"] -> {
-        let selector = process.new_selector()
-        websocket(
-          request: req,
-          on_init: fn(conn) { #(chartspace_state, Some(selector)) },
-          on_close: fn(_state) { io.println("Chartspace WebSocket closed") },
-          handler: fn(state, conn, msg) {
-            let #(new_state, _) =
-              chartspace_server.handle_message(state, conn, msg, [])
-            actor.continue(new_state)
-          },
-        )
-      }
-
-      ["ws", "findry"] -> {
-        let selector = process.new_selector()
-        websocket(
-          request: req,
-          on_init: fn(conn) { #(findry_state, Some(selector)) },
-          on_close: fn(_state) { io.println("Findry WebSocket closed") },
-          handler: fn(state, conn, msg) {
-            let #(new_state, _) =
-              findry_server.handle_message(state, conn, msg, [])
-            actor.continue(new_state)
-          },
-        )
-      }
-
-      ["api", "schedule-meeting"] -> {
-        case req.method {
-          http.Post -> {
-            case mist.read_body(req, 1024 * 1024) {
-              Ok(req) -> {
-                let json = dynamic.from(req.body)
-                case decode_meeting(json) {
-                  Ok(meeting) -> {
-                    // Send email notifications to all attendees
-                    let notifications =
-                      list.map(meeting.attendees, fn(attendee) {
-                        EmailNotification(
-                          to: attendee,
-                          subject: "New Meeting: " <> meeting.title,
-                          body: string.concat([
-                            "You have been invited to a meeting:\n\n",
-                            "Title: ",
-                            meeting.title,
-                            "\n",
-                            "Description: ",
-                            meeting.description,
-                            "\n",
-                            "Date: ",
-                            meeting.date,
-                            "\n",
-                            "Time: ",
-                            meeting.start_time,
-                            " (",
-                            meeting.timezone,
-                            ")\n",
-                            "Duration: ",
-                            int.to_string(meeting.duration_minutes),
-                            " minutes\n",
-                          ]),
-                        )
-                      })
-
-                    // Send emails (this would connect to an email service in production)
-                    let _ = list.map(notifications, send_email)
-
-                    response.new(200)
-                    |> response.set_header("content-type", "application/json")
-                    |> response.set_body(
-                      Bytes(bytes_tree.from_string("{\"status\":\"success\"}")),
-                    )
-                  }
-                  Error(_) ->
-                    response.new(400)
-                    |> response.set_header("content-type", "application/json")
-                    |> response.set_body(
-                      Bytes(bytes_tree.from_string(
-                        "{\"error\":\"Invalid request data\"}",
-                      )),
-                    )
-                }
-              }
-              Error(_) ->
-                response.new(400)
-                |> response.set_header("content-type", "application/json")
-                |> response.set_body(
-                  Bytes(bytes_tree.from_string(
-                    "{\"error\":\"Invalid request body\"}",
-                  )),
-                )
-            }
-          }
-          _ ->
-            response.new(405)
-            |> response.set_header("content-type", "application/json")
-            |> response.set_body(
-              Bytes(bytes_tree.from_string("{\"error\":\"Method not allowed\"}")),
-            )
-        }
-      }
-
-      segments -> {
-        case segments {
-          // Main app routes
-          ["app.html"] -> serve_html("app.html")
-          ["app.css"] -> serve_css("app.css")
-          ["app.mjs"] -> serve_file("app.mjs", "text/javascript")
-          ["app_ffi.js"] -> serve_file("app_ffi.js", "text/javascript")
-
-          // Events module routes
-          ["events"] -> serve_html("events/events.html")
-          ["events", "share"] -> serve_html("events/events.html")
-          ["events", "events.css"] -> serve_css("events/events.css")
-          ["events", "events.html"] -> serve_html("events/events.html")
-          ["events", "events.mjs"] ->
-            serve_file("events/events.mjs", "text/javascript")
-          ["events", "events_ffi.js"] ->
-            serve_file("events/events_ffi.js", "text/javascript")
-          ["events", event_id] -> serve_html("events/events.html")
-
-          // Revert to serving individual HTML files for each route
-          ["bizpay"] -> serve_html("bizpay.html")
-          ["divvyqueue"] -> serve_html("divvyqueue.html")
-          ["findry"] -> serve_html("findry.html")
-          ["projects"] -> serve_html("projects.html")
-          ["login"] -> serve_html("login.html")
-          ["signup"] -> serve_html("signup.html")
-
-          // Non-SPA routes
-          ["landing"] -> serve_html("landing.html")
-          ["revu"] -> serve_html("revu.html")
-          ["revu", "curl_tool.css"] -> serve_css("revu/curl_tool.css")
-          ["divvyqueue", "contracts"] -> serve_html("contracts.html")
-          ["contracts"] -> serve_html("contracts.html")
-          ["ambigunector", "ambigunector_ffi.js"] ->
-            serve_file("ambigunector/ambigunector_ffi.js", "text/javascript")
-          ["findry", "findry.css"] -> serve_css("findry/findry.css")
-          ["findry", "findry.js"] ->
-            serve_file("findry/findry.js", "text/javascript")
-          ["findry", "spaces"] -> serve_html("findry.html")
-          ["styles.css"] -> serve_css("styles.css")
-          ["landing.css"] -> serve_css("landing.css")
-          ["chartspace.css"] -> serve_css("chartspace.css")
-          ["campaign-form.css"] -> serve_css("campaign-form.css")
-          ["projects.css"] -> serve_css("projects.css")
-          ["bizpay", "features"] -> serve_html("bizpay.html")
-          ["bizpay", "pricing"] -> serve_html("bizpay.html")
-          ["bizpay", "docs"] -> serve_html("bizpay.html")
-          ["bizpay", "demo"] -> serve_html("bizpay.html")
-          ["bizpay", "contact"] -> serve_html("bizpay.html")
-          ["bizpay", "interest"] -> handle_interest_form("bizpay")
-          ["bizpay.css"] -> serve_css("bizpay.css")
-          [project_name, "interest"] -> handle_interest_form(project_name)
-          ["sledge"] -> serve_html("sledge.html")
-          ["dd"] -> serve_html("dd.html")
-          ["shiny"] -> serve_html("shiny.html")
-          ["space-captains"] -> serve_html("space-captains.html")
-          ["hunter"] -> serve_html("hunter.html")
-          ["chartspace"] -> serve_html("chartspace.html")
-          ["compliance"] -> serve_html("compliance.html")
-          ["buzzpay"] -> serve_html("buzzpay.html")
-          ["todos"] -> serve_html("todos.html")
-          ["banking"] -> serve_html("banking.html")
-          ["cards"] -> serve_html("cards.html")
-          ["currency"] -> serve_html("currency.html")
-          ["bills"] -> serve_html("bills.html")
-          ["payroll"] -> serve_html("payroll.html")
-          ["tax"] -> serve_html("tax.html")
-          ["ads"] -> serve_html("ads.html")
-          ["settings"] -> serve_html("settings.html")
-          ["calendar"] -> serve_html("calendar.html")
-          ["calendar.css"] -> serve_css("calendar.css")
-          ["calendar.mjs"] -> serve_file("calendar.mjs", "text/javascript")
-          ["calendar_ffi.js"] ->
-            serve_file("calendar_ffi.js", "text/javascript")
-          ["debug", "files"] -> {
-            let assert Ok(files) = simplifile.read_directory("../client/build")
-            let content = string.join(files, "\n")
-            serve_content(content, "text/plain")
-          }
-          ["assets", ..rest] -> {
-            let file_path = string.join(rest, "/")
-            case try_serve_static_file("assets/" <> file_path) {
-              Ok(response) -> response
-              Error(_) -> serve_404()
-            }
-          }
-          path -> {
-            let file_path = string.join(path, "/")
-            case try_serve_static_file(file_path) {
-              Ok(response) -> response
-              Error(_) -> serve_404()
-            }
-          }
-        }
-      }
-    }
-  }
-
-  // Start server
-  let assert Ok(_) =
-    handler
-    |> mist.new
-    |> mist.port(port)
-    |> mist.bind("0.0.0.0")
-    |> mist.start_http
-
-  process.sleep_forever()
+  io.println("Server started on port " <> string.from_int(port))
 }
 
 fn serve_404() -> Response(ResponseData) {
@@ -403,27 +207,14 @@ fn serve_content(
   |> response.set_body(Bytes(bytes_tree.from_string(content)))
 }
 
-fn decode_meeting(
-  json: dynamic.Dynamic,
-) -> Result(Meeting, List(dynamic.DecodeError)) {
-  dynamic.decode8(
-    Meeting,
-    dynamic.field("id", dynamic.string),
-    dynamic.field("title", dynamic.string),
-    dynamic.field("description", dynamic.string),
-    dynamic.field("date", dynamic.string),
-    dynamic.field("start_time", dynamic.string),
-    dynamic.field("duration_minutes", dynamic.int),
-    dynamic.field("attendees", dynamic.list(dynamic.string)),
-    dynamic.field("timezone", dynamic.string),
-  )(json)
-}
+// Meeting handling functionality moved to the meeting_server module
 
 @external(erlang, "io", "format")
 fn io_format(format: String, args: List(String)) -> Nil
 
 fn send_email(notification: EmailNotification) -> Result(Nil, String) {
-  io_format("Sending email:\nTo: ~s\nSubject: ~s\nBody: ~s\n---\n", [
+  io_format("Sending email:\nFrom: ~s\nTo: ~s\nSubject: ~s\nBody: ~s\n---\n", [
+    notification.from,
     notification.to,
     notification.subject,
     notification.body,
@@ -463,4 +254,337 @@ fn serve_file(filename: String, content_type: String) -> Response(ResponseData) 
     Ok(response) -> response
     Error(_) -> serve_404()
   }
+}
+
+fn serve_projects_partial(project_filter: String) -> Response(ResponseData) {
+  // Simple implementation for now - just return placeholder HTML
+  let html =
+    "<div class=\"project-list\"><h3>Projects filtered by: "
+    <> project_filter
+    <> "</h3><p>This is a placeholder for filtered project listing.</p></div>"
+
+  response.new(200)
+  |> response.set_header("content-type", "text/html")
+  |> response.set_body(Bytes(bytes_tree.from_string(html)))
+}
+
+fn serve_checkout_success() -> Response(ResponseData) {
+  // Just show a simple success page for now
+  response.new(200)
+  |> response.set_header("content-type", "text/html")
+  |> response.set_body(
+    Bytes(bytes_tree.from_string(
+      "<!DOCTYPE html><html><head><title>Checkout Success</title></head><body><h1>Checkout Success!</h1><p>Your order has been processed successfully.</p><p><a href=\"/\">Return to homepage</a></p></body></html>",
+    )),
+  )
+}
+
+// Helper to get current date formatted as "Month Day, Year"
+fn get_current_date() -> String {
+  // Just return hardcoded date for the example
+  "March 12, 2024"
+}
+
+// Serve the cart page
+fn serve_cart_page() -> Response(ResponseData) {
+  serve_html("cart.html")
+}
+
+fn handle_get_request(req: Request(String)) -> Response(ResponseData) {
+  case serve_static(req) {
+    Ok(resp) -> resp
+    Error(_) ->
+      case handle_html_routes(req) {
+        Ok(resp) -> resp
+        Error(_) ->
+          case handle_api_request(req) {
+            Ok(resp) -> resp
+            Error(_) -> not_found_response()
+          }
+      }
+  }
+}
+
+fn handle_other_request(req: Request(String)) -> Response(ResponseData) {
+  case handle_api_request(req) {
+    Ok(resp) -> resp
+    Error(_) -> not_found_response()
+  }
+}
+
+fn not_found_response() -> Response(ResponseData) {
+  response.new(404)
+  |> response.set_body(mist.Bytes(bytes_tree.from_string("Not Found")))
+}
+
+// Temporarily commented out
+// fn handle_cart_message(
+//   msg: CartMessage,
+//   state: CartState,
+// ) -> actor.Next(CartMessage, CartState) {
+//   case msg {
+//     AddItem(id, title, price) -> {
+//       let new_state = CartState(items: state.items)
+//       actor.continue(new_state)
+//     }
+//     RemoveItem(id) -> {
+//       let new_state = CartState(items: state.items)
+//       actor.continue(new_state)
+//     }
+//     UpdateQuantity(id, qty) -> {
+//       let new_state = CartState(items: state.items)
+//       actor.continue(new_state)
+//     }
+//     SyncState(items) -> {
+//       let new_state = CartState(items: items)
+//       actor.continue(new_state)
+//     }
+//   }
+// }
+
+fn handle_request(req: Request(String)) -> Response(ResponseData) {
+  case req.path {
+    "/ws/cart" -> {
+      // Websocket handling temporarily disabled
+      not_found_response()
+      // Original code:
+      // let assert Ok(actor) = cart_actor.start()
+      // let ws_handler = fn(conn: WebsocketConnection) -> #(
+      //   CartState,
+      //   Option(process.Subject(CartMessage)),
+      // ) {
+      //   let state = CartState(items: "[]")
+      //   #(state, Some(actor))
+      // }
+      // 
+      // let msg_handler = fn(
+      //   state: CartState,
+      //   conn: WebsocketConnection,
+      //   msg: WebsocketMessage(String),
+      // ) -> actor.Next(String, CartState) {
+      //   case msg {
+      //     Text(text) -> {
+      //       case string.split(text, ":") {
+      //         ["add", id_str, title, price_str] -> {
+      //           case int.parse(id_str), float.parse(price_str) {
+      //             Ok(id), Ok(price) -> {
+      //               actor.send(actor, AddItem(id, title, price))
+      //               actor.continue(state)
+      //             }
+      //             _, _ -> actor.continue(state)
+      //           }
+      //         }
+      //         ["remove", id_str] -> {
+      //           case int.parse(id_str) {
+      //             Ok(id) -> {
+      //               actor.send(actor, RemoveItem(id))
+      //               actor.continue(state)
+      //             }
+      //             Error(_) -> actor.continue(state)
+      //           }
+      //         }
+      //         ["update", id_str, qty_str] -> {
+      //           case int.parse(id_str), int.parse(qty_str) {
+      //             Ok(id), Ok(qty) -> {
+      //               actor.send(actor, UpdateQuantity(id, qty))
+      //               actor.continue(state)
+      //             }
+      //             _, _ -> actor.continue(state)
+      //           }
+      //         }
+      //         ["sync"] -> {
+      //           let state = CartState(items: state.items)
+      //           let msg = string.concat(["state|", state.items])
+      //           websocket.send_text(conn, msg)
+      //           actor.continue(state)
+      //         }
+      //         _ -> actor.continue(state)
+      //       }
+      //     }
+      //     _ -> actor.continue(state)
+      //   }
+      // }
+      // 
+      // let close_handler = fn(_state: CartState) -> Nil { Nil }
+      // 
+      // websocket.upgrade(req, ws_handler, msg_handler, close_handler)
+    }
+    _ -> {
+      case serve_static(req) {
+        Ok(resp) -> resp
+        Error(_) ->
+          case handle_html_routes(req) {
+            Ok(resp) -> resp
+            Error(_) ->
+              case handle_api_request(req) {
+                Ok(resp) -> resp
+                Error(_) -> not_found_response()
+              }
+          }
+      }
+    }
+  }
+}
+
+fn serve_static(req: Request(String)) -> Result(Response(ResponseData), Nil) {
+  // Remove leading slash and serve static file
+  let path = req.path
+  let path = case string.starts_with(path, "/") {
+    True -> string.slice(path, 1, string.length(path))
+    False -> path
+  }
+
+  case try_serve_static_file(path) {
+    Ok(response) -> Ok(response)
+    Error(_) -> Error(Nil)
+  }
+}
+
+fn handle_html_routes(
+  req: Request(String),
+) -> Result(Response(ResponseData), Nil) {
+  // Check if this is a known static page
+  case req.path {
+    "/" -> Ok(serve_html("index.html"))
+    "/findry" -> Ok(serve_html("index.html"))
+    "/events" -> Ok(serve_html("index.html"))
+    "/divvyqueue" -> Ok(serve_html("index.html"))
+    "/divvyqueue2" -> Ok(serve_html("index.html"))
+    "/projects" -> Ok(serve_html("projects_page.html"))
+    "/about" -> Ok(serve_html("index.html"))
+    "/calendar" -> Ok(serve_html("calendar_page.html"))
+    "/login" -> Ok(serve_html("index.html"))
+    "/signup" -> Ok(serve_html("index.html"))
+    "/store" -> Ok(serve_html("index.html"))
+    "/mt-clipboards" -> Ok(serve_html("mt_clipboards.html"))
+    "/cart" -> Ok(serve_cart_page())
+    "/wishlist" -> Ok(serve_html("wishlist.html"))
+    "/account" -> Ok(serve_html("account.html"))
+    "/checkout" -> Ok(serve_html("checkout.html"))
+    "/checkout/success" -> Ok(serve_checkout_success())
+    _ -> {
+      // Try to serve as a static file
+      let path = req.path
+      let path = case string.starts_with(path, "/") {
+        True -> string.slice(path, 1, string.length(path))
+        False -> path
+      }
+
+      case try_serve_static_file(path) {
+        Ok(response) -> Ok(response)
+        Error(_) -> Error(Nil)
+      }
+    }
+  }
+}
+
+fn method_not_allowed() -> Response(ResponseData) {
+  let error_json = json.object([#("error", json.string("Method not allowed"))])
+  let body = json.to_string(error_json)
+  response.new(405)
+  |> response.set_header("content-type", "application/json")
+  |> response.set_body(Bytes(bytes_tree.from_string(body)))
+}
+
+// Function to route wishlist API requests
+fn route_wishlist_request(req: Request(String)) -> Response(ResponseData) {
+  // Extract necessary information and construct a similar response
+  let path_segments = request.path_segments(req)
+
+  // Handle different wishlist API routes
+  case list.drop(path_segments, 2), req.method {
+    // GET /api/wishlist/products - List all products
+    ["products"], Get -> handle_wishlist_products()
+
+    // GET /api/wishlist/products/:id - Get product by ID
+    ["products", product_id], Get -> handle_wishlist_product(product_id)
+
+    // Other routes can be added as needed
+    _, _ -> method_not_allowed()
+  }
+}
+
+// Restore these functions for handling wishlist products
+fn handle_wishlist_products() -> Response(ResponseData) {
+  // Get all products endpoint
+  let products = get_mock_products()
+
+  let products_json =
+    list.map(products, fn(product) {
+      json.object([
+        #("id", json.string(product.id)),
+        #("name", json.string(product.name)),
+        #("description", json.string(product.description)),
+        #("category", json.string(product.category)),
+        #("price", json.float(product.price)),
+        #("salePrice", case product.sale_price {
+          Some(price) -> json.float(price)
+          None -> json.null()
+        }),
+        #("image", json.string(product.image_url)),
+        #("badge", case product.badge {
+          Some(badge) -> json.string(badge)
+          None -> json.null()
+        }),
+        #("specs", json.object(get_mock_specs(product.id))),
+      ])
+    })
+
+  let body = json.to_string(json.array(products_json, fn(x) { x }))
+  response.new(200)
+  |> response.set_header("content-type", "application/json")
+  |> response.set_body(Bytes(bytes_tree.from_string(body)))
+}
+
+fn handle_wishlist_product(product_id: String) -> Response(ResponseData) {
+  let products = get_mock_products()
+  let product = list.find(products, fn(p) { p.id == product_id })
+
+  case product {
+    Ok(product) -> {
+      let product_json =
+        json.object([
+          #("id", json.string(product.id)),
+          #("name", json.string(product.name)),
+          #("description", json.string(product.description)),
+          #("category", json.string(product.category)),
+          #("price", json.float(product.price)),
+          #("salePrice", case product.sale_price {
+            Some(price) -> json.float(price)
+            None -> json.null()
+          }),
+          #("image", json.string(product.image_url)),
+          #("badge", case product.badge {
+            Some(badge) -> json.string(badge)
+            None -> json.null()
+          }),
+          #("specs", json.object(get_mock_specs(product.id))),
+        ])
+      let body = json.to_string(product_json)
+      response.new(200)
+      |> response.set_header("content-type", "application/json")
+      |> response.set_body(Bytes(bytes_tree.from_string(body)))
+    }
+    Error(_) -> {
+      let error_json =
+        json.object([#("error", json.string("Product not found"))])
+      let body = json.to_string(error_json)
+      response.new(404)
+      |> response.set_header("content-type", "application/json")
+      |> response.set_body(Bytes(bytes_tree.from_string(body)))
+    }
+  }
+}
+
+fn handle_api_request(
+  _req: Request(String),
+) -> Result(Response(ResponseData), Nil) {
+  // Default response for unmatched API endpoints
+  Ok(
+    response.new(404)
+    |> response.set_header("content-type", "application/json")
+    |> response.set_body(
+      Bytes(bytes_tree.from_string("{\"error\": \"API endpoint not found\"}")),
+    ),
+  )
 }

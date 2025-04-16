@@ -1,4 +1,4 @@
-// import { initBackground } from './bizpay_background.js';
+// import { initBackground } from './divvyqueue2_background.js';
 
 export function setWindowLocation(path) {
   window.location.href = path;

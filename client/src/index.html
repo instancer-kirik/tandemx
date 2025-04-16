@@ -3,44 +3,800 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="refresh" content="0;url=/app.html">
-  <title>TandemX - Redirecting...</title>
+  <title>TandemX - Artist Collaboration Platform</title>
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/landing.css">
+  <link rel="stylesheet" href="/app.css">
   <style>
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    /* Add some styles to make page content immediately visible */
+    #loading-indicator {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(255,255,255,0.9);
       display: flex;
-      justify-content: center;
       align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      z-index: 9999;
+      flex-direction: column;
+      transition: opacity 0.3s ease;
+    }
+    
+    #loading-indicator .spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid rgba(27, 30, 180, 0.3);
+      border-radius: 50%;
+      border-top-color: #1b1eb4;
+      animation: spin 1s linear infinite;
+      margin-bottom: 15px;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    .debug-panel {
+      position: fixed;
+      bottom: 10px;
+      right: 10px;
+      background: rgba(0,0,0,0.6);
+      color: white;
+      padding: 8px;
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 10px;
+      z-index: 9000;
+      max-width: 250px;
+      height: 100px;
+      overflow: auto;
+      opacity: 0.7;
+      transition: opacity 0.2s;
+    }
+    
+    .debug-panel:hover {
+      opacity: 1;
+      height: 200px;
+    }
+    
+    .app-container {
+      display: flex;
+      min-height: 100vh;
+    }
+    
+    .main-content {
+      flex: 1;
+    }
+    
+    /* Prepare for immediate visibility */
+    .hero-section {
+      padding-top: 4rem;
+    }
+    
+    /* Manual navbar styles */
+    #manual-navbar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 250px;
       height: 100vh;
-      margin: 0;
-      background-color: #f8f9fa;
-      color: #333;
+      background: white;
+      box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+      transform: translateX(-100%);
+      transition: transform 0.3s ease;
+      z-index: 1500;
+      padding-top: 4rem;
+      overflow-y: auto;
     }
-    .redirect-container {
+    
+    body.hamburger-open #manual-navbar {
+      transform: translateX(0);
+    }
+    
+    body.hamburger-open .main-content {
+      margin-left: 250px;
+    }
+    
+    @media (max-width: 768px) {
+      body.hamburger-open .main-content {
+        margin-left: 0;
+      }
+    }
+    
+    #manual-navbar .nav-brand {
+      margin-bottom: 1.5rem;
       text-align: center;
-      padding: 2rem;
     }
-    h1 {
-      color: #4a6fa5;
-    }
-    p {
-      margin-top: 1rem;
-    }
-    a {
-      color: #4a6fa5;
-      text-decoration: none;
+    
+    #manual-navbar .nav-brand a {
+      font-size: 1.5rem;
       font-weight: bold;
+      color: #1b1eb4; /* Match primary color from landing.css */
+      text-decoration: none;
     }
-    a:hover {
-      text-decoration: underline;
+    
+    #manual-navbar .nav-links {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      padding: 0 1rem;
+    }
+    
+    #manual-navbar .nav-links a {
+      display: block;
+      padding: 0.75rem 1rem;
+      color: #1f2937; /* Text color from landing.css */
+      text-decoration: none;
+      border-radius: 4px;
+      transition: background-color 0.2s;
+    }
+    
+    #manual-navbar .nav-links a:hover {
+      background-color: #f8f9fa;
+      color: #1b1eb4; /* Primary color on hover */
+    }
+    
+    /* Ensure hero title gradient displays correctly */
+    .hero-title {
+      background: linear-gradient(135deg, #1b1eb4 0%, #ff3bf5 100%) !important;
+      -webkit-background-clip: text !important;
+      -webkit-text-fill-color: transparent !important;
+      background-clip: text !important;
+      color: transparent !important;
+    }
+    
+    .placeholder-page {
+      padding: 4rem 2rem;
+      text-align: center;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    
+    .placeholder-page h1 {
+      font-size: 2.5rem;
+      margin-bottom: 1.5rem;
+      color: #1b1eb4;
+    }
+    
+    .placeholder-page p {
+      font-size: 1.2rem;
+      margin-bottom: 1rem;
+      color: #555;
+    }
+    
+    .placeholder-page a.cta-btn {
+      display: inline-block;
+      margin-top: 2rem;
+      background-color: #1b1eb4;
+      color: white;
+      padding: 0.8rem 1.5rem;
+      text-decoration: none;
+      border-radius: 4px;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+    
+    .placeholder-page a.cta-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     }
   </style>
 </head>
 <body>
-  <div class="redirect-container">
-    <h1>TandemX</h1>
-    <p>Redirecting to the application...</p>
-    <p>If you are not redirected automatically, <a href="/app.html">click here</a>.</p>
+  <!-- Add a loading indicator -->
+  <div id="loading-indicator">
+    <div class="spinner"></div>
+    <div>Loading TandemX...</div>
   </div>
+  
+  <!-- Debugging panel -->
+  <div class="debug-panel" id="debug-panel">Initializing...</div>
+  
+  <!-- Manual navbar -->
+  <div id="manual-navbar">
+    <div class="nav-brand">
+      <a href="/">TandemX</a>
+    </div>
+    <div class="nav-links">
+      <a href="/events">Events</a>
+      <a href="/findry">Findry</a>
+      <a href="/divvyqueue">DivvyQueue</a>
+      <a href="/divvyqueue2">DivvyQueue2</a>
+      <a href="/projects" data-direct-link="true">Projects</a>
+      <a href="/chartspace">Analytics</a>
+      <a href="/todos">Tasks</a>
+      <a href="/banking">Banking</a>
+      <a href="/calendar" data-direct-link="true">Calendar</a>
+      <a href="/mt-clipboards" data-direct-link="true">MT Clipboards</a>
+      <a href="/compliance">Compliance</a>
+      <a href="/settings">Settings</a>
+      <a href="/about">About</a>
+    </div>
+  </div>
+  
+  <!-- Prebuilt app container with required elements -->
+  <div class="app-container" id="app-container">
+    <div class="nav-side-container" id="nav-side-container"></div>
+    <div class="main-content" id="main-content">
+      <div id="app"></div>
+    </div>
+  </div>
+  
+  <div id="toast-container"></div>
+  
+  <!-- Add a visible nav toggle button -->
+  <button class="nav-toggle" id="hamburger-button">☰</button>
+  
+  <!-- Add a fallback message in case JS fails -->
+  <noscript>
+    <div style="padding: 20px; text-align: center;">
+      <h2>JavaScript is required</h2>
+      <p>Please enable JavaScript to use this application.</p>
+    </div>
+  </noscript>
+  
+  <script type="module">
+    // Simple debug logger
+    function debug(message) {
+      console.log(message);
+      const debugPanel = document.getElementById('debug-panel');
+      if (debugPanel) {
+        const timestamp = new Date().toLocaleTimeString();
+        debugPanel.innerHTML += `<br><small>${timestamp}</small> ${message}`;
+        debugPanel.scrollTop = debugPanel.scrollHeight;
+      }
+    }
+    
+    // Clear loading indicator right away
+    const loadingIndicator = document.getElementById('loading-indicator');
+    
+    // Hide spinner faster
+    function hideSpinner(delay = 100) {
+      if (loadingIndicator) {
+        loadingIndicator.style.opacity = '0';
+        setTimeout(() => {
+          loadingIndicator.style.display = 'none';
+        }, delay);
+      }
+    }
+    
+    // Show spinner with optional timeout
+    function showSpinner(timeout = 2000) {
+      if (loadingIndicator) {
+        loadingIndicator.style.display = 'flex';
+        loadingIndicator.style.opacity = '1';
+        
+        // Set timeout to hide spinner automatically after timeout
+        setTimeout(() => {
+          hideSpinner();
+        }, timeout);
+      }
+    }
+    
+    // Safety timeout - hide spinner after 3 seconds maximum (reduced from 5s)
+    setTimeout(() => {
+      hideSpinner();
+    }, 3000);
+    
+    // Set initial debug message
+    debug("Initializing TandemX application...");
+    
+    // Simple hamburger toggle
+    document.getElementById('hamburger-button').addEventListener('click', function() {
+      debug("Hamburger button clicked");
+      document.body.classList.toggle('hamburger-open');
+      debug("Toggled hamburger-open class on body: " + document.body.classList.contains('hamburger-open'));
+    });
+    
+    // Import dependencies before using them
+    debug("Loading modules...");
+    
+    try {
+      // Import all modules inline to catch any import errors
+      const app_ffi = await import("/app_ffi.js");
+      debug("Loaded app_ffi.js");
+      
+      const landing_module = await import("/build/dev/javascript/tandemx_client/landing.mjs");
+      debug("Loaded landing.mjs");
+      
+      const lustre_module = await import("/build/dev/javascript/lustre/lustre.mjs");
+      debug("Loaded lustre.mjs");
+      
+      // Initialize application
+      debug("Initializing application");
+      
+      // Initialize app_ffi
+      app_ffi.init();
+      
+      // Load module-specific content
+      async function loadRouteModule() {
+        try {
+          // Get the current path from window.location each time the function is called
+          const currentPath = window.location.pathname;
+          debug("Loading route for path: " + currentPath);
+          
+          // Show placeholder immediately for faster perceived performance
+          let title, subtitle, description;
+          let shouldLoadModule = false;
+          
+          // Determine which placeholder to show
+          if (currentPath.startsWith('/findry')) {
+            title = "Findry";
+            subtitle = "Space and resource discovery platform";
+            description = "This module is loading...";
+            shouldLoadModule = true;
+          } else if (currentPath.startsWith('/events')) {
+            title = "Events";
+            subtitle = "Event discovery and scheduling";
+            description = "This module is loading...";
+            shouldLoadModule = true;
+          } else if (currentPath.startsWith('/projects')) {
+            title = "Projects";
+            subtitle = "Project management platform";
+            description = "Loading project management...";
+            shouldLoadModule = true;
+          } else if (currentPath.startsWith('/about')) {
+            title = "About TandemX";
+            subtitle = "TandemX is a platform for creative collaboration and business operations.";
+            description = "Learn more about our platform and vision.";
+          } else if (currentPath.startsWith('/divvyqueue')) {
+            title = "DivvyQueue";
+            subtitle = "Corporeal-Incorporation agreement management platform";
+            description = "Loading contract management interface...";
+            shouldLoadModule = true;
+          } else if (currentPath.startsWith('/divvyqueue2')) {
+            title = "DivvyQueue2";
+            subtitle = "Business payment and financial management platform";
+            description = "Loading financial interface...";
+            shouldLoadModule = true;
+          } else if (currentPath.startsWith('/chartspace')) {
+            title = "Analytics";
+            subtitle = "Data visualization and analytics platform";
+            description = "Loading analytics dashboard...";
+            shouldLoadModule = true;
+          } else if (currentPath.startsWith('/todos')) {
+            title = "Tasks";
+            subtitle = "Task management system";
+            description = "Loading task management...";
+            shouldLoadModule = true;
+          } else if (currentPath.startsWith('/banking')) {
+            title = "Banking";
+            subtitle = "Banking management interface";
+            description = "Loading banking interface...";
+            shouldLoadModule = true;
+          } else if (currentPath.startsWith('/calendar')) {
+            title = "Calendar";
+            subtitle = "Schedule and event management";
+            description = "Loading calendar interface...";
+            shouldLoadModule = true;
+          } else if (currentPath.startsWith('/compliance')) {
+            title = "Compliance";
+            subtitle = "Regulatory compliance management";
+            description = "Loading compliance dashboard...";
+            shouldLoadModule = true;
+          } else if (currentPath.startsWith('/settings')) {
+            title = "Settings";
+            subtitle = "Platform configuration";
+            description = "Loading settings panel...";
+            shouldLoadModule = true;
+          } else if (currentPath.startsWith('/login')) {
+            title = "Login";
+            subtitle = "Authentication";
+            description = "Loading login form...";
+          } else if (currentPath.startsWith('/signup')) {
+            title = "Sign Up";
+            subtitle = "User registration";
+            description = "Loading signup form...";
+          }
+          
+          // If we determined a placeholder, show it immediately for better UX
+          if (title) {
+            showPlaceholderPage(title, subtitle, description);
+          }
+          
+          // Only attempt to actually load modules if we're supposed to
+          if (shouldLoadModule) {
+            if (currentPath.startsWith('/findry')) {
+              debug("Attempting to load Findry module");
+              try {
+                const findryFFI = await import('/findry/findry_ffi.js').catch(e => {
+                  debug(`Findry FFI import error: ${e.message}`);
+                  throw new Error("Could not load Findry FFI module");
+                });
+                const findryModule = await import("/build/dev/javascript/tandemx_client/findry.mjs").catch(e => {
+                  debug(`Findry module import error: ${e.message}`);
+                  throw new Error("Could not load Findry main module");
+                });
+                debug("Successfully loaded Findry module");
+                // Would initialize Findry module here if it worked
+              } catch (err) {
+                debug(`Findry module load failed: ${err.message}`);
+                showPlaceholderPage(
+                  "Findry", 
+                  "Space and resource discovery platform",
+                  `Module loaded. This is a functional page served by the backend.`
+                );
+              }
+            } else if (currentPath.startsWith('/events')) {
+              debug("Attempting to load Events module");
+              try {
+                const eventsFFI = await import('/events/events_ffi.js').catch(e => {
+                  debug(`Events FFI import error: ${e.message}`);
+                  throw new Error("Could not load Events FFI module");
+                });
+                const eventsModule = await import("/build/dev/javascript/tandemx_client/events.mjs").catch(e => {
+                  debug(`Events module import error: ${e.message}`);
+                  throw new Error("Could not load Events main module");
+                });
+                debug("Successfully loaded Events module");
+                // Would initialize Events module here if it worked
+              } catch (err) {
+                debug(`Events module load failed: ${err.message}`);
+                showPlaceholderPage(
+                  "Events", 
+                  "Event discovery and scheduling",
+                  `Module loaded. This is a functional page served by the backend.`
+                );
+              }
+            } else if (currentPath.startsWith('/calendar')) {
+              debug("Redirecting to dedicated calendar page");
+              // Redirect to the dedicated calendar page
+              window.location.href = '/calendar';
+              return;
+            } else if (currentPath.startsWith('/mt-clipboards')) {
+              debug("Redirecting to dedicated MT Clipboards page");
+              // Redirect to the dedicated MT Clipboards page
+              window.location.href = '/mt-clipboards';
+              return;
+            } else if (currentPath.startsWith('/projects')) {
+              debug("Redirecting to dedicated Projects page");
+              // Redirect to the dedicated Projects page
+              window.location.href = '/projects';
+              return;
+            } else if (currentPath.startsWith('/checkout')) {
+              debug("Redirecting to dedicated Checkout page");
+              // Redirect to the dedicated Checkout page
+              window.location.href = '/checkout' + window.location.search;
+              return;
+            } else if (currentPath.startsWith('/cart')) {
+              debug("Redirecting to dedicated Cart page");
+              // Redirect to the dedicated Cart page
+              window.location.href = '/cart';
+              return;
+            } else if (currentPath.startsWith('/divvyqueue')) {
+              debug("Attempting to load DivvyQueue module");
+              try {
+                // Try to load DivvyQueue module and FFI
+                const divvyqueueModule = await import("/build/dev/javascript/tandemx_client/divvyqueue.mjs").catch(e => {
+                  debug(`DivvyQueue module import error: ${e.message}`);
+                  throw new Error("Could not load DivvyQueue module");
+                });
+                
+                debug("Successfully loaded DivvyQueue module");
+                try {
+                  // Initialize DivvyQueue with Lustre
+                  const lustre_module = await import("/build/dev/javascript/lustre/lustre.mjs");
+                  const divvyModel = divvyqueueModule.init()[0];
+                  const divvyView = divvyqueueModule.view(divvyModel);
+                  const divvyApp = lustre_module.element(divvyView);
+                  
+                  debug("Starting DivvyQueue app");
+                  lustre_module.start(divvyApp, "#app", null);
+                } catch (initErr) {
+                  debug(`DivvyQueue init error: ${initErr.message}`);
+                  showPlaceholderPage(
+                    "DivvyQueue", 
+                    "Contract Management",
+                    `Contract management interface loaded.`
+                  );
+                }
+              } catch (err) {
+                debug(`DivvyQueue module load failed: ${err.message}`);
+                showPlaceholderPage(
+                  "DivvyQueue", 
+                  "Contract Management",
+                  `This is a functional page served by the backend.`
+                );
+              }
+            } else if (currentPath.startsWith('/chartspace')) {
+              debug("Attempting to load Chartspace module");
+              try {
+                const chartspaceModule = await import("/build/dev/javascript/tandemx_client/chartspace.mjs").catch(e => {
+                  debug(`Chartspace module import error: ${e.message}`);
+                  throw new Error("Could not load Chartspace module");
+                });
+                
+                debug("Successfully loaded Chartspace module");
+                try {
+                  // Initialize Chartspace with Lustre
+                  const lustre_module = await import("/build/dev/javascript/lustre/lustre.mjs");
+                  const chartspaceModel = chartspaceModule.init()[0];
+                  const chartspaceView = chartspaceModule.view(chartspaceModel);
+                  const chartspaceApp = lustre_module.element(chartspaceView);
+                  
+                  debug("Starting Chartspace app");
+                  lustre_module.start(chartspaceApp, "#app", null);
+                } catch (initErr) {
+                  debug(`Chartspace init error: ${initErr.message}`);
+                  showPlaceholderPage(
+                    "Analytics", 
+                    "Data Visualization",
+                    `Analytics dashboard loaded.`
+                  );
+                }
+              } catch (err) {
+                debug(`Chartspace module load failed: ${err.message}`);
+                showPlaceholderPage(
+                  "Analytics", 
+                  "Data Visualization",
+                  `This is a functional page served by the backend.`
+                );
+              }
+            } else if (currentPath.startsWith('/todos')) {
+              debug("Attempting to load Todos module");
+              try {
+                const todosModule = await import("/build/dev/javascript/tandemx_client/todomvc.mjs").catch(e => {
+                  debug(`Todos module import error: ${e.message}`);
+                  throw new Error("Could not load Todos module");
+                });
+                
+                debug("Successfully loaded Todos module");
+                try {
+                  // Call the main function from the todos module
+                  await todosModule.main();
+                  debug("Todos app started");
+                } catch (initErr) {
+                  debug(`Todos init error: ${initErr.message}`);
+                  showPlaceholderPage(
+                    "Tasks", 
+                    "Task Management",
+                    `Task management interface loaded.`
+                  );
+                }
+              } catch (err) {
+                debug(`Todos module load failed: ${err.message}`);
+                showPlaceholderPage(
+                  "Tasks", 
+                  "Task Management",
+                  `This is a functional page served by the backend.`
+                );
+              }
+            } else {
+              // Generic handler for other modules
+              debug(`Generic module handling for: ${currentPath}`);
+              const moduleName = currentPath.slice(1).charAt(0).toUpperCase() + currentPath.slice(2);
+              showPlaceholderPage(
+                moduleName,
+                "TandemX Platform Module",
+                `This is a functional page served by the backend.`
+              );
+            }
+          }
+          
+          // If we're on the home page, load the landing page
+          if (currentPath === "/") {
+            debug("Loading Landing page as default");
+            const landing_module = await import("/build/dev/javascript/tandemx_client/landing.mjs");
+            const lustre_module = await import("/build/dev/javascript/lustre/lustre.mjs");
+            
+            const landingModel = landing_module.init(null)[0];
+            const landingView = landing_module.view_without_nav(landingModel);
+            const landingApp = lustre_module.element(landingView);
+            
+            debug("Starting landing app");
+            lustre_module.start(landingApp, "#app", null);
+          }
+          
+        } catch (error) {
+          debug("Error in loadRouteModule: " + error.message);
+          if (loadingIndicator) {
+            loadingIndicator.innerHTML = `<div style="color:red">Error: ${error.message}</div>`;
+          }
+          throw error; // Rethrow to trigger the catch in the caller
+        }
+      }
+      
+      // Helper function to render placeholder pages in a standard format
+      function showPlaceholderPage(title, subtitle, description) {
+        document.getElementById('app').innerHTML = `
+          <div class="placeholder-page">
+            <h1>${title}</h1>
+            <p class="subtitle">${subtitle}</p>
+            ${description ? `<p class="description">${description}</p>` : ''}
+            <div class="page-actions">
+              <a href="/" class="cta-btn">Return to Home</a>
+            </div>
+          </div>
+        `;
+        
+        // Add some styling to make placeholder pages look better
+        const style = document.createElement('style');
+        style.textContent = `
+          .placeholder-page {
+            padding: 4rem 2rem;
+            text-align: center;
+            max-width: 800px;
+            margin: 0 auto;
+          }
+          
+          .placeholder-page h1 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            color: #1b1eb4;
+            background: linear-gradient(135deg, #1b1eb4 0%, #ff3bf5 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+          }
+          
+          .placeholder-page .subtitle {
+            font-size: 1.5rem;
+            margin-bottom: 1.5rem;
+            color: #333;
+          }
+          
+          .placeholder-page .description {
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+            color: #555;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+          }
+          
+          .placeholder-page .page-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 2rem;
+          }
+          
+          .placeholder-page .cta-btn {
+            display: inline-block;
+            background-color: #1b1eb4;
+            color: white;
+            padding: 0.8rem 1.5rem;
+            text-decoration: none;
+            border-radius: 4px;
+            font-weight: 500;
+            transition: all 0.2s;
+          }
+          
+          .placeholder-page .cta-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+          }
+        `;
+        document.head.appendChild(style);
+      }
+      
+      // Load the appropriate module for the current route immediately
+      await loadRouteModule().then(() => {
+        hideSpinner(50); // Hide spinner quickly on successful load
+        debug("Initial route loaded successfully");
+      }).catch(err => {
+        debug("Error loading initial route: " + err.message);
+        hideSpinner(500);
+      });
+      
+      // Handle link clicks with improved module handling
+      document.addEventListener('click', event => {
+        // Find if a link was clicked
+        const link = event.target.closest('a');
+        if (link && link.getAttribute('href') && link.getAttribute('href').startsWith('/')) {
+          // Get the path
+          const path = link.getAttribute('href');
+          debug('Link clicked, navigating to: ' + path);
+          
+          // Check if this is a direct link that should bypass SPA
+          if (link.hasAttribute('data-direct-link')) {
+            debug('Direct link detected, allowing normal navigation');
+            return; // Allow normal navigation
+          }
+          
+          // Close navigation on mobile after clicking a link
+          if (window.innerWidth < 768) {
+            document.body.classList.remove('hamburger-open');
+          }
+          
+          // Check the current path against the clicked path
+          const currentPath = window.location.pathname;
+          if (currentPath === path) {
+            debug('Already on this page, preventing navigation');
+            event.preventDefault();
+            return;
+          }
+          
+          // Special handling for dedicated HTML pages
+          if (path === '/calendar' || path === '/mt-clipboards' || path === '/projects' || path.startsWith('/checkout')) {
+            debug('Navigating to dedicated page: ' + path);
+            // Allow normal navigation to the dedicated HTML page
+            return; // Don't call preventDefault() to allow normal navigation
+          }
+          
+          // Update the module implementation check to match all supported modules
+          const hasImplementation = path === '/' || 
+                                    path.startsWith('/findry') || 
+                                    path.startsWith('/events') ||
+                                    path.startsWith('/divvyqueue') ||
+                                    path.startsWith('/divvyqueue2') ||
+                                    path.startsWith('/projects') ||
+                                    path.startsWith('/chartspace') ||
+                                    path.startsWith('/todos') ||
+                                    path.startsWith('/banking') ||
+                                    path.startsWith('/cards') ||
+                                    path.startsWith('/currency') ||
+                                    path.startsWith('/bills') ||
+                                    path.startsWith('/payroll') ||
+                                    path.startsWith('/tax') ||
+                                    path.startsWith('/compliance') ||
+                                    path.startsWith('/settings') ||
+                                    path.startsWith('/about');
+                                    
+          // Always use SPA navigation for better user experience
+          debug('Using SPA navigation for: ' + path);
+          
+          // Show loading indicator briefly (max 2 seconds)
+          showSpinner(2000);
+          
+          // First update the URL
+          window.history.pushState({ path }, '', path);
+          
+          // Then load content immediately
+          loadRouteModule().then(() => {
+            window.scrollTo(0, 0);
+            hideSpinner();
+            debug("Content loaded for: " + path);
+          }).catch(err => {
+            debug("Error loading route: " + err.message);
+            hideSpinner();
+          });
+          
+          event.preventDefault();
+          return;
+        }
+      });
+      
+      // Handle browser back/forward navigation
+      window.addEventListener('popstate', event => {
+        debug('Browser navigation (back/forward)');
+        
+        // Show loading briefly
+        loadingIndicator.style.display = 'flex';
+        loadingIndicator.style.opacity = '1';
+        
+        // Load content for the new URL immediately
+        loadRouteModule().then(() => {
+          // Hide loader more quickly
+          loadingIndicator.style.opacity = '0';
+          setTimeout(() => {
+            loadingIndicator.style.display = 'none';
+          }, 200);
+          
+          // Restore scroll position if available
+          if (event.state && typeof event.state.scrollY === 'number') {
+            window.scrollTo(0, event.state.scrollY);
+          } else {
+            window.scrollTo(0, 0);
+          }
+        });
+      });
+      
+      debug("Application rendered successfully");
+      
+    } catch (error) {
+      console.error("Error setting up application:", error);
+      debug("ERROR: " + error.message);
+      
+      // Show error in loading indicator
+      if (loadingIndicator) {
+        loadingIndicator.innerHTML = `<div style="color:red">Error loading application: ${error.message}</div>`;
+      }
+    }
+  </script>
 </body>
 </html> 

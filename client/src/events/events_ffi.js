@@ -1,7 +1,8 @@
 // Get the WebSocket URL for real-time updates
 export function getWebSocketUrl() {
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  return `${protocol}//${window.location.host}/events/ws`;
+  const host = window.location.hostname === '0.0.0.0' ? 'localhost' : window.location.hostname;
+  return `${protocol}//${host}:${window.location.port}/ws/events`;
 }
 
 // Dispatch messages to the Gleam application
@@ -52,34 +53,42 @@ export function onClick(handler) {
 }
 
 // Share event on social media
-export function shareEvent(eventId, platform) {
-  const eventUrl = `${window.location.origin}/events/${eventId}`;
-  const eventTitle = document.querySelector('.event-title h1')?.textContent || 'Check out this event!';
+export function shareEvent(event) {
+  console.log('Events FFI: Sharing event', event);
   
-  let shareUrl;
-  switch (platform) {
-    case 'facebook':
-      shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(eventUrl)}`;
-      break;
-    case 'twitter':
-      shareUrl = `https://twitter.com/intent/tweet?url=${encodeURIComponent(eventUrl)}&text=${encodeURIComponent(eventTitle)}`;
-      break;
-    case 'instagram':
-      // Instagram doesn't support direct sharing via URL
-      // You might want to implement a different sharing mechanism
-      console.log('Instagram sharing not supported');
-      return;
-    case 'email':
-      shareUrl = `mailto:?subject=${encodeURIComponent(eventTitle)}&body=${encodeURIComponent(`Check out this event: ${eventUrl}`)}`;
-      break;
-    default:
-      console.error('Unsupported sharing platform');
-      return;
+  // Check if the Web Share API is available
+  if (navigator.share) {
+    navigator.share({
+      title: event.title,
+      text: event.description,
+      url: window.location.origin + '/events/' + event.id,
+    })
+    .then(() => console.log('Successfully shared event'))
+    .catch((error) => console.error('Error sharing event:', error));
+  } else {
+    // Fallback for browsers that don't support the Web Share API
+    // Copy the event URL to clipboard
+    const eventUrl = window.location.origin + '/events/' + event.id;
+    navigator.clipboard.writeText(eventUrl)
+      .then(() => {
+        // Show a toast notification
+        if (window.showToast) {
+          window.showToast('Event link copied to clipboard!', 'success');
+        } else {
+          alert('Event link copied to clipboard!');
+        }
+      })
+      .catch((error) => {
+        console.error('Error copying to clipboard:', error);
+        if (window.showToast) {
+          window.showToast('Failed to copy event link', 'error');
+        } else {
+          alert('Failed to copy event link');
+        }
+      });
   }
-
-  if (shareUrl) {
-    window.open(shareUrl, '_blank', 'width=600,height=400');
-  }
+  
+  return true;
 }
 
 // Copy event link to clipboard
@@ -172,5 +181,72 @@ export function init() {
   }
 }
 
-// Log when the module is loaded
+// Initialize the map for event locations
+export function initMap() {
+  console.log('Events FFI: Initializing map');
+  
+  // Check if the map container exists
+  const mapContainer = document.getElementById('map-container');
+  if (!mapContainer) {
+    console.error('Map container not found');
+    return false;
+  }
+  
+  // In a real implementation, this would initialize a map library like Leaflet or Google Maps
+  // For now, we'll just add a placeholder
+  mapContainer.innerHTML = '<div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background-color: #f0f0f0;"><p>Map would be displayed here</p></div>';
+  
+  return true;
+}
+
+// Show an event location on the map
+export function showEventLocation(lat, lng, title) {
+  console.log(`Events FFI: Showing event location - ${title} at ${lat}, ${lng}`);
+  
+  // Check if the map container exists
+  const mapContainer = document.getElementById('map-container');
+  if (!mapContainer) {
+    console.error('Map container not found');
+    return false;
+  }
+  
+  // Make the map container visible
+  mapContainer.style.display = 'block';
+  
+  // In a real implementation, this would center the map on the event location
+  // For now, we'll just update the placeholder
+  mapContainer.innerHTML = `<div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background-color: #f0f0f0;"><p>Map showing: ${title} at ${lat}, ${lng}</p></div>`;
+  
+  return true;
+}
+
+// Hide the map
+export function hideMap() {
+  console.log('Events FFI: Hiding map');
+  
+  // Check if the map container exists
+  const mapContainer = document.getElementById('map-container');
+  if (!mapContainer) {
+    console.error('Map container not found');
+    return false;
+  }
+  
+  // Hide the map container
+  mapContainer.style.display = 'none';
+  
+  return true;
+}
+
+// Generate a shareable calendar link
+export function generateCalendarLink(events) {
+  console.log('Events FFI: Generating calendar link for events', events);
+  
+  // In a real implementation, this would generate an iCal file or a link to a calendar service
+  // For now, we'll just return a dummy link
+  const calendarLink = window.location.origin + '/events/calendar?shared=true&events=' + events.map(e => e.id).join(',');
+  
+  return calendarLink;
+}
+
+// Initialize the module
 console.log('Events FFI module loaded'); 

@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shopping Cart - TandemX</title>
+    <link rel="stylesheet" href="/styles.css">
+    <link rel="stylesheet" href="/app.css">
+    <link rel="stylesheet" href="/landing.css">
+    <!-- HTMX -->
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <style>
+        /* App container structure */
+        .app-container {
+            display: flex;
+            min-height: 100vh;
+        }
+        
+        .main-content {
+            flex: 1;
+            padding-top: 1rem;
+        }
+        
+        /* Nav menu */
+        #manual-navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 250px;
+            height: 100vh;
+            background: white;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+            transform: translateX(-100%);
+            transition: transform 0.3s ease;
+            z-index: 1500;
+            padding-top: 4rem;
+            overflow-y: auto;
+        }
+        
+        body.hamburger-open #manual-navbar {
+            transform: translateX(0);
+        }
+        
+        #manual-navbar .nav-brand {
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+        
+        #manual-navbar .nav-brand a {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #1b1eb4;
+            text-decoration: none;
+        }
+        
+        #manual-navbar .nav-links {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            padding: 0 1rem;
+        }
+        
+        #manual-navbar .nav-links a {
+            display: block;
+            padding: 0.75rem 1rem;
+            color: #1f2937;
+            text-decoration: none;
+            border-radius: 4px;
+            transition: background-color 0.2s;
+        }
+        
+        #manual-navbar .nav-links a:hover {
+            background-color: #f8f9fa;
+            color: #1b1eb4;
+        }
+        
+        /* Hamburger button */
+        .nav-toggle {
+            position: fixed;
+            top: 1rem;
+            left: 1rem;
+            z-index: 2000;
+            width: 40px;
+            height: 40px;
+            background: white;
+            border: none;
+            border-radius: 4px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+        
+        /* Cart styles */
+        .cart-page {
+            max-width: 1000px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+        
+        .cart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #eaeaea;
+        }
+        
+        .cart-header h1 {
+            font-size: 2.5rem;
+            color: #1b1eb4;
+            margin: 0;
+        }
+        
+        .sync-status {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 1rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+        
+        .sync-status.synced {
+            background-color: #d1fae5;
+            color: #047857;
+        }
+        
+        .sync-status.unsynced {
+            background-color: #fee2e2;
+            color: #b91c1c;
+        }
+        
+        .cart-items {
+            margin-bottom: 2rem;
+        }
+        
+        .cart-item {
+            display: flex;
+            align-items: center;
+            padding: 1.5rem 0;
+            border-bottom: 1px solid #eaeaea;
+        }
+        
+        .item-image {
+            width: 100px;
+            height: 100px;
+            border-radius: 0.5rem;
+            object-fit: cover;
+            margin-right: 1.5rem;
+            background-color: #f9fafb;
+        }
+        
+        .item-details {
+            flex: 1;
+        }
+        
+        .item-details h3 {
+            margin: 0 0 0.5rem 0;
+            font-size: 1.25rem;
+            color: #1f2937;
+        }
+        
+        .item-details span {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: #1b1eb4;
+        }
+        
+        .item-quantity {
+            display: flex;
+            align-items: center;
+            margin: 0 2rem;
+        }
+        
+        .qty-btn {
+            width: 2rem;
+            height: 2rem;
+            border-radius: 0.25rem;
+            background-color: #f3f4f6;
+            border: none;
+            font-size: 1.25rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        .qty-btn:hover {
+            background-color: #e5e7eb;
+        }
+        
+        .item-quantity span {
+            width: 2.5rem;
+            text-align: center;
+            font-size: 1rem;
+            font-weight: 500;
+        }
+        
+        .remove-btn {
+            padding: 0.5rem 1rem;
+            border-radius: 0.25rem;
+            background-color: #f3f4f6;
+            border: none;
+            color: #1f2937;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .remove-btn:hover {
+            background-color: #fee2e2;
+            color: #b91c1c;
+        }
+        
+        .cart-empty {
+            text-align: center;
+            padding: 3rem 0;
+        }
+        
+        .cart-empty h2 {
+            font-size: 1.5rem;
+            color: #6b7280;
+            margin-bottom: 1rem;
+        }
+        
+        .cart-empty p {
+            color: #9ca3af;
+            margin-bottom: 2rem;
+        }
+        
+        .cart-empty a {
+            display: inline-block;
+            padding: 0.75rem 1.5rem;
+            background-color: #1b1eb4;
+            color: white;
+            font-weight: 500;
+            border-radius: 0.25rem;
+            text-decoration: none;
+            transition: background-color 0.2s;
+        }
+        
+        .cart-empty a:hover {
+            background-color: #151c7e;
+        }
+        
+        .cart-summary {
+            background-color: #f9fafb;
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+        }
+        
+        .cart-summary h2 {
+            margin-top: 0;
+            margin-bottom: 1.5rem;
+            font-size: 1.5rem;
+            color: #1f2937;
+        }
+        
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.75rem;
+        }
+        
+        .summary-row:last-child {
+            margin-bottom: 0;
+        }
+        
+        .summary-label {
+            color: #6b7280;
+        }
+        
+        .summary-value {
+            font-weight: 500;
+        }
+        
+        .summary-total {
+            border-top: 1px solid #e5e7eb;
+            margin-top: 1rem;
+            padding-top: 1rem;
+        }
+        
+        .summary-total .summary-label,
+        .summary-total .summary-value {
+            font-weight: 600;
+            font-size: 1.125rem;
+            color: #1f2937;
+        }
+        
+        .checkout-btn {
+            display: block;
+            width: 100%;
+            padding: 1rem;
+            margin-top: 1.5rem;
+            background-color: #1b1eb4;
+            color: white;
+            border: none;
+            border-radius: 0.25rem;
+            font-size: 1rem;
+            font-weight: 600;
+            text-align: center;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            text-decoration: none;
+        }
+        
+        .checkout-btn:hover {
+            background-color: #151c7e;
+        }
+        
+        .cart-actions {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 2rem;
+        }
+        
+        .continue-shopping {
+            display: inline-flex;
+            align-items: center;
+            color: #1b1eb4;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        
+        .continue-shopping svg {
+            margin-right: 0.5rem;
+        }
+        
+        .cart-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 2rem;
+        }
+        
+        @media (max-width: 768px) {
+            .cart-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Hamburger button -->
+    <button class="nav-toggle" id="hamburger-button">☰</button>
+    
+    <!-- Navigation menu -->
+    <div id="manual-navbar">
+        <div class="nav-brand">
+            <a href="/">TandemX</a>
+        </div>
+        <div class="nav-links">
+            <a href="/">Home</a>
+            <a href="/events">Events</a>
+            <a href="/findry">Findry</a>
+            <a href="/divvyqueue">DivvyQueue</a>
+            <a href="/divvyqueue2">DivvyQueue2</a>
+            <a href="/projects">Projects</a>
+            <a href="/calendar">Calendar</a>
+            <a href="/mt-clipboards">MT Clipboards</a>
+            <a href="/store">Store</a>
+            <a href="/cart">Cart</a>
+            <a href="/about">About</a>
+        </div>
+    </div>
+    
+    <!-- Main content -->
+    <div class="app-container">
+        <div class="main-content">
+            <div class="cart-page">
+                <div id="cart-root"></div>
+                
+                <div class="cart-actions">
+                    <a href="/projects" class="continue-shopping">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M19 12H5"></path>
+                            <path d="M12 19l-7-7 7-7"></path>
+                        </svg>
+                        Continue Shopping
+                    </a>
+                    
+                    <a href="/checkout" class="checkout-btn">Proceed to Checkout</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast container for notifications -->
+    <div id="toast-container"></div>
+
+    <script type="module">
+        import { initializeApp, setupModule } from '/build/dev/javascript/tandemx_client/cart_ffi.mjs';
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            // Handle hamburger menu toggle
+            document.getElementById('hamburger-button').addEventListener('click', function() {
+                document.body.classList.toggle('hamburger-open');
+            });
+            
+            // Initialize cart application
+            initializeApp();
+        });
+    </script>
+</body>
+</html> 

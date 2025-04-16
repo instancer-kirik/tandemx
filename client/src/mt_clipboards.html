@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MT Clipboards - TandemX</title>
+    <link rel="stylesheet" href="/styles.css">
+    <link rel="stylesheet" href="/app.css">
+    <link rel="stylesheet" href="/landing.css">
+    <!-- HTMX -->
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <!-- Core dependencies -->
+    <script type="module" src="/app_ffi.js"></script>
+    <style>
+        /* App container structure */
+        .app-container {
+            display: flex;
+            min-height: 100vh;
+        }
+        
+        .main-content {
+            flex: 1;
+            padding-top: 1rem;
+        }
+        
+        /* Nav menu */
+        #manual-navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 250px;
+            height: 100vh;
+            background: white;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+            transform: translateX(-100%);
+            transition: transform 0.3s ease;
+            z-index: 1500;
+            padding-top: 4rem;
+            overflow-y: auto;
+        }
+        
+        body.hamburger-open #manual-navbar {
+            transform: translateX(0);
+        }
+        
+        #manual-navbar .nav-brand {
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+        
+        #manual-navbar .nav-brand a {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #1b1eb4;
+            text-decoration: none;
+        }
+        
+        #manual-navbar .nav-links {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            padding: 0 1rem;
+        }
+        
+        #manual-navbar .nav-links a {
+            display: block;
+            padding: 0.75rem 1rem;
+            color: #1f2937;
+            text-decoration: none;
+            border-radius: 4px;
+            transition: background-color 0.2s;
+        }
+        
+        #manual-navbar .nav-links a:hover {
+            background-color: #f8f9fa;
+            color: #1b1eb4;
+        }
+        
+        /* Hamburger button */
+        .nav-toggle {
+            position: fixed;
+            top: 1rem;
+            left: 1rem;
+            z-index: 2000;
+            width: 40px;
+            height: 40px;
+            background: white;
+            border: none;
+            border-radius: 4px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+        
+        /* Cart Icon Link */
+        .cart-icon-link {
+            position: fixed;
+            top: 1rem;
+            right: 1rem; /* Position on the right */
+            z-index: 2000;
+            width: 40px;
+            height: 40px;
+            background: white;
+            border: none;
+            border-radius: 4px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            cursor: pointer;
+            text-decoration: none;
+            color: #1f2937; /* Standard icon color */
+        }
+        
+        .cart-icon-link:hover {
+            background-color: #f8f9fa; /* Slight hover effect */
+        }
+        
+        /* Clipboard listing styles */
+        .clipboard-listings {
+            padding: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .listings-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+        
+        .clipboard-item {
+            border: 1px solid #eaeaea;
+            border-radius: 8px;
+            overflow: hidden;
+            transition: transform 0.3s, box-shadow 0.3s;
+            background: white;
+        }
+        
+        .clipboard-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+        
+        .clipboard-image {
+            height: 200px;
+            background: #f5f5f5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .clipboard-image img {
+            max-width: 100%;
+            max-height: 180px;
+            object-fit: contain;
+        }
+        
+        .clipboard-details {
+            padding: 1.5rem;
+        }
+        
+        .clipboard-description {
+            color: #666;
+            margin-bottom: 1rem;
+        }
+        
+        .clipboard-price {
+            font-weight: bold;
+            font-size: 1.2rem;
+            margin-bottom: 1rem;
+            color: #2563eb;
+        }
+        
+        .clipboard-features {
+            list-style: none;
+            padding: 0;
+            margin-bottom: 1.5rem;
+        }
+        
+        .clipboard-features li {
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+        }
+        
+        .feature-check {
+            color: #10b981;
+            margin-right: 0.5rem;
+            font-weight: bold;
+        }
+        
+        .clipboard-actions {
+            display: flex;
+            gap: 1rem;
+        }
+        
+        .view-details-btn, .add-to-cart-btn {
+            padding: 0.75rem 1rem;
+            border-radius: 4px;
+            font-weight: 500;
+            cursor: pointer;
+            text-align: center;
+            transition: background 0.3s;
+        }
+        
+        .view-details-btn {
+            background: #f3f4f6;
+            color: #1f2937;
+            text-decoration: none;
+            flex: 1;
+        }
+        
+        .add-to-cart-btn {
+            background: #2563eb;
+            color: white;
+            border: none;
+            flex: 1;
+        }
+        
+        .view-details-btn:hover {
+            background: #e5e7eb;
+        }
+        
+        .add-to-cart-btn:hover {
+            background: #1d4ed8;
+        }
+        
+        .storefront-header {
+            text-align: center;
+            padding: 3rem 1rem;
+            background: #f9fafb;
+            margin-bottom: 2rem;
+        }
+        
+        .storefront-header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            color: #1f2937;
+        }
+        
+        .storefront-header p {
+            font-size: 1.2rem;
+            color: #4b5563;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        /* Notification toast */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            background: white;
+            color: #333;
+            border-radius: 4px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 1000;
+            animation: toast-in 0.3s ease, toast-out 0.3s ease 2.7s forwards;
+        }
+        
+        .toast.success {
+            background: #10b981;
+            color: white;
+        }
+        
+        @keyframes toast-in {
+            from { transform: translateY(100px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        @keyframes toast-out {
+            from { transform: translateY(0); opacity: 1; }
+            to { transform: translateY(100px); opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Hamburger button -->
+    <button class="nav-toggle" id="hamburger-button">☰</button>
+    <!-- Cart Icon Link -->
+    <a href="/cart" class="cart-icon-link">🛒</a>
+    
+    <!-- Navigation menu -->
+    <div id="manual-navbar">
+        <div class="nav-brand">
+            <a href="/">TandemX</a>
+        </div>
+        <div class="nav-links">
+            <a href="/">Home</a>
+            <a href="/events">Events</a>
+            <a href="/findry">Findry</a>
+            <a href="/divvyqueue">DivvyQueue</a>
+            <a href="/divvyqueue2">DivvyQueue2</a>
+            <a href="/projects">Projects</a>
+            <a href="/calendar">Calendar</a>
+            <a href="/mt-clipboards">MT Clipboards</a>
+            <a href="/store">Store</a>
+            <a href="/about">About</a>
+        </div>
+    </div>
+    
+    <!-- Main content -->
+    <div class="app-container">
+        <div class="main-content">
+            <div class="clipboard-storefront">
+                <div class="storefront-header">
+                    <h1>MT Clipboards Collection</h1>
+                    <p>Professional clipboard solutions for businesses and individuals</p>
+                </div>
+                
+                <div class="clipboard-listings">
+                    <div class="listings-grid" id="clipboards-container">
+                        <!-- Clipboard items will be generated here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast container for notifications -->
+    <div id="toast-container"></div>
+
+    <script type="module">
+        // Manual rendering of clipboard items
+        document.addEventListener('DOMContentLoaded', () => {
+            const clipboardItems = [
+                {
+                    name: "Executive Pro",
+                    description: "Premium aluminum clipboard with leather finish",
+                    price: 49.99,
+                    id: "executive-pro",
+                    features: [
+                        "Aluminum construction", "Genuine leather finish",
+                        "Built-in storage compartment", "Magnetic closure",
+                        "Personalization available"
+                    ]
+                },
+                {
+                    name: "Heavy-Duty Clamp",
+                    description: "Industrial-strength clipboard with reinforced clamp",
+                    price: 59.99,
+                    id: "heavy-duty-clamp",
+                    features: [
+                        "Extra-wide 2-inch clamp", "Reinforced steel construction",
+                        "Anti-slip grip surface", "Weather-resistant coating",
+                        "Heavy-duty spring mechanism"
+                    ]
+                },
+                {
+                    name: "Multi-Clip Pro",
+                    description: "Versatile clipboard with multiple clip positions",
+                    price: 44.99,
+                    id: "multi-clip-pro",
+                    features: [
+                        "Adjustable clip positions", "360-degree rotation",
+                        "Quick-release mechanism", "Ergonomic grip",
+                        "Compatible with various paper sizes"
+                    ]
+                },
+                {
+                    name: "Eco-Friendly",
+                    description: "Sustainable bamboo clipboard with recycled materials",
+                    price: 39.99,
+                    id: "eco-friendly",
+                    features: [
+                        "Bamboo construction", "Recycled materials", 
+                        "Low carbon footprint", "Natural finish", 
+                        "Biodegradable packaging"
+                    ]
+                },
+                {
+                    name: "Giant Clamp XL",
+                    description: "Oversized clipboard for large documents and blueprints",
+                    price: 69.99,
+                    id: "giant-clamp-xl",
+                    features: [
+                        "3-inch wide clamp", "A3 size support", 
+                        "Reinforced aluminum frame", "Non-slip surface", 
+                        "Heavy-duty carrying handle"
+                    ]
+                },
+                {
+                    name: "Corporate Bundle",
+                    description: "Bulk order solution for businesses",
+                    price: 29.99,
+                    id: "corporate-bundle",
+                    features: [
+                        "Custom branding options", "Minimum order: 50 units",
+                        "Bulk pricing available", "Priority shipping",
+                        "Corporate gift packaging"
+                    ]
+                },
+                {
+                    name: "Quick-Clip Elite",
+                    description: "Professional clipboard with rapid-release mechanism",
+                    price: 54.99,
+                    id: "quick-clip-elite",
+                    features: [
+                        "One-handed operation", "Silent clip mechanism", 
+                        "Adjustable pressure", "Anti-rust coating", 
+                        "Built-in ruler"
+                    ]
+                },
+                {
+                    name: "Compact Traveler",
+                    description: "Portable clipboard for professionals on the go",
+                    price: 34.99,
+                    id: "compact-traveler",
+                    features: [
+                        "Lightweight design", "Folding mechanism", 
+                        "Water-resistant", "Pen holder", "Clip storage"
+                    ]
+                }
+            ];
+            
+            const container = document.getElementById('clipboards-container');
+            
+            if (container) {
+                clipboardItems.forEach(item => {
+                    const productId = `clipboard-${item.id}`;
+                    const itemElement = document.createElement('div');
+                    itemElement.className = 'clipboard-item';
+                    
+                    // Generate features HTML
+                    const featuresHtml = item.features.map(feature => 
+                        `<li><span class="feature-check">✓</span>${feature}</li>`
+                    ).join('');
+                    
+                    itemElement.innerHTML = `
+                        <div class="clipboard-image">
+                            <img src="/images/clipboards/${item.id}.jpg" alt="${item.name}" 
+                                onerror="this.src='/images/clipboards/placeholder.jpg'; this.onerror=null;">
+                        </div>
+                        <div class="clipboard-details">
+                            <h3>${item.name}</h3>
+                            <p class="clipboard-description">${item.description}</p>
+                            <div class="clipboard-price">$${item.price.toFixed(2)}</div>
+                            <ul class="clipboard-features">
+                                ${featuresHtml}
+                            </ul>
+                            <div class="clipboard-actions">
+                                <a href="/products/${productId}" class="view-details-btn">View Details</a>
+                                <button class="add-to-cart-btn" data-product-id="${productId}">Add to Cart</button>
+                            </div>
+                        </div>
+                    `;
+                    
+                    container.appendChild(itemElement);
+                });
+                
+                // Add event listeners for Add to Cart buttons
+                document.querySelectorAll('.add-to-cart-btn').forEach(button => {
+                    button.addEventListener('click', () => {
+                        const productId = button.getAttribute('data-product-id');
+                        // Find product details from the products array
+                        const product = clipboardItems.find(item => `clipboard-${item.id}` === productId);
+                        
+                        if (product) {
+                            // Get current cart from localStorage
+                            let cart = JSON.parse(localStorage.getItem('cart') || '[]');
+                            
+                            // Check if product already exists in cart
+                            const existingItemIndex = cart.findIndex(item => item.id === productId);
+                            
+                            if (existingItemIndex >= 0) {
+                                // Update quantity if item exists
+                                cart[existingItemIndex].quantity += 1;
+                            } else {
+                                // Add new item if it doesn't exist
+                                cart.push({
+                                    id: productId,
+                                    name: product.name,
+                                    price: product.price,
+                                    quantity: 1,
+                                    image: `/images/clipboards/${product.id}.jpg`
+                                });
+                            }
+                            
+                            // Update cart in localStorage
+                            localStorage.setItem('cart', JSON.stringify(cart));
+                            
+                            // Show notification
+                            const toast = document.createElement('div');
+                            toast.className = 'toast success';
+                            toast.textContent = 'Product added to cart!';
+                            document.getElementById('toast-container').appendChild(toast);
+                            
+                            // Remove toast after 3 seconds
+                            setTimeout(() => {
+                                toast.remove();
+                            }, 3000);
+                        }
+                    });
+                });
+            }
+            
+            // Handle hamburger menu toggle
+            document.getElementById('hamburger-button').addEventListener('click', function() {
+                document.body.classList.toggle('hamburger-open');
+            });
+        });
+    </script>
+</body>
+</html> 

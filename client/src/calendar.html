@@ -4,13 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Calendar - TandemX</title>
-    <link rel="stylesheet" href="/calendar.css">
+    <link rel="stylesheet" href="/src/calendar.css">
+    <script type="module" src="/src/calendar_ffi.js"></script>
 </head>
 <body>
-    <div id="app"></div>
+    <div id="calendar-root"></div>
     <script type="module">
-        import { main } from './calendar.mjs';
-        main();
+        import * as calendarModule from '/build/dev/javascript/tandemx_client/calendar.mjs';
+        window.addEventListener('DOMContentLoaded', () => {
+            calendarModule.main();
+        });
     </script>
 </body>
 </html> 

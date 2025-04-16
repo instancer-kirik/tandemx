@@ -175,7 +175,7 @@ _______________(generated, idk)______________________
   - [ ] Collaborative pricing tools
 
 ### Payment Processing
-- [ ] BizPay Integration
+- [ ] DivvyQueue2 Integration
   - [ ] Virtual card processing
   - [ ] Multi-currency support
   - [ ] Transaction tracking

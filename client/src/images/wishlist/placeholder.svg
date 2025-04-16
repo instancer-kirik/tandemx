@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="300" height="200" viewBox="0 0 300 200">
+  <rect width="300" height="200" fill="#f3f4f6"/>
+  <circle cx="150" cy="80" r="40" fill="#9ca3af" stroke="#4b5563" stroke-width="2"/>
+  <rect x="110" y="130" width="80" height="50" rx="5" fill="#9ca3af" stroke="#4b5563" stroke-width="2"/>
+  <rect x="130" y="120" width="40" height="20" rx="2" fill="#9ca3af" stroke="#4b5563" stroke-width="2"/>
+  <circle cx="125" cy="70" r="10" fill="#4b5563"/>
+  <circle cx="175" cy="70" r="10" fill="#4b5563"/>
+  <path d="M135 95 Q150 105 165 95" stroke="#4b5563" stroke-width="3" fill="none"/>
+  <text x="50%" y="180" text-anchor="middle" dominant-baseline="middle" font-family="Arial, sans-serif" font-size="14" fill="#4b5563">Robot Part Image</text>
+</svg> 

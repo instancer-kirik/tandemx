@@ -68,7 +68,7 @@ TandemX combines multiple specialized platforms:
 - Compliance and breach prevention
 - Transparent transaction tracking
 
-### BizPay - unsure about name/marketing for this, maybe ask businesses, could be good, maybe logo(s) idk
+### DivvyQueue2 - unsure about name/marketing for this, maybe ask businesses, could be good, maybe logo(s) idk
 - Automated bill payments for:
   - Utilities: PHCN, Umeme, Eskom (electricity)
   - Telecoms: MTN, Airtel, Spectranet (internet/Wi-Fi)

@@ -4,24 +4,105 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>TandemX - Artist Collaboration Platform</title>
+  <!-- Styles -->
   <link rel="stylesheet" href="/styles.css">
   <link rel="stylesheet" href="/app.css">
   <link rel="stylesheet" href="/landing.css">
   <link rel="stylesheet" href="/events/events.css">
-  <link rel="stylesheet" href="/calendar.css">
+  <link rel="stylesheet" href="/src/calendar.css">
+  <link rel="stylesheet" href="/src/setlist.css">
+  <link rel="stylesheet" href="/src/setlist_sharing.css">
+  <!-- HTMX -->
+  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+  <!-- Core dependencies -->
   <script type="module" src="/app_ffi.js"></script>
-  <script type="module" src="/events/events_ffi.js"></script>
-  <script type="module" src="/calendar_ffi.js"></script>
-  <script type="module" src="/findry_ffi.js"></script>
 </head>
 <body>
-  <div id="app"></div>
+  <div class="app-container" id="app-container">
+    <!-- Navigation -->
+    <nav class="nav-side-container" id="nav-side-container">
+      <div class="nav-brand">
+        <a href="/" hx-get="/" hx-target="#main-content" hx-push-url="true">TandemX</a>
+      </div>
+      <div class="nav-links">
+        <a href="/" hx-get="/" hx-target="#main-content" hx-push-url="true">Home</a>
+        <a href="/events" hx-get="/events" hx-target="#main-content" hx-push-url="true">Events</a>
+        <a href="/calendar" hx-get="/calendar" hx-target="#main-content" hx-push-url="true">Calendar</a>
+        <a href="/findry" hx-get="/findry" hx-target="#main-content" hx-push-url="true">Findry</a>
+        <a href="/store" hx-get="/store" hx-target="#main-content" hx-push-url="true">Store</a>
+        <a href="/about" hx-get="/about" hx-target="#main-content" hx-push-url="true">About</a>
+      </div>
+    </nav>
+
+    <!-- Main content area -->
+    <div class="main-content" id="main-content">
+      <!-- Content will be loaded here via HTMX -->
+    </div>
+  </div>
+
+  <!-- Toast container for notifications -->
   <div id="toast-container"></div>
-  <div id="map-container" style="display: none;"></div>
-  
-  <script type="module">
-    import { main } from "/build/dev/javascript/tandemx_client/app.mjs";
-    main();
+
+  <!-- Initialize HTMX -->
+  <script>
+    document.body.addEventListener('htmx:afterSwap', function(evt) {
+      // Handle any post-swap initialization
+      const path = evt.detail.path;
+      
+      // Initialize specific modules based on path
+      if (path.includes('/calendar')) {
+        // Clear any existing calendar content
+        const mainContent = document.getElementById('main-content');
+        if (mainContent) {
+          // Create the calendar page structure
+          mainContent.innerHTML = `
+            <div class="calendar-page">
+              <div class="calendar-header">
+                <h1>Calendar</h1>
+                <p>View and schedule your meetings</p>
+              </div>
+              <div id="calendar-root" class="calendar-container">
+                <!-- Calendar will be initialized here -->
+              </div>
+            </div>
+          `;
+        }
+        
+        // Import and initialize calendar
+        import('/src/calendar_ffi.js').then(() => {
+          import('/build/dev/javascript/tandemx_client/calendar.mjs').then(calendarModule => {
+            // Initialize the calendar module
+            const [model, effect] = calendarModule.init(null);
+            const app = calendarModule.lustre.application(
+              () => [model, effect],
+              calendarModule.update,
+              calendarModule.view
+            );
+            calendarModule.lustre.start(app, "#calendar-root", null);
+          });
+        });
+      }
+      
+      if (path.includes('/events')) {
+        import('/events/events_ffi.js').then(() => {
+          import('/build/dev/javascript/tandemx_client/events.mjs').then(eventsModule => {
+            const lustre_module = import("/build/dev/javascript/lustre/lustre.mjs");
+            const eventsModel = eventsModule.init()[0];
+            const eventsView = eventsModule.view(eventsModel);
+            const eventsApp = lustre_module.element(eventsView);
+            lustre_module.start(eventsApp, "#main-content", null);
+          });
+        });
+      }
+      
+      if (path.includes('/store')) {
+        import('/src/vendure_store_ffi.js').then(() => {
+          import('/build/dev/javascript/tandemx_client/vendure_store.mjs').then(vendureModule => {
+            vendureModule.main();
+          });
+          });
+      }
+    });
   </script>
 </body>
 </html> 

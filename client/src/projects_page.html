@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Projects - TandemX</title>
+    <link rel="stylesheet" href="/styles.css">
+    <link rel="stylesheet" href="/app.css">
+    <link rel="stylesheet" href="/landing.css">
+    <!-- HTMX -->
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <style>
+        /* App container structure */
+        .app-container {
+            display: flex;
+            min-height: 100vh;
+        }
+        
+        .main-content {
+            flex: 1;
+            padding-top: 1rem;
+        }
+        
+        /* Nav menu */
+        #manual-navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 250px;
+            height: 100vh;
+            background: white;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+            transform: translateX(-100%);
+            transition: transform 0.3s ease;
+            z-index: 1500;
+            padding-top: 4rem;
+            overflow-y: auto;
+        }
+        
+        body.hamburger-open #manual-navbar {
+            transform: translateX(0);
+        }
+        
+        #manual-navbar .nav-brand {
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+        
+        #manual-navbar .nav-brand a {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #1b1eb4;
+            text-decoration: none;
+        }
+        
+        #manual-navbar .nav-links {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            padding: 0 1rem;
+        }
+        
+        #manual-navbar .nav-links a {
+            display: block;
+            padding: 0.75rem 1rem;
+            color: #1f2937;
+            text-decoration: none;
+            border-radius: 4px;
+            transition: background-color 0.2s;
+        }
+        
+        #manual-navbar .nav-links a:hover {
+            background-color: #f8f9fa;
+            color: #1b1eb4;
+        }
+        
+        /* Hamburger button */
+        .nav-toggle {
+            position: fixed;
+            top: 1rem;
+            left: 1rem;
+            z-index: 2000;
+            width: 40px;
+            height: 40px;
+            background: white;
+            border: none;
+            border-radius: 4px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+        
+        /* Projects styles */
+        .projects-page {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+        
+        .projects-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        
+        .projects-header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            color: #1b1eb4;
+        }
+        
+        .projects-header p {
+            color: #666;
+            font-size: 1.1rem;
+        }
+        
+        .projects-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+        
+        .project-card {
+            border: 1px solid #eaeaea;
+            border-radius: 8px;
+            overflow: hidden;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        
+        .project-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+        
+        .project-header {
+            padding: 1.5rem;
+            background-color: #f9fafb;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+        
+        .project-emoji {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        .project-name {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+            color: #1f2937;
+        }
+        
+        .project-description {
+            padding: 0 1.5rem;
+            margin-bottom: 1.5rem;
+            color: #4b5563;
+        }
+        
+        .project-features {
+            list-style: none;
+            padding: 0 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .project-features li {
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: flex-start;
+        }
+        
+        .feature-check {
+            color: #10b981;
+            margin-right: 0.5rem;
+        }
+        
+        .project-actions {
+            padding: 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            border-top: 1px solid #eaeaea;
+        }
+        
+        .project-link, .interest-btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 4px;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        
+        .project-link {
+            background-color: #f3f4f6;
+            color: #1f2937;
+        }
+        
+        .interest-btn {
+            background-color: #1b1eb4;
+            color: white;
+        }
+        
+        .project-link:hover {
+            background-color: #e5e7eb;
+        }
+        
+        .interest-btn:hover {
+            background-color: #151c7e;
+        }
+        
+        /* Active tab styles */
+        .tabs {
+            display: flex;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid #eaeaea;
+        }
+        
+        .tab {
+            padding: 1rem 1.5rem;
+            font-weight: 500;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+        }
+        
+        .tab.active {
+            border-bottom-color: #1b1eb4;
+            color: #1b1eb4;
+        }
+        
+        .tab:hover:not(.active) {
+            border-bottom-color: #e5e7eb;
+        }
+    </style>
+</head>
+<body>
+    <!-- Hamburger button -->
+    <button class="nav-toggle" id="hamburger-button">☰</button>
+    
+    <!-- Navigation menu -->
+    <div id="manual-navbar">
+        <div class="nav-brand">
+            <a href="/">TandemX</a>
+        </div>
+        <div class="nav-links">
+            <a href="/">Home</a>
+            <a href="/events">Events</a>
+            <a href="/findry">Findry</a>
+            <a href="/divvyqueue">DivvyQueue</a>
+            <a href="/divvyqueue2">DivvyQueue2</a>
+            <a href="/projects">Projects</a>
+            <a href="/calendar">Calendar</a>
+            <a href="/mt-clipboards">MT Clipboards</a>
+            <a href="/store">Store</a>
+            <a href="/about">About</a>
+        </div>
+    </div>
+    
+    <!-- Main content -->
+    <div class="app-container">
+        <div class="main-content">
+            <div class="projects-page">
+                <div class="projects-header">
+                    <h1>TandemX Projects</h1>
+                    <p>Explore our suite of tools and platforms for creative collaboration</p>
+                </div>
+                
+                <div class="tabs">
+                    <div class="tab active" hx-get="/projects/all" hx-target="#projects-container" hx-trigger="click">All Projects</div>
+                    <div class="tab" hx-get="/projects/development" hx-target="#projects-container" hx-trigger="click">Development</div>
+                    <div class="tab" hx-get="/projects/creative" hx-target="#projects-container" hx-trigger="click">Creative</div>
+                    <div class="tab" hx-get="/projects/business" hx-target="#projects-container" hx-trigger="click">Business</div>
+                </div>
+                
+                <div id="projects-container" class="projects-grid">
+                    <!-- Projects will be loaded here via HTMX -->
+                    <!-- Fallback content that will be replaced via HTMX -->
+                    <div class="project-card">
+                        <div class="project-header">
+                            <span class="project-emoji">📋</span>
+                            <h3 class="project-name">MT Clipboards</h3>
+                        </div>
+                        <p class="project-description">Professional clipboard solutions for businesses and individuals</p>
+                        <ul class="project-features">
+                            <li><span class="feature-check">✓</span> Premium quality materials</li>
+                            <li><span class="feature-check">✓</span> Custom branding options</li>
+                            <li><span class="feature-check">✓</span> Bulk ordering available</li>
+                            <li><span class="feature-check">✓</span> Corporate gift solutions</li>
+                            <li><span class="feature-check">✓</span> Eco-friendly options</li>
+                        </ul>
+                        <div class="project-actions">
+                            <a href="/mt-clipboards" class="project-link">Learn More</a>
+                            <a href="/checkout?product=mt-clipboards" class="interest-btn">Buy Now</a>
+                        </div>
+                    </div>
+                    
+                    <div class="project-card">
+                        <div class="project-header">
+                            <span class="project-emoji">🌐</span>
+                            <h3 class="project-name">Sledge</h3>
+                        </div>
+                        <p class="project-description">A web browser made by developers, for developers, with advanced privacy features and developer tools</p>
+                        <ul class="project-features">
+                            <li><span class="feature-check">✓</span> Privacy-focused architecture with sandboxing</li>
+                            <li><span class="feature-check">✓</span> QWebEngine with Chromium support</li>
+                            <li><span class="feature-check">✓</span> Group-based memory-state tab management</li>
+                            <li><span class="feature-check">✓</span> Anti-flashbang and force dark mode</li>
+                            <li><span class="feature-check">✓</span> V3 extensions and Manifest V2 support</li>
+                        </ul>
+                        <div class="project-actions">
+                            <a href="/sledge" class="project-link">Learn More</a>
+                            <a href="/checkout?product=sledge" class="interest-btn">Buy Now</a>
+                        </div>
+                    </div>
+                    
+                    <div class="project-card">
+                        <div class="project-header">
+                            <span class="project-emoji">🎨</span>
+                            <h3 class="project-name">Findry</h3>
+                        </div>
+                        <p class="project-description">Art and resource discovery platform connecting creative spaces with artists</p>
+                        <ul class="project-features">
+                            <li><span class="feature-check">✓</span> Artist/Offerer Discovery</li>
+                            <li><span class="feature-check">✓</span> Space/Equipment marketplace</li>
+                            <li><span class="feature-check">✓</span> Interactive virtual space tours</li>
+                            <li><span class="feature-check">✓</span> Event scheduling and organizing</li>
+                            <li><span class="feature-check">✓</span> Brand-managed events</li>
+                        </ul>
+                        <div class="project-actions">
+                            <a href="/findry" class="project-link">Learn More</a>
+                            <a href="/checkout?product=findry" class="interest-btn">Buy Now</a>
+                        </div>
+                    </div>
+                    
+                    <div class="project-card">
+                        <div class="project-header">
+                            <span class="project-emoji">📊</span>
+                            <h3 class="project-name">DivvyQueue</h3>
+                        </div>
+                        <p class="project-description">Corporeal-Incorporation agreement management platform</p>
+                        <ul class="project-features">
+                            <li><span class="feature-check">✓</span> Multiparty agreements with document support</li>
+                            <li><span class="feature-check">✓</span> Timeline tracking and breach handling</li>
+                            <li><span class="feature-check">✓</span> Smart contract integration</li>
+                            <li><span class="feature-check">✓</span> Cross-discipline project tools</li>
+                            <li><span class="feature-check">✓</span> Real-time collaboration</li>
+                        </ul>
+                        <div class="project-actions">
+                            <a href="/divvyqueue" class="project-link">Learn More</a>
+                            <a href="/checkout?product=divvyqueue" class="interest-btn">Buy Now</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast container for notifications -->
+    <div id="toast-container"></div>
+
+    <script type="module">
+        document.addEventListener('DOMContentLoaded', () => {
+            // Handle hamburger menu toggle
+            document.getElementById('hamburger-button').addEventListener('click', function() {
+                document.body.classList.toggle('hamburger-open');
+            });
+            
+            // Handle tab switching
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    // Remove active class from all tabs
+                    document.querySelectorAll('.tab').forEach(t => {
+                        t.classList.remove('active');
+                    });
+                    
+                    // Add active class to clicked tab
+                    tab.classList.add('active');
+                });
+            });
+            
+            // Load initial projects
+            htmx.trigger('#projects-container', 'htmx:load');
+        });
+    </script>
+</body>
+</html> 

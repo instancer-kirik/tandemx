@@ -595,3 +595,10 @@ fn space_decoder(
 
   decoder(dynamic)
 }
+
+pub fn view(model: Model) -> Element(Msg) {
+  html.div([class("findry-container")], [
+    view_nav(model),
+    view_spaces_page(model),
+  ])
+}

@@ -14,6 +14,7 @@
   --border-radius: 4px;
   --box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
   --transition-speed: 0.3s;
+  --navbar-width: 250px;
 }
 
 * {
@@ -29,16 +30,140 @@ body {
   background-color: var(--background-color);
 }
 
+/* App Container */
 .app-container {
   display: flex;
   min-height: 100vh;
+  background: #f9fafb;
 }
 
+/* When nav is open, adjust spacing for the navbar */
+.app-container.nav-open {
+  padding-left: var(--navbar-width);
+}
+
+/* Navigation Styles */
+.nav-container {
+  position: relative;
+  z-index: 1000;
+}
+
+.nav-toggle {
+  position: fixed;
+  top: 1rem;
+  left: 1rem;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  font-size: 1.5rem;
+  color: var(--primary-color);
+  background: white;
+  border: 1px solid var(--medium-gray);
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  cursor: pointer;
+  z-index: 2000;
+  transition: all 0.2s ease;
+}
+
+.nav-toggle:hover {
+  transform: scale(1.05);
+  background-color: var(--light-gray);
+}
+
+.navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: var(--navbar-width);
+  height: 100vh;
+  background: white;
+  padding: 4rem 1rem 2rem;
+  box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+  transform: translateX(-100%); /* Start off-screen */
+  transition: transform 0.3s ease;
+  overflow-y: auto;
+  z-index: 1500;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+/* When nav is open, move the navbar into view */
+.app-container.nav-open .navbar,
+.navbar.open {
+  transform: translateX(0) !important;
+  left: 0 !important;
+}
+
+.nav-brand {
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.nav-brand a {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: var(--primary-color);
+  text-decoration: none;
+}
+
+.nav-links {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.nav-links a {
+  display: block;
+  padding: 0.75rem 1rem;
+  color: var(--text-color);
+  text-decoration: none;
+  border-radius: var(--border-radius);
+  transition: background-color 0.2s;
+  position: relative;
+}
+
+.nav-links a:hover {
+  background-color: var(--light-gray);
+}
+
+.nav-sub-links {
+  display: none;
+  margin-top: 0.5rem;
+  padding-left: 1rem;
+}
+
+.nav-links > a:hover .nav-sub-links {
+  display: block;
+}
+
+.nav-sub-links a {
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+}
+
+/* When nav is open, adjust the main content */
 .main-content {
   flex: 1;
-  padding: 20px;
-  margin-left: 250px; /* Adjust based on your nav width */
-  transition: margin-left var(--transition-speed);
+  padding: 2rem;
+  position: relative;
+}
+
+.nav-open .main-content {
+  margin-left: var(--navbar-width);
+}
+
+/* Fix for landing page in nav context */
+.nav-open .landing-page .main-nav {
+  display: none; /* Hide landing's top nav when side nav is open */
+}
+
+.landing-page {
+  width: 100%;
+  padding-top: 1rem;
 }
 
 /* Home Page Styles */
@@ -185,4 +310,127 @@ body {
     flex-direction: column;
     gap: 15px;
   }
+
+  .nav-open .main-content {
+    margin-left: 0;
+  }
+
+  .navbar {
+    width: 100%;
+    left: -100%;
+  }
+
+  .nav-open .navbar {
+    transform: translateX(100%);
+  }
+}
+
+/* Add nav-side-container styling */
+.nav-side-container {
+  width: 300px;
+  background: white;
+  box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+  padding: 2rem;
+  transition: transform 0.3s ease;
+}
+
+.nav-open .nav-side-container {
+  transform: translateX(0);
+}
+
+/* Fix for landing page top margin */
+#app {
+  margin-top: 0;
+}
+
+/* Landing page specific styles to work with navigation */
+.hero-section {
+  padding-top: 3rem !important;
+}
+
+/* Fix spacing on mobile in nav open state */
+@media (max-width: 768px) {
+  .app-container.nav-open .main-content {
+    display: none; /* Hide content when nav is open on mobile */
+  }
+}
+
+/* Direct hamburger toggle styles */
+body.hamburger-open .navbar {
+  transform: translateX(0) !important;
+}
+
+/* Adjust main content when navbar is open */
+body.hamburger-open .main-content {
+  margin-left: var(--navbar-width);
+}
+
+@media (max-width: 768px) {
+  body.hamburger-open .main-content {
+    margin-left: 0;
+  }
+}
+
+/* Vendure store styles */
+.vendure-store-container {
+  width: 100%;
+  min-height: 100vh;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  padding: 2rem;
+}
+
+/* Calendar styles */
+.calendar-container {
+  width: 100%;
+  min-height: 100vh;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  padding: 2rem;
+}
+
+/* Placeholder styles */
+.placeholder-page {
+  text-align: center;
+  padding: 4rem 2rem;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.placeholder-page h1 {
+  font-size: 2.5rem;
+  color: #1f2937;
+  margin-bottom: 1rem;
+}
+
+.placeholder-page .subtitle {
+  font-size: 1.25rem;
+  color: #6b7280;
+  margin-bottom: 1.5rem;
+}
+
+.placeholder-page .description {
+  color: #4b5563;
+  margin-bottom: 2rem;
+}
+
+.placeholder-page .page-actions {
+  margin-top: 2rem;
+}
+
+.placeholder-page .cta-btn {
+  display: inline-block;
+  padding: 0.75rem 1.5rem;
+  background: #2563eb;
+  color: white;
+  text-decoration: none;
+  border-radius: 6px;
+  transition: background 0.2s;
+}
+
+.placeholder-page .cta-btn:hover {
+  background: #1d4ed8;
 } 

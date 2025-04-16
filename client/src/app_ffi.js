@@ -1,96 +1,130 @@
-// Main application FFI functions
+// Simple app FFI for core functionality
 let initialized = false;
-let navigationCallback = null;
-
-// Store the callback in window to ensure it persists
-if (typeof window !== 'undefined') {
-  window.tandemxNavigationCallback = window.tandemxNavigationCallback || null;
-}
 
 // Initialize the application
 export function init() {
-  if (initialized) {
-    console.log('App FFI already initialized, skipping');
-    // Restore callback from window if available
-    if (window.tandemxNavigationCallback && !navigationCallback) {
-      navigationCallback = window.tandemxNavigationCallback;
-      console.log('Restored navigation callback from window');
-    }
-    return true;
-  }
+  if (initialized) return true;
   
-  // Set up event listeners for navigation
-  window.addEventListener('popstate', (event) => {
-    console.log('Popstate event triggered, path:', window.location.pathname);
-    // Call the navigation callback if it exists
-    if (navigationCallback || window.tandemxNavigationCallback) {
-      const callback = navigationCallback || window.tandemxNavigationCallback;
-      console.log('Calling navigation callback with path:', window.location.pathname);
-      callback(window.location.pathname);
-    } else {
-      console.warn('Navigation callback not set yet, cannot handle popstate');
-      // Try to recover by dispatching a custom event
-      const event = new CustomEvent('tandemx-navigate', { 
-        detail: { path: window.location.pathname } 
-      });
-      window.dispatchEvent(event);
-      console.log('Dispatched tandemx-navigate event as fallback for popstate');
-    }
-  });
-
-  // Initialize toast notifications
-  setupToastNotifications();
-  
-  // Set up navigation toggle
-  setupNavToggle();
-  
-  // Mark as initialized
-  initialized = true;
   console.log('App FFI initialized');
   
-  // Return success
-  return true;
-}
-
-// Set up a listener for navigation events
-export function setupNavigationListener(callback) {
-  console.log('Setting up navigation listener');
-  navigationCallback = callback;
-  // Store in window for persistence
-  if (typeof window !== 'undefined') {
-    window.tandemxNavigationCallback = callback;
+  // Only run browser-specific code if document exists
+  if (typeof document !== 'undefined') {
+    // Setup the core functionality
+    setupToastNotifications();
+    setupNavToggle();
+    setupCalendarObserver();
   }
-  console.log('Navigation listener set up successfully');
   
-  // Immediately trigger a navigation event for the current path
-  // This ensures the view is updated on initial load
-  setTimeout(() => {
-    console.log('Triggering initial navigation for current path:', window.location.pathname);
-    callback(window.location.pathname);
-  }, 0);
-  
+  initialized = true;
   return true;
 }
 
-// Set up a listener for the custom tandemx-navigate event
-export function setupCustomEventListener(callback) {
-  console.log('Setting up custom event listener for tandemx-navigate');
-  window.addEventListener('tandemx-navigate', function(event) {
-    console.log('Received tandemx-navigate event:', event.detail.path);
-    callback(event.detail.path);
-  });
-  console.log('Custom event listener set up successfully');
-  return true;
-}
-
-// Get the current window location path
+// Get current window location path
 export function getWindowLocation() {
-  console.log('Getting window location:', window.location.pathname);
+  if (typeof window === 'undefined') {
+    return '/';
+  }
   return window.location.pathname;
+}
+
+// Set up navigation listener
+export function setupNavigationListener(callback) {
+  if (typeof document === 'undefined' || typeof window === 'undefined') {
+    console.log('Document or window not available, skipping navigation listener setup');
+    return false;
+  }
+
+  // Handle link clicks
+  document.addEventListener('click', e => {
+    const link = e.target.closest('a');
+    if (link) {
+      const href = link.getAttribute('href');
+      if (href && href.startsWith('/') && !href.includes('://')) {
+        e.preventDefault();
+        console.log('Navigation intercepted for:', href);
+        window.history.pushState({}, '', href);
+        callback(href);
+      }
+    }
+  });
+  
+  // Handle back/forward
+  window.addEventListener('popstate', () => {
+    const path = window.location.pathname;
+    console.log('Popstate event, navigating to:', path);
+    callback(path);
+  });
+  
+  return true;
+}
+
+// Setup custom event listener
+export function setupCustomEventListener(callback) {
+  if (typeof window === 'undefined') {
+    console.log('Window not available, skipping custom event listener setup');
+    return false;
+  }
+
+  window.addEventListener('navigate', event => {
+    if (event.detail && event.detail.path) {
+      callback(event.detail.path);
+    }
+  });
+  
+  return true;
+}
+
+// Navigate to a path
+export function navigate(path) {
+  if (typeof window === 'undefined') {
+    console.log('Window not available, skipping navigation to:', path);
+    return false;
+  }
+  console.log('Navigating to:', path);
+  window.history.pushState({}, '', path);
+  // Dispatch a custom navigation event
+  const event = new CustomEvent('navigate', { detail: { path } });
+  window.dispatchEvent(event);
+  return true;
+}
+
+// Navigate to Vendure storefront
+export function navigateToVendure(path) {
+  if (typeof window === 'undefined') {
+    console.log('Window not available, skipping Vendure navigation to:', path);
+    return false;
+  }
+
+  // Redirect to Vendure store
+  if (window.location.hostname === "localhost") {
+    window.location.href = `http://localhost:5173${path}`;
+  } else {
+    // Production URL - update this with your actual domain
+    window.location.href = `https://store.yourdomain.com${path}`;
+  }
+  return true;
+}
+
+// Toggle the navigation menu
+export function toggleNav() {
+  if (typeof document === 'undefined') {
+    console.log('Document not available, skipping nav toggle');
+    return false;
+  }
+
+  const appContainer = document.querySelector('.app-container');
+  if (appContainer) {
+    appContainer.classList.toggle('nav-open');
+  }
+  return true;
 }
 
 // Set up toast notifications
 function setupToastNotifications() {
+  if (typeof window === 'undefined' || typeof document === 'undefined') {
+    return;
+  }
+
   window.showToast = (message, type = 'success', duration = 3000) => {
     const toastContainer = document.getElementById('toast-container');
     
@@ -122,52 +156,77 @@ function setupToastNotifications() {
 
 // Set up navigation toggle
 function setupNavToggle() {
+  if (typeof document === 'undefined') {
+    return;
+  }
+
   document.addEventListener('click', (event) => {
     if (event.target.closest('.nav-toggle')) {
-      document.body.classList.toggle('nav-open');
+      // Toggle the nav-open class on the app-container element
+      const appContainer = document.querySelector('.app-container');
+      if (appContainer) {
+        appContainer.classList.toggle('nav-open');
+        console.log('Toggled nav-open class on app-container');
+      }
+      
+      // Also toggle the open class on the navbar for compatibility
       const navbar = document.querySelector('.navbar');
       if (navbar) {
         navbar.classList.toggle('open');
-      }
-    }
-  });
-  
-  // Handle all internal navigation links
-  document.addEventListener('click', (event) => {
-    const link = event.target.closest('a[href]');
-    if (link && link.getAttribute('href').startsWith('/')) {
-      // Don't intercept external links or links with target="_blank"
-      if (link.getAttribute('target') === '_blank' || link.getAttribute('href').startsWith('http')) {
-        return;
-      }
-      
-      event.preventDefault();
-      const path = link.getAttribute('href');
-      console.log('Link clicked, navigating to:', path);
-      navigate(path);
-      
-      // Close the navigation on mobile after clicking a link
-      if (window.innerWidth < 768) {
-        document.body.classList.remove('nav-open');
-        const navbar = document.querySelector('.navbar');
-        if (navbar) {
-          navbar.classList.remove('open');
-        }
+        console.log('Toggled open class on navbar');
       }
     }
   });
 }
 
-// Handle navigation
-export function navigate(path) {
-  console.log('Navigate function called with path:', path);
-  
-  // Use traditional navigation - actually change the page
-  window.location.href = path;
+// Initialize calendar when the container is present
+function initCalendar() {
+  if (typeof document === 'undefined') {
+    return;
+  }
+
+  const calendarContainer = document.querySelector('[data-init-calendar="true"]');
+  if (calendarContainer) {
+    console.log('Initializing calendar');
+    // Import and initialize the calendar module
+    import('/src/calendar_ffi.js').then(module => {
+      if (module.initCalendarWithAppEntrypoint) {
+        module.initCalendarWithAppEntrypoint();
+      }
+    }).catch(err => {
+      console.error('Failed to load calendar module:', err);
+    });
+  }
+}
+
+// Set up mutation observer to watch for calendar container
+function setupCalendarObserver() {
+  if (typeof document === 'undefined') {
+    return;
+  }
+
+  const observer = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+      if (mutation.addedNodes.length) {
+        const calendarContainer = document.querySelector('[data-init-calendar="true"]');
+        if (calendarContainer) {
+          initCalendar();
+          observer.disconnect();
+        }
+      }
+    });
+  });
+
+  observer.observe(document.body, { childList: true, subtree: true });
 }
 
 // Handle sharing content
 export function shareContent(title, text, url) {
+  if (typeof window === 'undefined' || typeof navigator === 'undefined') {
+    console.log('Window or navigator not available, skipping share');
+    return false;
+  }
+
   if (navigator.share) {
     navigator.share({
       title: title,
@@ -182,10 +241,135 @@ export function shareContent(title, text, url) {
       .then(() => window.showToast('Link copied to clipboard!'))
       .catch(() => window.showToast('Failed to copy link', 'error'));
   }
+  return true;
 }
 
-// Initialize when the module is imported
-document.addEventListener('DOMContentLoaded', () => {
-  console.log('App FFI module loaded');
-  init(); // Initialize the app when the DOM is loaded
-}); 
+// Helper to determine if a URL is an external resource
+function isExternalResource(url) {
+  // Check file extensions that should be loaded as resources
+  const resourceExtensions = ['.css', '.js', '.jpg', '.jpeg', '.png', '.gif', '.svg', '.pdf'];
+  return resourceExtensions.some(ext => url.endsWith(ext));
+}
+
+// Setup lazy loading for additional modules
+function setupLazyLoading() {
+  if (typeof document === 'undefined') {
+    return;
+  }
+
+  // The modules will be loaded when they are needed
+  const modulesToLoad = {
+    '/events': () => import('/events/events_ffi.js'),
+    '/calendar': () => import('/src/calendar_ffi.js'),
+    '/findry': () => import('/findry/findry_ffi.js')
+  };
+  
+  // Listen for route changes to load modules
+  document.addEventListener('app:navigate', (event) => {
+    if (event.detail && event.detail.path) {
+      const path = event.detail.path;
+      
+      // Check if we need to load a module for this path
+      Object.keys(modulesToLoad).forEach(route => {
+        if (path.startsWith(route)) {
+          // Load the module
+          modulesToLoad[route]().catch(err => {
+            console.warn(`Failed to load module for ${route}:`, err);
+          });
+        }
+      });
+    }
+  });
+}
+
+// Get the WebSocket URL for real-time updates
+export function getWebSocketUrl() {
+  if (typeof window === 'undefined') {
+    console.log('Window not available, returning default WebSocket URL');
+    return 'ws://localhost:8000/ws/cart';
+  }
+  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  const host = window.location.hostname === '0.0.0.0' ? 'localhost' : window.location.hostname;
+  return `${protocol}//${host}:${window.location.port}/ws/cart`;
+}
+
+// Initialize the cart module
+export function initCart() {
+  console.log('Cart FFI module loaded');
+  initializeWebSocket();
+  return true;
+}
+
+// WebSocket connection for cart synchronization
+let socket = null;
+
+// Initialize WebSocket connection
+function initializeWebSocket() {
+  if (!window.WebSocket) {
+    console.warn("WebSockets not available in this browser");
+    return;
+  }
+
+  const wsUrl = getWebSocketUrl();
+  socket = new WebSocket(wsUrl);
+
+  socket.addEventListener('open', (event) => {
+    console.log('Cart WebSocket connection established');
+    // Request initial cart state
+    send("sync:");
+  });
+
+  socket.addEventListener('message', (event) => {
+    console.log('Cart update received:', event.data);
+    // Dispatch event for cart updates
+    const cartEvent = new CustomEvent('cartUpdate', {
+      detail: { data: event.data }
+    });
+    window.dispatchEvent(cartEvent);
+  });
+
+  socket.addEventListener('close', (event) => {
+    console.log('Cart WebSocket connection closed');
+    // Try to reconnect after a delay
+    setTimeout(initializeWebSocket, 3000);
+  });
+
+  socket.addEventListener('error', (event) => {
+    console.error('Cart WebSocket error:', event);
+  });
+}
+
+// Send message to server via WebSocket
+export function send(msg) {
+  if (socket && socket.readyState === WebSocket.OPEN) {
+    socket.send(msg);
+    return true;
+  } else {
+    console.error('Cart WebSocket is not connected');
+    if (!socket) {
+      initializeWebSocket();
+    }
+    return false;
+  }
+}
+
+// Add item to cart
+export function addToCart(productId, title, price) {
+  console.log('Adding to cart:', { productId, title, price });
+  const msg = `add:${productId}:${title}:${price}`;
+  return send(msg);
+}
+
+// Remove item from cart
+export function removeFromCart(productId) {
+  console.log('Removing from cart:', productId);
+  const msg = `remove:${productId}`;
+  return send(msg);
+}
+
+// Update item quantity
+export function updateQuantity(productId, quantity) {
+  console.log('Updating quantity:', { productId, quantity });
+  const msg = `update:${productId}:${quantity}`;
+  return send(msg);
+} 

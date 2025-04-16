@@ -58,7 +58,8 @@ pub fn view() -> Element(Msg) {
             html.a([attribute.href("/events/share")], [
               html.text("Share Schedule"),
             ]),
-            html.a([attribute.href("/events/calendar")], [html.text("Calendar")]),
+            html.a([attribute.href("/calendar")], [html.text("Calendar")]),
+            html.a([attribute.href("/setlist")], [html.text("Setlist Manager")]),
           ]),
         ]),
         // Constructs System
@@ -106,6 +107,9 @@ pub fn view() -> Element(Msg) {
         ]),
         // Settings
         html.a([attribute.href("/settings")], [html.text("Settings")]),
+        html.a([attribute.href("/about"), attribute.class("nav-link")], [
+          html.text("About"),
+        ]),
       ]),
     ]),
   ])

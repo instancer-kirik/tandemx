@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Account - TandemX</title>
+    <link rel="stylesheet" href="/styles.css">
+    <link rel="stylesheet" href="/app.css">
+    <link rel="stylesheet" href="/landing.css">
+    <style>
+        /* App container structure */
+        .app-container {
+            display: flex;
+            min-height: 100vh;
+        }
+        
+        .main-content {
+            flex: 1;
+            padding-top: 1rem;
+        }
+        
+        /* Nav menu */
+        #manual-navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 250px;
+            height: 100vh;
+            background: white;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+            transform: translateX(-100%);
+            transition: transform 0.3s ease;
+            z-index: 1500;
+            padding-top: 4rem;
+            overflow-y: auto;
+        }
+        
+        body.hamburger-open #manual-navbar {
+            transform: translateX(0);
+        }
+        
+        #manual-navbar .nav-brand {
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+        
+        #manual-navbar .nav-brand a {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #1b1eb4;
+            text-decoration: none;
+        }
+        
+        #manual-navbar .nav-links {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            padding: 0 1rem;
+        }
+        
+        #manual-navbar .nav-links a {
+            display: block;
+            padding: 0.75rem 1rem;
+            color: #1f2937;
+            text-decoration: none;
+            border-radius: 4px;
+            transition: background-color 0.2s;
+        }
+        
+        #manual-navbar .nav-links a:hover {
+            background-color: #f8f9fa;
+            color: #1b1eb4;
+        }
+        
+        /* Hamburger button */
+        .nav-toggle {
+            position: fixed;
+            top: 1rem;
+            left: 1rem;
+            z-index: 2000;
+            width: 40px;
+            height: 40px;
+            background: white;
+            border: none;
+            border-radius: 4px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+        
+        /* Cart Icon Link */
+        .cart-icon-link {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            z-index: 2000;
+            width: 40px;
+            height: 40px;
+            background: white;
+            border: none;
+            border-radius: 4px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            cursor: pointer;
+            text-decoration: none;
+            color: #1f2937;
+        }
+        
+        .cart-icon-link:hover {
+            background-color: #f8f9fa;
+        }
+        
+        /* Account page styles */
+        .account-header {
+            text-align: center;
+            padding: 3rem 1rem;
+            background: #f9fafb;
+            margin-bottom: 2rem;
+        }
+        
+        .account-header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            color: #1f2937;
+        }
+        
+        .account-header p {
+            font-size: 1.2rem;
+            color: #4b5563;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        #fs_dashboard_container {
+            position: relative;
+            width: 100%;
+            height: calc(100vh - 200px);
+            min-height: 600px;
+            margin: 0 auto;
+            padding: 0 1rem;
+            max-width: 1200px;
+        }
+        
+        #fs_dashboard_container iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        
+        /* Portal options for users without account */
+        .portal-options {
+            max-width: 800px;
+            margin: 3rem auto;
+            padding: 0 1rem;
+        }
+        
+        .portal-option {
+            background: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .portal-option h3 {
+            margin-top: 0;
+            margin-bottom: 1rem;
+            color: #1f2937;
+        }
+        
+        .portal-option p {
+            color: #4b5563;
+            margin-bottom: 1.5rem;
+        }
+        
+        .portal-btn {
+            display: inline-block;
+            padding: 0.75rem 1.5rem;
+            background: #1b1eb4;
+            color: white;
+            border-radius: 4px;
+            text-decoration: none;
+            font-weight: 500;
+            transition: background-color 0.2s;
+        }
+        
+        .portal-btn:hover {
+            background: #151c7e;
+        }
+        
+        .secondary-btn {
+            background: #f3f4f6;
+            color: #1f2937;
+        }
+        
+        .secondary-btn:hover {
+            background: #e5e7eb;
+        }
+    </style>
+</head>
+<body>
+    <!-- Hamburger button -->
+    <button class="nav-toggle" id="hamburger-button">☰</button>
+    
+    <!-- Cart Icon Link -->
+    <a href="/cart" class="cart-icon-link">🛒</a>
+    
+    <!-- Navigation menu -->
+    <div id="manual-navbar">
+        <div class="nav-brand">
+            <a href="/">TandemX</a>
+        </div>
+        <div class="nav-links">
+            <a href="/">Home</a>
+            <a href="/events">Events</a>
+            <a href="/findry">Findry</a>
+            <a href="/divvyqueue">DivvyQueue</a>
+            <a href="/divvyqueue2">DivvyQueue2</a>
+            <a href="/projects">Projects</a>
+            <a href="/calendar">Calendar</a>
+            <a href="/mt-clipboards">MT Clipboards</a>
+            <a href="/store">Store</a>
+            <a href="/cart">Cart</a>
+            <a href="/account">My Account</a>
+            <a href="/about">About</a>
+        </div>
+    </div>
+    
+    <!-- Main content -->
+    <div class="app-container">
+        <div class="main-content">
+            <div class="account-header">
+                <h1>Customer Dashboard</h1>
+                <p>Manage your purchases, licenses, and account details</p>
+            </div>
+            
+            <div id="customer-portal-container">
+                <!-- This will contain either the Lemon Squeezy portal or login options -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Handle hamburger menu toggle
+            document.getElementById('hamburger-button').addEventListener('click', function() {
+                document.body.classList.toggle('hamburger-open');
+            });
+            
+            // Check if user is logged in to Lemon Squeezy (this is a placeholder)
+            const isLoggedIn = false; // This would be determined dynamically
+            const portalContainer = document.getElementById('customer-portal-container');
+            
+            // REPLACE THESE WITH YOUR ACTUAL LEMON SQUEEZY CREDENTIALS
+            const storeId = "tandemx"; // Replace with your store ID
+            
+            if (isLoggedIn) {
+                // Display customer portal content for logged in users
+                portalContainer.innerHTML = `
+                    <div id="customer-portal">
+                        <iframe 
+                            src="https://app.lemonsqueezy.com/my-orders?external=1" 
+                            frameborder="0"
+                            style="width: 100%; height: 700px; border: none; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);"
+                            allowfullscreen>
+                        </iframe>
+                    </div>
+                `;
+            } else {
+                // Display options for users who aren't logged in
+                portalContainer.innerHTML = `
+                    <div class="portal-options">
+                        <div class="portal-option">
+                            <h3>Already have an account?</h3>
+                            <p>Access your customer dashboard to manage your licenses, downloads, and subscription information.</p>
+                            <a href="https://app.lemonsqueezy.com/my-orders" target="_blank" class="portal-btn">Login to Customer Portal</a>
+                        </div>
+                        
+                        <div class="portal-option">
+                            <h3>Check Order Status</h3>
+                            <p>Have an order number? Check the status of your purchase and access your digital products.</p>
+                            <a href="https://app.lemonsqueezy.com/my-orders/lookup" target="_blank" class="portal-btn">Check Order Status</a>
+                        </div>
+                        
+                        <div class="portal-option">
+                            <h3>Need to make a purchase?</h3>
+                            <p>Browse our products and discover tools to boost your productivity.</p>
+                            <a href="/mt-clipboards" class="portal-btn secondary-btn">View Products</a>
+                        </div>
+                    </div>
+                `;
+            }
+        });
+    </script>
+</body>
+</html> 

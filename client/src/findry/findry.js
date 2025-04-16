@@ -1,3 +1,5 @@
+import { getWebSocketUrl } from './findry_ffi.js';
+
 // WebSocket connection
 let ws = null;
 
@@ -13,7 +15,8 @@ let currentView = 'spaces'; // 'spaces', 'artists', or 'matches'
 let viewMode = 'card'; // 'card' or 'list'
 
 function connectWebSocket() {
-  ws = new WebSocket('ws://0.0.0.0:8000/ws/findry');
+  const wsUrl = getWebSocketUrl();
+  ws = new WebSocket(wsUrl);
   
   ws.onopen = () => {
     console.log('Connected to Findry WebSocket');
@@ -306,15 +309,15 @@ function showEmptyState(container) {
 }
 
 function initializeSwipeListeners(card) {
-  // Touch events
-  card.addEventListener('touchstart', handleTouchStart);
-  card.addEventListener('touchmove', handleTouchMove);
+  // Add touch event listeners with passive option
+  card.addEventListener('touchstart', handleTouchStart, { passive: false });
+  card.addEventListener('touchmove', handleTouchMove, { passive: false });
   card.addEventListener('touchend', handleTouchEnd);
   
-  // Mouse events
+  // Add mouse event listeners
   card.addEventListener('mousedown', handleMouseDown);
-  document.addEventListener('mousemove', handleMouseMove);
-  document.addEventListener('mouseup', handleMouseUp);
+  card.addEventListener('mousemove', handleMouseMove);
+  card.addEventListener('mouseup', handleMouseUp);
 }
 
 function handleTouchStart(e) {

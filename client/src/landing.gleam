@@ -113,12 +113,12 @@ fn view_payment_section() -> Element(Msg) {
 }
 
 pub fn view(model: Model) -> Element(Msg) {
-  html.div([class("landing-page")], [
+  html.div([class("landing-page dashboard-layout")], [
     view_nav(),
-    view_hero(),
-    view_products(),
-    view_clipboard_listings(),
-    view_features(),
+    html.div([class("dashboard-container")], [
+      view_hero(),
+      view_dashboard_modules(),
+    ]),
     view_payment_section(),
     view_footer(),
   ])
@@ -126,11 +126,11 @@ pub fn view(model: Model) -> Element(Msg) {
 
 // New function that renders the landing page without its own navigation
 pub fn view_without_nav(model: Model) -> Element(Msg) {
-  html.div([class("landing-page")], [
-    view_hero(),
-    view_products(),
-    view_clipboard_listings(),
-    view_features(),
+  html.div([class("landing-page dashboard-layout")], [
+    html.div([class("dashboard-container")], [
+      view_hero(),
+      view_dashboard_modules(),
+    ]),
     view_payment_section(),
     view_footer(),
   ])
@@ -167,301 +167,166 @@ fn view_nav() -> Element(Msg) {
 }
 
 fn view_hero() -> Element(Msg) {
-  html.div([class("hero-section")], [
+  html.div([class("hero-section dashboard-hero")], [
     html.div([class("hero-content")], [
-      html.h1([class("hero-title")], [html.text("Multiplayer interfaces")]),
+      html.h1([class("hero-title")], [html.text("TandemX Dashboard")]),
       html.p([class("hero-subtitle")], [
         html.text(
-          "From development tools to creative spaces, instance.select's tandemx provides a comprehensive suite of solutions. Connect, collaborate, and grow with our integrated platform ecosystem.",
-        ),
-      ]),
-      html.div([class("hero-cta")], [
-        html.a([class("cta-btn primary"), attribute.href("/signup")], [
-          html.text("Get Started"),
-        ]),
-        html.a([class("cta-btn secondary"), attribute.href("/projects")], [
-          html.text("Explore Projects"),
-        ]),
-      ]),
-    ]),
-  ])
-}
-
-fn view_products() -> Element(Msg) {
-  html.div([class("products-section")], [
-    html.div([class("section-header")], [
-      html.h2([class("section-title")], [html.text("Featured Projects")]),
-      html.a([class("view-all-btn"), attribute.href("/projects")], [
-        html.text(
-          "View All Projects →(also I don't think the express interest buttons work yet - no db)",
+          "Your command center for creative collaboration and business operations. Access all your tools from one central hub.",
         ),
       ]),
     ]),
-    html.div([class("products-grid")], [
-      view_product_card(
-        "MT Clipboards",
-        "📋",
-        "Professional clipboard solutions for businesses and individuals",
-        "/mt-clipboards",
+  ])
+}
+
+fn view_dashboard_modules() -> Element(Msg) {
+  html.div([class("dashboard-grid")], [
+    // Row 1: Main modules
+    html.div([class("dashboard-row")], [
+      // Creative tools
+      view_dashboard_card(
+        "Creative Tools",
         [
-          "Premium quality materials", "Custom branding options",
-          "Bulk ordering available", "Corporate gift solutions",
-          "Eco-friendly options",
+          #("Findry", "/findry", "Artist and space discovery platform"),
+          #("Events", "/events", "Event discovery and scheduling"),
+          #("ChartSpace", "/chartspace", "Visual data analytics"),
+          #("Digital Boards", "/digital-boards", "Visual organization tools"),
         ],
+        "creative",
       ),
-      view_product_card(
-        "Sledge",
-        "🌐",
-        "A web browser made by developers, for developers, with advanced privacy features and developer tools",
-        "/sledge",
+      // Business tools
+      view_dashboard_card(
+        "Business Tools",
         [
-          "Privacy-focused architecture with sandboxing",
-          "QWebEngine with Chromium support",
-          "Group-based memory-state tab management",
-          "Anti-flashbang and force dark mode",
-          "V3 extensions and Manifest V2 support",
+          #("DivvyQueue", "/divvyqueue", "Agreement management"),
+          #("DivvyQueue2", "/divvyqueue2", "Financial management"),
+          #("Compliance", "/compliance", "Regulatory compliance tools"),
+          #("Banking", "/banking", "Financial operations"),
         ],
+        "business",
       ),
-      view_product_card(
-        "Findry",
-        "🎨",
-        "Art and resource discovery platform connecting creative spaces with artists",
-        "/findry",
+    ]),
+    // Row 2: Additional tools and quick stats
+    html.div([class("dashboard-row")], [
+      // Tasks and Calendar
+      view_dashboard_card(
+        "Organization",
         [
-          "Artist/Offerer Discovery", "Space/Equipment marketplace",
-          "Interactive virtual space tours", "Event scheduling and organizing",
-          "Brand-managed events",
+          #("Tasks", "/todos", "Task management system"),
+          #("Calendar", "/calendar", "Schedule and event management"),
+          #("Projects", "/projects", "Project management hub"),
+          #("Cards", "/cards", "Card-based management"),
         ],
+        "organization",
       ),
-      view_product_card(
-        "DivvyQueue",
-        "📊",
-        "Corporeal-Incorporation agreement management platform",
-        "/divvyqueue",
+      // Quick stats
+      view_stats_card(),
+    ]),
+    // Row 3: Products and marketplace
+    html.div([class("dashboard-row")], [
+      // Products showcase
+      view_dashboard_card(
+        "Products",
         [
-          "Multiparty agreements with document support",
-          "Timeline tracking and breach handling", "Smart contract integration",
-          "Cross-discipline project tools", "Real-time collaboration",
+          #(
+            "MT Clipboards",
+            "/mt-clipboards",
+            "Professional clipboard solutions",
+          ),
+          #("Sledge", "/sledge", "Developer browser"),
+          #("Hunter Exam Prep", "/hunter", "Training for the Hunter Exam"),
+          #("Digital Tools", "/tools", "Digital productivity tools"),
         ],
+        "products",
       ),
+      // Activity feed
+      view_activity_feed(),
     ]),
   ])
 }
 
-fn view_clipboard_listings() -> Element(Msg) {
-  html.div([class("clipboard-listings")], [
-    html.div([class("section-header")], [
-      html.h2([class("section-title")], [html.text("MT Clipboards Collection")]),
-      html.p([class("section-subtitle")], [
-        html.text("Discover our range of professional clipboard solutions"),
-      ]),
-    ]),
-    html.div([class("listings-grid")], [
-      view_clipboard_item(
-        "Executive Pro",
-        "Premium aluminum clipboard with leather finish",
-        49.99,
-        "executive-pro",
-        [
-          "Aluminum construction", "Genuine leather finish",
-          "Built-in storage compartment", "Magnetic closure",
-          "Personalization available",
-        ],
-      ),
-      view_clipboard_item(
-        "Heavy-Duty Clamp",
-        "Industrial-strength clipboard with reinforced clamp",
-        59.99,
-        "heavy-duty-clamp",
-        [
-          "Extra-wide 2-inch clamp", "Reinforced steel construction",
-          "Anti-slip grip surface", "Weather-resistant coating",
-          "Heavy-duty spring mechanism",
-        ],
-      ),
-      view_clipboard_item(
-        "Multi-Clip Pro",
-        "Versatile clipboard with multiple clip positions",
-        44.99,
-        "multi-clip-pro",
-        [
-          "Adjustable clip positions", "360-degree rotation",
-          "Quick-release mechanism", "Ergonomic grip",
-          "Compatible with various paper sizes",
-        ],
-      ),
-      view_clipboard_item(
-        "Eco-Friendly",
-        "Sustainable bamboo clipboard with recycled materials",
-        39.99,
-        "eco-friendly",
-        [
-          "Bamboo construction", "Recycled materials", "Low carbon footprint",
-          "Natural finish", "Biodegradable packaging",
-        ],
-      ),
-      view_clipboard_item(
-        "Giant Clamp XL",
-        "Oversized clipboard for large documents and blueprints",
-        69.99,
-        "giant-clamp-xl",
-        [
-          "3-inch wide clamp", "A3 size support", "Reinforced aluminum frame",
-          "Non-slip surface", "Heavy-duty carrying handle",
-        ],
-      ),
-      view_clipboard_item(
-        "Corporate Bundle",
-        "Bulk order solution for businesses",
-        29.99,
-        "corporate-bundle",
-        [
-          "Custom branding options", "Minimum order: 50 units",
-          "Bulk pricing available", "Priority shipping",
-          "Corporate gift packaging",
-        ],
-      ),
-      view_clipboard_item(
-        "Quick-Clip Elite",
-        "Professional clipboard with rapid-release mechanism",
-        54.99,
-        "quick-clip-elite",
-        [
-          "One-handed operation", "Silent clip mechanism", "Adjustable pressure",
-          "Anti-rust coating", "Built-in ruler",
-        ],
-      ),
-      view_clipboard_item(
-        "Compact Traveler",
-        "Portable clipboard for professionals on the go",
-        34.99,
-        "compact-traveler",
-        [
-          "Lightweight design", "Folding mechanism", "Water-resistant",
-          "Pen holder", "Clip storage",
-        ],
-      ),
-    ]),
-  ])
-}
-
-fn view_clipboard_item(
-  name: String,
-  description: String,
-  price: Float,
-  id: String,
-  features: List(String),
+fn view_dashboard_card(
+  title: String,
+  links: List(#(String, String, String)),
+  card_type: String,
 ) -> Element(Msg) {
-  let product_id = "clipboard-" <> id
-  html.div([class("clipboard-item")], [
-    html.div([class("clipboard-image")], [
-      html.img([
-        attribute.src("/images/clipboards/" <> id <> ".jpg"),
-        attribute.alt(name),
-      ]),
-    ]),
-    html.div([class("clipboard-details")], [
-      html.h3([], [html.text(name)]),
-      html.p([class("clipboard-description")], [html.text(description)]),
-      html.div([class("clipboard-price")], [
-        html.text("$" <> float.to_string(price)),
-      ]),
-      html.ul(
-        [class("clipboard-features")],
-        list.map(features, fn(feature) {
-          html.li([], [
-            html.span([class("feature-check")], [html.text("✓")]),
-            html.text(feature),
-          ])
-        }),
-      ),
-      html.div([class("clipboard-actions")], [
+  html.div([class("dashboard-card " <> card_type)], [
+    html.h3([class("card-title")], [html.text(title)]),
+    html.div(
+      [class("card-links")],
+      list.map(links, fn(link_data) {
+        let #(name, link, description) = link_data
         html.a(
           [
-            class("view-details-btn"),
-            attribute.href("/products/" <> product_id),
+            class("dashboard-link"),
+            attribute.href(link),
+            attribute.title(description),
           ],
-          [html.text("View Details")],
-        ),
-        html.button(
-          [class("add-to-cart-btn"), event.on_click(AddToCart(product_id))],
-          [html.text("Add to Cart")],
-        ),
-      ]),
-    ]),
-  ])
-}
-
-fn view_product_card(
-  name: String,
-  emoji: String,
-  description: String,
-  path: String,
-  features: List(String),
-) -> Element(Msg) {
-  html.div([class("product-card")], [
-    html.div([class("product-header")], [
-      html.span([class("product-emoji")], [html.text(emoji)]),
-      html.h3([class("product-name")], [html.text(name)]),
-    ]),
-    html.p([class("product-description")], [html.text(description)]),
-    html.ul(
-      [class("product-features")],
-      list.map(features, fn(feature) {
-        html.li([], [
-          html.span([class("feature-check")], [html.text("✓")]),
-          html.text(feature),
-        ])
+          [
+            html.div([class("link-content")], [
+              html.span([class("link-name")], [html.text(name)]),
+              html.span([class("link-description")], [html.text(description)]),
+            ]),
+          ],
+        )
       }),
     ),
-    html.div([class("product-actions")], [
-      html.a([class("product-link"), attribute.href(path)], [
-        html.text("Learn More"),
+  ])
+}
+
+fn view_stats_card() -> Element(Msg) {
+  html.div([class("dashboard-card stats")], [
+    html.h3([class("card-title")], [html.text("Quick Stats")]),
+    html.div([class("stats-container")], [
+      html.div([class("stat-item")], [
+        html.span([class("stat-value")], [html.text("12")]),
+        html.span([class("stat-label")], [html.text("Active Projects")]),
       ]),
-      html.a([class("interest-btn"), attribute.href(path <> "/interest")], [
-        html.text("Express Interest"),
+      html.div([class("stat-item")], [
+        html.span([class("stat-value")], [html.text("4")]),
+        html.span([class("stat-label")], [html.text("Pending Agreements")]),
+      ]),
+      html.div([class("stat-item")], [
+        html.span([class("stat-value")], [html.text("8")]),
+        html.span([class("stat-label")], [html.text("Upcoming Events")]),
+      ]),
+      html.div([class("stat-item")], [
+        html.span([class("stat-value")], [html.text("3")]),
+        html.span([class("stat-label")], [html.text("New Messages")]),
       ]),
     ]),
   ])
 }
 
-fn view_features() -> Element(Msg) {
-  html.div([class("features-section")], [
-    html.h2([class("section-title")], [html.text("Why Choose TandemX")]),
-    html.div([class("features-grid")], [
-      view_feature(
-        "🛠️",
-        "Developer-First",
-        "Built by developers for developers, with powerful tools and environments",
-      ),
-      view_feature(
-        "🎨",
-        "Creative Spaces",
-        "Connect with the perfect spaces and resources for your creative projects",
-      ),
-      view_feature(
-        "🤝",
-        "Smart Collaboration",
-        "Advanced tools for multiparty agreements and project coordination",
-      ),
-      view_feature(
-        "🚀",
-        "Scalable Solutions",
-        "From development tools to business operations, grow with our ecosystem",
-      ),
+fn view_activity_feed() -> Element(Msg) {
+  html.div([class("dashboard-card activity")], [
+    html.h3([class("card-title")], [html.text("Recent Activity")]),
+    html.ul([class("activity-feed")], [
+      html.li([class("activity-item")], [
+        html.span([class("activity-time")], [html.text("Today 10:45 AM")]),
+        html.span([class("activity-text")], [
+          html.text("New agreement proposal from Studio 721"),
+        ]),
+      ]),
+      html.li([class("activity-item")], [
+        html.span([class("activity-time")], [html.text("Yesterday 3:20 PM")]),
+        html.span([class("activity-text")], [
+          html.text("Task completed: Update project timeline"),
+        ]),
+      ]),
+      html.li([class("activity-item")], [
+        html.span([class("activity-time")], [html.text("March 12, 2:15 PM")]),
+        html.span([class("activity-text")], [
+          html.text("Event scheduled: Team planning session"),
+        ]),
+      ]),
+      html.li([class("activity-item")], [
+        html.span([class("activity-time")], [html.text("March 10, 11:30 AM")]),
+        html.span([class("activity-text")], [
+          html.text("New artist space match found in Brooklyn"),
+        ]),
+      ]),
     ]),
-  ])
-}
-
-fn view_feature(
-  emoji: String,
-  title: String,
-  description: String,
-) -> Element(Msg) {
-  html.div([class("feature-card")], [
-    html.span([class("feature-emoji")], [html.text(emoji)]),
-    html.h3([class("feature-title")], [html.text(title)]),
-    html.p([class("feature-description")], [html.text(description)]),
   ])
 }
 
@@ -528,4 +393,14 @@ fn view_footer_column(
       }),
     ),
   ])
+}
+
+pub fn main() {
+  let app = lustre.application(init, update, view)
+
+  // Start the application and mount it to the document
+  case lustre.start(app, "#app", Nil) {
+    Ok(_) -> Nil
+    Error(_) -> Nil
+  }
 }

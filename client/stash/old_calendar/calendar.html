@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calendar - TandemX</title>
+    <link rel="stylesheet" href="/src/calendar.css">
+    <link rel="stylesheet" href="/src/mayan_calendar.css">
+    <script type="module" src="/src/calendar_ffi.js"></script>
+</head>
+<body>
+    <div id="calendar-root" class="mayan-calendar-container">
+        <div class="mayan-header">
+            <h1>Mayan Calendar</h1>
+            <p>View and schedule your meetings with Mayan calendar support</p>
+        </div>
+        
+        <div id="calendar-system-container" class="mayan-calendar-system">
+            <!-- Calendar system selector will be added here -->
+        </div>
+        
+        <div class="mayan-controls">
+            <div class="mayan-month-selector">
+                <button class="mayan-btn prev-month" id="prev-month">Previous</button>
+                <div class="mayan-current-month" id="current-month">January 2024</div>
+                <button class="mayan-btn next-month" id="next-month">Next</button>
+            </div>
+            
+            <div class="mayan-display-options">
+                <button class="mayan-display-btn active" data-system="mayan">Mayan</button>
+                <button class="mayan-display-btn" data-system="gregorian">Gregorian</button>
+                <button class="mayan-display-btn" data-system="julian">Julian</button>
+            </div>
+        </div>
+        
+        <div id="calendar-grid" class="mayan-grid">
+            <!-- Calendar will be initialized here -->
+        </div>
+        
+        <div id="mayan-info-panel" class="mayan-info-panel">
+            <h3>Today in Mayan Calendar</h3>
+            <div class="mayan-date-info">
+                <div class="mayan-date-component">
+                    <h4>Long Count</h4>
+                    <div class="mayan-date-value" id="mayan-long-count">13.0.10.8.12</div>
+                </div>
+                <div class="mayan-date-component">
+                    <h4>Tzolkin</h4>
+                    <div class="mayan-date-value" id="mayan-tzolkin">4 Eb</div>
+                </div>
+                <div class="mayan-date-component">
+                    <h4>Haab</h4>
+                    <div class="mayan-date-value" id="mayan-haab">0 Kankin</div>
+                </div>
+            </div>
+            
+            <div class="mayan-significance">
+                <h4>Mayan Day Energy</h4>
+                <p id="mayan-significance">Eb represents the human journey and the road of life. A good day for making travel plans and community endeavors.</p>
+            </div>
+        </div>
+        
+        <!-- Meeting scheduler dialog -->
+        <div id="meeting-scheduler" class="scheduler-dialog" style="display: none;">
+            <h2>Schedule Meeting</h2>
+            <div class="time-info" id="meeting-time-info">Meeting on <span id="meeting-date"></span> at <span id="meeting-time">9:00</span> EST</div>
+            
+            <form id="meeting-form" class="meeting-form">
+                <div class="form-group">
+                    <label for="meeting-title">Title</label>
+                    <input type="text" id="meeting-title" name="title" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="meeting-description">Description</label>
+                    <textarea id="meeting-description" name="description" rows="3"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="meeting-time">Time</label>
+                    <select id="meeting-time" name="time">
+                        <option value="09:00">9:00 AM</option>
+                        <option value="10:00">10:00 AM</option>
+                        <option value="11:00">11:00 AM</option>
+                        <option value="12:00">12:00 PM</option>
+                        <option value="13:00">1:00 PM</option>
+                        <option value="14:00">2:00 PM</option>
+                        <option value="15:00">3:00 PM</option>
+                        <option value="16:00">4:00 PM</option>
+                        <option value="17:00">5:00 PM</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="meeting-duration">Duration (minutes)</label>
+                    <select id="meeting-duration" name="duration">
+                        <option value="15">15 minutes</option>
+                        <option value="30" selected>30 minutes</option>
+                        <option value="45">45 minutes</option>
+                        <option value="60">60 minutes</option>
+                        <option value="90">90 minutes</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="meeting-attendees">Attendees (comma separated)</label>
+                    <input type="text" id="meeting-attendees" name="attendees" value="instance.select@gmail.com">
+                </div>
+                
+                <div class="form-group">
+                    <label for="location-type">Location Type</label>
+                    <select id="location-type" name="location_type">
+                        <option value="virtual">Virtual</option>
+                        <option value="in-person">In-person</option>
+                    </select>
+                </div>
+                
+                <div class="form-group" id="virtual-location-group">
+                    <label for="virtual-location">Meeting Link</label>
+                    <input type="text" id="virtual-location" name="location">
+                </div>
+                
+                <div class="form-group" id="physical-location-group" style="display: none;">
+                    <label for="physical-location">Physical Location</label>
+                    <input type="text" id="physical-location" name="physical_location" placeholder="Office Room 101">
+                </div>
+                
+                <!-- Mayan calendar info section -->
+                <div class="mayan-meeting-info">
+                    <h3>Mayan Calendar Energy</h3>
+                    <div id="meeting-mayan-info"></div>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" id="cancel-meeting-btn" class="cancel-btn">Cancel</button>
+                    <button type="submit" id="schedule-meeting-btn" class="submit-btn">Schedule Meeting</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Toast container for notifications -->
+    <div id="toast-container"></div>
+    
+    <script type="module">
+        import * as calendarModule from '/build/dev/javascript/tandemx_client/calendar.mjs';
+        import * as calendarSystemSelector from '/src/calendar_system_selector.js';
+        import * as mayanCalendar from '/src/mayan_calendar.js';
+        
+        window.addEventListener('DOMContentLoaded', () => {
+            // Initialize main calendar module
+            calendarModule.main();
+            
+            // Initialize calendar system selector
+            const systemContainer = document.getElementById('calendar-system-container');
+            if (systemContainer) {
+                calendarSystemSelector.initCalendarSystemUI(systemContainer);
+            }
+            
+            // Update Mayan info panel with today's date
+            updateMayanInfoPanel(new Date());
+            
+            // Setup meeting scheduler
+            setupMeetingScheduler();
+        });
+        
+        // Function to update the Mayan info panel
+        function updateMayanInfoPanel(date) {
+            // Import necessary modules
+            import('/src/mayan_calendar.js')
+                .then(mayanCalendar => {
+                    // Get today's Mayan date
+                    const mayanDate = mayanCalendar.gregorianToMayan(date);
+                    
+                    // Update the info panel
+                    document.getElementById('mayan-long-count').textContent = mayanDate.longCount;
+                    document.getElementById('mayan-tzolkin').textContent = mayanDate.tzolkin;
+                    document.getElementById('mayan-haab').textContent = mayanDate.haab;
+                    
+                    // Update significance based on Tzolkin day
+                    const tzolkinDaySignificance = {
+                        'Imix': 'Imix represents primordial earth and nurturing energy. A good day for new beginnings and maternal activities.',
+                        'Ik': 'Ik represents wind, breath, and spirit. A good day for communication and inspiration.',
+                        'Akbal': 'Akbal represents darkness, the night, and the dreamworld. A good day for introspection and dream work.',
+                        'Kan': 'Kan represents seed, abundance, and lizard. A good day for planting seeds and starting projects.',
+                        'Chicchan': 'Chicchan represents serpent and life force energy. A good day for spiritual work and healing.',
+                        'Cimi': 'Cimi represents death, transformation, and letting go. A good day for releasing what no longer serves you.',
+                        'Manik': 'Manik represents deer, hand, and grasping knowledge. A good day for skilled work and healing with hands.',
+                        'Lamat': 'Lamat represents star, abundance, and rabbit. A good day for fertility and harmony.',
+                        'Muluc': 'Muluc represents water, offering, and moon. A good day for emotional work and making offerings.',
+                        'Oc': 'Oc represents dog, loyalty, and guidance. A good day for friendship and working with communities.',
+                        'Chuen': 'Chuen represents monkey, artistry, and weaving. A good day for creative work and play.',
+                        'Eb': 'Eb represents the human journey and road of life. A good day for making travel plans and community endeavors.',
+                        'Ben': 'Ben represents corn, abundance, and personal growth. A good day for home and family matters.',
+                        'Ix': 'Ix represents jaguar, shaman, and earth magic. A good day for working with sacred energies.',
+                        'Men': 'Men represents eagle, vision, and higher perspective. A good day for seeing the bigger picture.',
+                        'Cib': 'Cib represents owl, wisdom, and introspection. A good day for seeking inner wisdom.',
+                        'Caban': 'Caban represents earth, movement, and synchronicity. A good day for connection with earth energies.',
+                        'Etznab': 'Etznab represents mirror, flint, and truth-telling. A good day for clarity and honest reflection.',
+                        'Cauac': 'Cauac represents storm, thunder, and purification. A good day for cleansing and renewal.',
+                        'Ahau': 'Ahau represents sun, enlightenment, and completion. A good day for celebration and spiritual awareness.'
+                    };
+                    
+                    document.getElementById('mayan-significance').textContent = 
+                        tzolkinDaySignificance[mayanDate.tzolkinDay] || 
+                        `${mayanDate.tzolkinDay} energy brings special qualities for this day.`;
+                })
+                .catch(error => {
+                    console.error('Error loading Mayan calendar module:', error);
+                });
+        }
+        
+        // Setup meeting scheduler functionality
+        function setupMeetingScheduler() {
+            // Event delegation for day cells
+            document.addEventListener('click', function(event) {
+                const dayCell = event.target.closest('.day');
+                
+                if (dayCell) {
+                    const dateStr = dayCell.getAttribute('data-date');
+                    if (dateStr) {
+                        openSchedulerForDate(dateStr);
+                    }
+                }
+                
+                // Handle schedule button clicks
+                if (event.target.matches('.mayan-schedule-btn') || event.target.matches('.schedule-btn')) {
+                    // Find the parent day cell
+                    const parentDay = event.target.closest('.day');
+                    if (parentDay) {
+                        const dateStr = parentDay.getAttribute('data-date');
+                        if (dateStr) {
+                            openSchedulerForDate(dateStr);
+                        }
+                    }
+                    
+                    // Stop the event from bubbling to the day cell
+                    event.stopPropagation();
+                }
+            });
+            
+            // Add event listener for form submission
+            const meetingForm = document.getElementById('meeting-form');
+            if (meetingForm) {
+                meetingForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    
+                    // Get form data
+                    const formData = new FormData(meetingForm);
+                    const meetingData = Object.fromEntries(formData.entries());
+                    
+                    // Get selected date
+                    const dateStr = document.getElementById('meeting-date').textContent;
+                    
+                    // Create meeting object
+                    const meeting = {
+                        title: meetingData.title,
+                        description: meetingData.description,
+                        date: dateStr,
+                        start_time: meetingData.time,
+                        duration_minutes: parseInt(meetingData.duration, 10),
+                        attendees: meetingData.attendees.split(',').map(e => e.trim()),
+                        location_type: { type: meetingData.location_type === 'virtual' ? 'Virtual' : 'Physical' },
+                        location: meetingData.location_type === 'virtual' ? 
+                            meetingData.location : meetingData.physical_location
+                    };
+                    
+                    // Schedule the meeting with Mayan info
+                    scheduleMeetingWithMayanInfo(meeting);
+                });
+            }
+            
+            // Add event listener for the cancel button
+            const cancelBtn = document.getElementById('cancel-meeting-btn');
+            if (cancelBtn) {
+                cancelBtn.addEventListener('click', function() {
+                    document.getElementById('meeting-scheduler').style.display = 'none';
+                });
+            }
+            
+            // Handle location type changes
+            const locationType = document.getElementById('location-type');
+            if (locationType) {
+                locationType.addEventListener('change', function() {
+                    const virtualGroup = document.getElementById('virtual-location-group');
+                    const physicalGroup = document.getElementById('physical-location-group');
+                    
+                    if (this.value === 'virtual') {
+                        virtualGroup.style.display = 'block';
+                        physicalGroup.style.display = 'none';
+                    } else {
+                        virtualGroup.style.display = 'none';
+                        physicalGroup.style.display = 'block';
+                    }
+                });
+            }
+        }
+        
+        // Function to open the scheduler for a specific date
+        function openSchedulerForDate(dateStr) {
+            // Update the meeting date
+            document.getElementById('meeting-date').textContent = dateStr;
+            
+            // Get Mayan date info
+            import('/src/mayan_calendar.js')
+                .then(mayanCalendar => {
+                    const date = new Date(dateStr);
+                    const mayanDate = mayanCalendar.gregorianToMayan(date);
+                    
+                    // Show Mayan date info in the scheduler
+                    const mayanInfoElement = document.getElementById('meeting-mayan-info');
+                    if (mayanInfoElement) {
+                        mayanInfoElement.innerHTML = `
+                            <div class="mayan-meeting-date">
+                                <strong>Long Count:</strong> ${mayanDate.longCount}<br>
+                                <strong>Tzolkin:</strong> ${mayanDate.tzolkin}<br>
+                                <strong>Haab:</strong> ${mayanDate.haab}<br>
+                                <div class="mayan-day-glyph">${mayanCalendar.getDayGlyph(date)}</div>
+                            </div>
+                            <div class="mayan-meeting-significance">
+                                <p>This day's energy: ${getMayanDaySignificance(mayanDate.tzolkinDay)}</p>
+                            </div>
+                        `;
+                    }
+                    
+                    // Show the scheduler dialog
+                    document.getElementById('meeting-scheduler').style.display = 'block';
+                    
+                    // Generate a meeting link
+                    import('/src/calendar_ffi.js')
+                        .then(calendarFfi => {
+                            const virtualLocationInput = document.getElementById('virtual-location');
+                            if (virtualLocationInput && !virtualLocationInput.value) {
+                                virtualLocationInput.value = calendarFfi.generateMeetingLink ? 
+                                    calendarFfi.generateMeetingLink('google') : 
+                                    'https://meet.google.com/' + Math.random().toString(36).substring(2, 11);
+                            }
+                        });
+                });
+        }
+        
+        // Function to schedule meeting with Mayan info
+        function scheduleMeetingWithMayanInfo(meeting) {
+            // Import the calendar FFI module
+            import('/src/calendar_ffi.js')
+                .then(calendarFfi => {
+                    // Schedule the meeting
+                    if (calendarFfi.scheduleMeeting) {
+                        calendarFfi.scheduleMeeting(meeting);
+                    } else {
+                        console.error('scheduleMeeting function not available');
+                        alert('Could not schedule meeting. Please try again.');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error importing calendar FFI:', error);
+                    alert('Could not schedule meeting. Please try again.');
+                });
+        }
+        
+        // Get the significance for a Tzolkin day
+        function getMayanDaySignificance(tzolkinDay) {
+            const tzolkinDaySignificance = {
+                'Imix': 'Imix represents primordial earth. Good for new beginnings.',
+                'Ik': 'Ik represents wind and spirit. Good for communication.',
+                'Akbal': 'Akbal represents darkness. Good for introspection.',
+                'Kan': 'Kan represents seed and abundance. Good for starting projects.',
+                'Chicchan': 'Chicchan represents serpent. Good for healing work.',
+                'Cimi': 'Cimi represents transformation. Good for releasing.',
+                'Manik': 'Manik represents deer/hand. Good for skilled work.',
+                'Lamat': 'Lamat represents star. Good for harmony.',
+                'Muluc': 'Muluc represents water. Good for emotional work.',
+                'Oc': 'Oc represents dog/loyalty. Good for friendship.',
+                'Chuen': 'Chuen represents monkey/artistry. Good for creativity.',
+                'Eb': 'Eb represents human journey. Good for travel planning.',
+                'Ben': 'Ben represents corn/growth. Good for family matters.',
+                'Ix': 'Ix represents jaguar/shaman. Good for spiritual work.',
+                'Men': 'Men represents eagle/vision. Good for planning.',
+                'Cib': 'Cib represents owl/wisdom. Good for inner reflection.',
+                'Caban': 'Caban represents earth/movement. Good for connection.',
+                'Etznab': 'Etznab represents mirror/truth. Good for clarity.',
+                'Cauac': 'Cauac represents storm. Good for cleansing.',
+                'Ahau': 'Ahau represents sun/completion. Good for celebration.'
+            };
+            
+            return tzolkinDaySignificance[tzolkinDay] || `${tzolkinDay} brings special qualities`;
+        }
+        
+        // Handle calendar system display buttons
+        document.querySelectorAll('.mayan-display-btn').forEach(button => {
+            button.addEventListener('click', () => {
+                // Remove active class from all buttons
+                document.querySelectorAll('.mayan-display-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                
+                // Add active class to clicked button
+                button.classList.add('active');
+                
+                // Get selected system
+                const system = button.getAttribute('data-system');
+                
+                // Convert calendar display
+                import('/src/calendar_ffi.js')
+                    .then(calendarFfi => {
+                        if (calendarFfi.convertCalendarDisplay) {
+                            calendarFfi.convertCalendarDisplay(system);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error loading calendar FFI module:', error);
+                    });
+            });
+        });
+    </script>
+</body>
+</html> 

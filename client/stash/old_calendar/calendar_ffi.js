@@ -1,4 +1,348 @@
 import { toList } from "./gleam.mjs";
+import * as mayanCalendar from './mayan_calendar.js';
+import * as calendarTranslation from './calendar_translation.js';
+
+// Current calendar system (can be changed by user)
+let currentCalendarSystem = calendarTranslation.CALENDAR_SYSTEMS.MAYAN; // Default to Mayan
+
+/**
+ * Get the current calendar system
+ * @returns {String} Current calendar system identifier
+ */
+export function getCurrentCalendarSystem() {
+  return currentCalendarSystem;
+}
+
+/**
+ * Set the current calendar system
+ * @param {String} system - Calendar system to use
+ * @returns {Boolean} Success status
+ */
+export function setCalendarSystem(system) {
+  if (Object.values(calendarTranslation.CALENDAR_SYSTEMS).includes(system)) {
+    currentCalendarSystem = system;
+    return true;
+  }
+  return false;
+}
+
+/**
+ * Get date in the current calendar system
+ * @param {Date} date - JavaScript Date object
+ * @returns {Object} Date in the current calendar system
+ */
+export function getDateInCurrentSystem(date) {
+  return calendarTranslation.fromGregorian(date, currentCalendarSystem);
+}
+
+/**
+ * Format date in the current calendar system
+ * @param {Date} date - JavaScript Date object
+ * @param {Object} options - Formatting options
+ * @returns {String} Formatted date string
+ */
+export function formatDateInCurrentSystem(date, options = {}) {
+  return calendarTranslation.formatDate(date, currentCalendarSystem, options);
+}
+
+/**
+ * Get Mayan date information for a specific date
+ * @param {String} dateStr - Date string in YYYY-MM-DD format
+ * @returns {Object} Mayan date information
+ */
+export function getMayanDate(dateStr) {
+  const date = new Date(dateStr);
+  return mayanCalendar.gregorianToMayan(date);
+}
+
+/**
+ * Get a list of all calendar systems for a specific date
+ * @param {String} dateStr - Date string in YYYY-MM-DD format
+ * @returns {Object} Date information in all calendar systems
+ */
+export function getAllCalendarSystems(dateStr) {
+  const date = new Date(dateStr);
+  return calendarTranslation.getAllCalendarSystems(date);
+}
+
+/**
+ * Get the Mayan day glyph for a specific date
+ * @param {String} dateStr - Date string in YYYY-MM-DD format
+ * @returns {String} Mayan day glyph
+ */
+export function getMayanDayGlyph(dateStr) {
+  const date = new Date(dateStr);
+  return mayanCalendar.getDayGlyph(date);
+}
+
+/**
+ * Get energies for all days in a month in the Mayan calendar
+ * @param {Number} year - Gregorian year
+ * @param {Number} month - Gregorian month (1-12)
+ * @returns {Array} Array of daily Mayan energies for the month
+ */
+export function getMayanMonthEnergies(year, month) {
+  return mayanCalendar.getMonthMayanEnergies(year, month);
+}
+
+/**
+ * Initialize the calendar with Mayan support
+ * This attaches Mayan date information to each day cell
+ */
+export function initMayanCalendar() {
+  // Get all day cells
+  const dayCells = document.querySelectorAll('.day');
+  
+  dayCells.forEach(cell => {
+    const dateStr = cell.getAttribute('data-date');
+    if (dateStr) {
+      // Get Mayan date information
+      const mayanDate = getMayanDate(dateStr);
+      
+      // Create Mayan date info elements
+      const mayanInfo = document.createElement('div');
+      mayanInfo.className = 'mayan-day-info';
+      
+      const tzolkin = document.createElement('div');
+      tzolkin.className = 'mayan-tzolkin';
+      tzolkin.textContent = mayanDate.tzolkin;
+      
+      const haab = document.createElement('div');
+      haab.className = 'mayan-haab';
+      haab.textContent = mayanDate.haab;
+      
+      const glyph = document.createElement('div');
+      glyph.className = 'mayan-glyph';
+      glyph.textContent = mayanCalendar.getDayGlyph(new Date(dateStr));
+      
+      // Add info to the day cell
+      mayanInfo.appendChild(tzolkin);
+      mayanInfo.appendChild(haab);
+      cell.appendChild(mayanInfo);
+      cell.appendChild(glyph);
+    }
+  });
+}
+
+// Function to convert calendar system on existing grid
+export function convertCalendarDisplay(toSystem) {
+  // Set the current calendar system
+  setCalendarSystem(toSystem);
+  
+  // Get all day cells
+  const dayCells = document.querySelectorAll('.day');
+  
+  dayCells.forEach(cell => {
+    const dateStr = cell.getAttribute('data-date');
+    if (dateStr) {
+      const date = new Date(dateStr);
+      
+      // Get date in the target system
+      const convertedDate = calendarTranslation.fromGregorian(date, toSystem);
+      
+      // Find or create the system-specific info element
+      let systemInfo = cell.querySelector(`.${toSystem}-day-info`);
+      if (!systemInfo) {
+        systemInfo = document.createElement('div');
+        systemInfo.className = `${toSystem}-day-info`;
+        cell.appendChild(systemInfo);
+      }
+      
+      // Update with formatted date information
+      systemInfo.innerHTML = calendarTranslation.formatDate(date, toSystem, { format: 'short' });
+      
+      // Toggle visibility of different calendar system infos
+      const allSystemInfos = cell.querySelectorAll('[class$="-day-info"]');
+      allSystemInfos.forEach(info => {
+        info.style.display = 'none';
+      });
+      systemInfo.style.display = 'block';
+    }
+  });
+  
+  // Update the calendar header to show current system
+  const calendarHeader = document.querySelector('.calendar-header h1');
+  if (calendarHeader) {
+    calendarHeader.textContent = `Calendar (${toSystem.charAt(0).toUpperCase() + toSystem.slice(1)})`;
+  }
+  
+  return { type: 'none' };
+}
+
+// When scheduling a meeting, add Mayan calendar information
+const originalScheduleMeeting = window.scheduleMeeting || function() {};
+export function scheduleMeeting(meeting) {
+  // Get Mayan date information
+  const mayanDate = getMayanDate(meeting.date);
+  
+  // Add Mayan information to meeting data
+  const meetingWithMayanInfo = {
+    ...meeting,
+    mayanDate: {
+      longCount: mayanDate.longCount,
+      tzolkin: mayanDate.tzolkin,
+      haab: mayanDate.haab
+    }
+  };
+  
+  console.log('Scheduling meeting with Mayan date info:', meetingWithMayanInfo);
+  
+  // Add Mayan significance to meeting description if not already set
+  if (!meeting.description || meeting.description.trim() === '') {
+    const tzolkinDay = mayanDate.tzolkinDay;
+    const significance = getMayanDaySignificance(tzolkinDay);
+    meetingWithMayanInfo.description = 
+      `Meeting on Mayan date: ${mayanDate.longCount} ${mayanDate.tzolkin} ${mayanDate.haab}\n\n` +
+      `Day energy: ${significance}`;
+  }
+  
+  // Call original scheduling function with enhanced data
+  if (typeof originalScheduleMeeting === 'function') {
+    return originalScheduleMeeting(meetingWithMayanInfo);
+  }
+  
+  // Show a loading indicator
+  const submitBtn = document.getElementById('schedule-meeting-btn');
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Scheduling...';
+  }
+  
+  // Find the day cell for this meeting date
+  const dayCell = findDayCell(meeting.date);
+  
+  // Create the email content
+  let emailSubject = `Meeting: ${meetingWithMayanInfo.title}`;
+  let emailBody = `
+    Meeting: ${meetingWithMayanInfo.title}
+    Date: ${formatDate(meetingWithMayanInfo.date)} (${mayanDate.longCount} ${mayanDate.tzolkin} ${mayanDate.haab})
+    Time: ${formatTime(meetingWithMayanInfo.start_time)} (${meetingWithMayanInfo.timezone || getTimezone()})
+    Duration: ${meetingWithMayanInfo.duration_minutes} minutes
+    Description: ${meetingWithMayanInfo.description}
+    Attendees: ${Array.isArray(meetingWithMayanInfo.attendees) ? meetingWithMayanInfo.attendees.join(', ') : meetingWithMayanInfo.attendees}
+  `;
+  
+  // Add location details to the email body
+  if (meetingWithMayanInfo.location_type.type === 'Virtual' || 
+      (meetingWithMayanInfo.location_type && meetingWithMayanInfo.location_type.type === 'Virtual')) {
+    emailBody += `\nVirtual Meeting Link: ${meetingWithMayanInfo.location}`;
+  } else {
+    emailBody += `\nMeeting Location: ${meetingWithMayanInfo.location}`;
+  }
+  
+  // Make API call to the server - ensure all required data is sent as JSON
+  fetch('/api/schedule-meeting', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(meetingWithMayanInfo)
+  })
+  .then(response => {
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+    return response.json();
+  })
+  .then(data => {
+    console.log('Server response:', data);
+    
+    // Format attendee list for the notification
+    const attendeeList = Array.isArray(meetingWithMayanInfo.attendees) 
+      ? meetingWithMayanInfo.attendees.join(', ') 
+      : meetingWithMayanInfo.attendees;
+    
+    // Show success message with specific details including Mayan date
+    showNotification(
+      `Meeting "${meetingWithMayanInfo.title}" scheduled for ${formatDate(meetingWithMayanInfo.date)} (${mayanDate.tzolkin}) at ${formatTime(meetingWithMayanInfo.start_time)}. Email notifications sent to: ${attendeeList}`, 
+      'success'
+    );
+    
+    // Reset button state
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Schedule Meeting';
+    }
+    
+    // Close both dialogs - use display:none to properly hide them
+    const schedulerDialog = document.querySelector('.scheduler-dialog');
+    const dayView = document.querySelector('.day-view');
+    
+    if (schedulerDialog) {
+      schedulerDialog.style.display = 'none';
+      
+      // Reset the form for next use
+      const form = schedulerDialog.querySelector('.meeting-form');
+      if (form) {
+        form.reset();
+        // Regenerate meeting link for next time
+        const virtualLocationInput = document.getElementById('virtual-location');
+        if (virtualLocationInput) {
+          virtualLocationInput.value = generateMeetingLink('google');
+        }
+      }
+    }
+    
+    if (dayView) {
+      dayView.style.display = 'none';
+    }
+    
+    // Add meeting to the calendar view
+    if (typeof addMeetingToCalendarView === 'function') {
+      addMeetingToCalendarView(meetingWithMayanInfo);
+    }
+    
+    // Add meeting directly to the day cell
+    if (dayCell && typeof addMeetingToDayCell === 'function') {
+      console.log('Adding meeting to day cell for date:', meetingWithMayanInfo.date);
+      addMeetingToDayCell(dayCell, meetingWithMayanInfo);
+    }
+  })
+  .catch(error => {
+    console.error('Error scheduling meeting:', error);
+    showNotification('Error scheduling meeting. Please try again.', 'error');
+    
+    // Reset button state
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Schedule Meeting';
+    }
+  });
+  
+  return { type: 'none' };
+}
+
+/**
+ * Get the significance description for a Tzolkin day
+ * @param {String} tzolkinDay - Tzolkin day name
+ * @returns {String} Significance description
+ */
+function getMayanDaySignificance(tzolkinDay) {
+  const tzolkinDaySignificance = {
+    'Imix': 'Imix represents primordial earth and nurturing energy. A good day for new beginnings and maternal activities.',
+    'Ik': 'Ik represents wind, breath, and spirit. A good day for communication and inspiration.',
+    'Akbal': 'Akbal represents darkness, the night, and the dreamworld. A good day for introspection and dream work.',
+    'Kan': 'Kan represents seed, abundance, and lizard. A good day for planting seeds and starting projects.',
+    'Chicchan': 'Chicchan represents serpent and life force energy. A good day for spiritual work and healing.',
+    'Cimi': 'Cimi represents death, transformation, and letting go. A good day for releasing what no longer serves you.',
+    'Manik': 'Manik represents deer, hand, and grasping knowledge. A good day for skilled work and healing with hands.',
+    'Lamat': 'Lamat represents star, abundance, and rabbit. A good day for fertility and harmony.',
+    'Muluc': 'Muluc represents water, offering, and moon. A good day for emotional work and making offerings.',
+    'Oc': 'Oc represents dog, loyalty, and guidance. A good day for friendship and working with communities.',
+    'Chuen': 'Chuen represents monkey, artistry, and weaving. A good day for creative work and play.',
+    'Eb': 'Eb represents the human journey and road of life. A good day for making travel plans and community endeavors.',
+    'Ben': 'Ben represents corn, abundance, and personal growth. A good day for home and family matters.',
+    'Ix': 'Ix represents jaguar, shaman, and earth magic. A good day for working with sacred energies.',
+    'Men': 'Men represents eagle, vision, and higher perspective. A good day for seeing the bigger picture.',
+    'Cib': 'Cib represents owl, wisdom, and introspection. A good day for seeking inner wisdom.',
+    'Caban': 'Caban represents earth, movement, and synchronicity. A good day for connection with earth energies.',
+    'Etznab': 'Etznab represents mirror, flint, and truth-telling. A good day for clarity and honest reflection.',
+    'Cauac': 'Cauac represents storm, thunder, and purification. A good day for cleansing and renewal.',
+    'Ahau': 'Ahau represents sun, enlightenment, and completion. A good day for celebration and spiritual awareness.'
+  };
+  
+  return tzolkinDaySignificance[tzolkinDay] || `${tzolkinDay} energy brings special qualities for this day.`;
+}
 
 // Get today's date in YYYY-MM-DD format
 export function getTodayDate() {
@@ -539,158 +883,6 @@ export function getMeetingDetails() {
     location_type: { type: locationType === 'virtual' ? 'Virtual' : 'InPerson' },
     location
   };
-}
-
-// Schedule meeting and send emails
-export function scheduleMeeting(meeting) {
-  console.log('Scheduling meeting:', meeting);
-  
-  // Ensure the meeting has all required fields
-  const title = meeting.title || "Default Meeting";
-  const description = meeting.description || '';
-  const date = meeting.date || new Date().toISOString().split('T')[0];
-  const start_time = meeting.start_time || '09:00';
-  const duration_minutes = meeting.duration_minutes || 30;
-  let attendees = meeting.attendees || [];
-  
-  // Ensure attendees is properly formatted
-  if (typeof attendees === 'string') {
-    attendees = attendees.split(',').map(email => email.trim()).filter(email => email.length > 0);
-  }
-  
-  // Always ensure there's at least one attendee
-  if (!Array.isArray(attendees) || attendees.length === 0) {
-    attendees = ['instance.select@gmail.com'];
-  }
-  
-  // Make sure the organizer is always included in the attendees list
-  const organizerEmail = 'instance.select@gmail.com';
-  if (!attendees.includes(organizerEmail)) {
-    attendees.push(organizerEmail);
-  }
-  
-  // Prepare the meeting data
-  const meetingData = {
-    id: meeting.id || generateId(),
-    title: title,
-    description: description,
-    date: date,
-    start_time: start_time,
-    duration_minutes: duration_minutes,
-    attendees: attendees,
-    timezone: meeting.timezone || getTimezone(),
-    location_type: meeting.location_type ? 
-      (typeof meeting.location_type === 'string' ? meeting.location_type : meeting.location_type.type) : 
-      'Virtual',
-    location: meeting.location || generateMeetingLink('google')
-  };
-  
-  console.log('FINAL meeting data for server:', meetingData);
-  
-  // Show a loading indicator
-  const submitBtn = document.getElementById('schedule-meeting-btn');
-  if (submitBtn) {
-    submitBtn.disabled = true;
-    submitBtn.textContent = 'Scheduling...';
-  }
-  
-  // Find the day cell for this meeting date
-  const dayCell = findDayCell(meeting.date);
-  
-  // Create the email content
-  let emailSubject = `Meeting: ${meetingData.title}`;
-  let emailBody = `
-    Meeting: ${meetingData.title}
-    Date: ${formatDate(meetingData.date)}
-    Time: ${formatTime(meetingData.start_time)} (${meetingData.timezone})
-    Duration: ${meetingData.duration_minutes} minutes
-    Description: ${meetingData.description}
-    Attendees: ${meetingData.attendees.join(', ')}
-  `;
-  
-  // Add location details to the email body
-  if (meetingData.location_type === 'Virtual') {
-    emailBody += `\nVirtual Meeting Link: ${meetingData.location}`;
-  } else {
-    emailBody += `\nMeeting Location: ${meetingData.location}`;
-  }
-  
-  // Make API call to the server - ensure all required data is sent as JSON
-  fetch('/api/schedule-meeting', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(meetingData)
-  })
-  .then(response => {
-    if (!response.ok) {
-      throw new Error(`HTTP error! Status: ${response.status}`);
-    }
-    return response.json();
-  })
-  .then(data => {
-    console.log('Server response:', data);
-    
-    // Format attendee list for the notification
-    const attendeeList = meetingData.attendees.join(', ');
-    
-    // Show success message with specific details
-    showNotification(
-      `Meeting "${meetingData.title}" scheduled for ${formatDate(meetingData.date)} at ${formatTime(meetingData.start_time)}. Email notifications sent to: ${attendeeList}`, 
-      'success'
-    );
-    
-    // Reset button state
-    if (submitBtn) {
-      submitBtn.disabled = false;
-      submitBtn.textContent = 'Schedule Meeting';
-    }
-    
-    // Close both dialogs - use display:none to properly hide them
-    const schedulerDialog = document.querySelector('.scheduler-dialog');
-    const dayView = document.querySelector('.day-view');
-    
-    if (schedulerDialog) {
-      schedulerDialog.style.display = 'none';
-      
-      // Reset the form for next use
-      const form = schedulerDialog.querySelector('.meeting-form');
-      if (form) {
-        form.reset();
-        // Regenerate meeting link for next time
-        const virtualLocationInput = document.getElementById('virtual-location');
-        if (virtualLocationInput) {
-          virtualLocationInput.value = generateMeetingLink('google');
-        }
-      }
-    }
-    
-    if (dayView) {
-      dayView.style.display = 'none';
-    }
-    
-    // Add meeting to the calendar view
-    addMeetingToCalendarView(meetingData);
-    
-    // Add meeting directly to the day cell
-    if (dayCell) {
-      console.log('Adding meeting to day cell for date:', meetingData.date);
-      addMeetingToDayCell(dayCell, meetingData);
-    }
-  })
-  .catch(error => {
-    console.error('Error scheduling meeting:', error);
-    showNotification('Error scheduling meeting. Please try again.', 'error');
-    
-    // Reset button state
-    if (submitBtn) {
-      submitBtn.disabled = false;
-      submitBtn.textContent = 'Schedule Meeting';
-    }
-  });
-  
-  return { type: 'none' };
 }
 
 // Helper function to find the day cell for a specific date

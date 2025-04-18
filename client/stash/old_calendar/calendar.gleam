@@ -24,6 +24,7 @@ pub type Model {
     schedule_state: ScheduleState,
     selected_date: Option(String),
     loading: Bool,
+    system_type: CalendarSystemType,
   )
 }
 
@@ -35,6 +36,7 @@ pub type CalendarSystem {
     month: Int,
     selected_date: Option(String),
     new_meeting: Option(Meeting),
+    system_type: CalendarSystemType,
   )
 }
 
@@ -123,6 +125,16 @@ pub type Msg {
   MeetingsLoaded(List(Meeting))
   OpenScheduler(String)
   MeetingScheduled(Meeting)
+  ChangeCalendarSystem(CalendarSystemType)
+}
+
+pub type CalendarSystemType {
+  Gregorian
+  Mayan
+  Julian
+  Hebrew
+  Islamic
+  Persian
 }
 
 // Initialize user interface with today's date
@@ -150,6 +162,7 @@ pub fn init(_: Nil) -> #(Model, effect.Effect(Msg)) {
       month: month,
       selected_date: Some(today_date),
       new_meeting: None,
+      system_type: Mayan,
     )
 
   let default_data =
@@ -178,6 +191,7 @@ pub fn init(_: Nil) -> #(Model, effect.Effect(Msg)) {
       schedule_state: NotScheduling,
       selected_date: Some(today_date),
       loading: True,
+      system_type: Mayan,
     ),
     effect.batch([
       effect.from(fn(dispatch) { dispatch(Initialized) }),
@@ -360,6 +374,23 @@ pub fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
       Model(..model, schedule_state: NotScheduling),
       effect.none(),
     )
+
+    ChangeCalendarSystem(system_type) -> {
+      io.println("Changing calendar system to: " <> string.inspect(system_type))
+
+      #(
+        Model(
+          ..model,
+          system_type: system_type,
+          calendar_system: CalendarSystem(
+            ..model.calendar_system,
+            system_type: system_type,
+          ),
+        ),
+        change_calendar_system_ffi(system_type),
+      )
+    }
+
     _ -> #(model, effect.none())
   }
 }
@@ -858,6 +889,29 @@ fn do_load_calendar_ffi() -> Dynamic
 // External function that clears any existing calendar elements and re-initializes calendar
 @external(javascript, "./calendar_ffi.js", "initCalendarWithAppEntrypoint")
 fn do_initialize_calendar_app() -> Dynamic
+
+// Add a function to handle calendar system change
+fn change_calendar_system_ffi(
+  system_type: CalendarSystemType,
+) -> effect.Effect(Msg) {
+  effect.from(fn(dispatch) {
+    let system_str = case system_type {
+      Gregorian -> "gregorian"
+      Mayan -> "mayan"
+      Julian -> "julian"
+      Hebrew -> "hebrew"
+      Islamic -> "islamic"
+      Persian -> "persian"
+    }
+
+    let _ = do_change_calendar_system_ffi(system_str)
+    dispatch(Initialized)
+  })
+}
+
+// Add the FFI function for calendar system change
+@external(javascript, "./calendar_ffi.js", "setCalendarSystem")
+fn do_change_calendar_system_ffi(system: String) -> Dynamic
 
 // Main function to export
 pub fn main() {

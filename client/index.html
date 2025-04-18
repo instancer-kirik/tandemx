@@ -3,256 +3,161 @@
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>TandemX Platform</title>
-        <link rel="stylesheet" href="https://unpkg.com/todomvc-common@1.0.5/base.css">
-        <link rel="stylesheet" href="https://unpkg.com/todomvc-app-css@2.4.2/index.css">
-        <link rel="stylesheet" href="src/chartspace.css">
-        <style>
-            /* Navigation */
-            .nav-tray {
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100%;
-                z-index: 100;
-            }
-
-            .nav-toggle {
-                position: fixed;
-                top: 1rem;
-                left: 1rem;
-                padding: 0.5rem;
-                font-size: 1.5rem;
-                background: white;
-                border: none;
-                border-radius: 6px;
-                box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-                cursor: pointer;
-                z-index: 101;
-            }
-
-            .navbar {
-                position: fixed;
-                top: 0;
-                left: -300px;
-                width: 300px;
-                height: 100vh;
-                background: white;
-                box-shadow: 2px 0 5px rgba(0,0,0,0.1);
-                transition: left 0.3s ease;
-                padding: 4rem 2rem 2rem;
-            }
-
-            .navbar.open {
-                left: 0;
-            }
-
-            .nav-brand a {
-                font-size: 1.5rem;
-                font-weight: bold;
-                color: #2563eb;
-                text-decoration: none;
-            }
-
-            .nav-links {
-                display: flex;
-                flex-direction: column;
-                gap: 1rem;
-                margin-top: 2rem;
-            }
-
-            .nav-links a {
-                color: #374151;
-                text-decoration: none;
-                font-weight: 500;
-                padding: 0.75rem 1rem;
-                border-radius: 6px;
-                transition: all 0.2s;
-            }
-
-            .nav-links a:hover {
-                color: #2563eb;
-                background: #f9fafb;
-            }
-
-            /* Add some padding to account for the fixed nav toggle */
-            .todoapp {
-                padding-top: 1rem;
-            }
-
-            /* Route containers */
-            .route-container {
-                display: none;
-            }
-            .route-container.active {
-                display: block;
-            }
-
-            /* Form analyzer styles */
-            .form-analyzer-container {
-                padding: 2rem;
-                max-width: 1200px;
-                margin: 0 auto;
-            }
-
-            /* Debug styles */
-            .debug-info {
-                position: fixed;
-                bottom: 1rem;
-                right: 1rem;
-                background: rgba(0,0,0,0.8);
-                color: white;
-                padding: 0.5rem;
-                font-family: monospace;
-                font-size: 12px;
-                border-radius: 4px;
-            }
-        </style>
+        <title>TandemX - Developer Tools</title>
+        <link rel="stylesheet" href="styles.css">
+        <link rel="stylesheet" href="src/landing.css">
+        <meta name="description" content="A collection of specialized development and creative tools organized by language and purpose.">
     </head>
     <body>
-        <nav class="nav-tray">
-            <button class="nav-toggle">☰</button>
-            <div class="navbar">
-                <div class="nav-brand">
-                    <a href="#">TandemX</a>
-                </div>
+        <nav class="main-nav">
+            <div class="nav-content">
+                <a class="logo" href="/">TandemX</a>
                 <div class="nav-links">
-                    <a href="#/" class="nav-link">Todo</a>
-                    <a href="#/chartspace" class="nav-link">Chartspace</a>
-                    <a href="#/form-analyzer" class="nav-link">Form Analyzer</a>
+                    <a class="nav-link" href="/">Home</a>
+                    <a class="nav-link" href="/tools">Dev Tools</a>
+                    <a class="nav-link" href="/tools/deepscape">Deepscape</a>
+                    <a class="nav-link" href="/tools/sledge">Sledge</a>
+                    <a class="nav-link" href="https://findry.lovable.app" target="_blank">Findry</a>
+                    <a class="nav-link" href="https://divvyqueue.lovable.app" target="_blank">DivvyQueue</a>
                 </div>
             </div>
         </nav>
 
-        <div id="todo-container" class="route-container"></div>
-        <div id="chartspace-container" class="route-container"></div>
-        <div id="form-analyzer-container" class="route-container">
-            <div data-lustre-app="form-analyzer" class="form-analyzer-container"></div>
+        <div class="landing-page">
+            <div class="hero-section">
+                <div class="hero-content">
+                    <h1 class="hero-title">TandemX Developer Tools</h1>
+                    <p class="hero-subtitle">A collection of specialized development and creative tools organized by language and purpose.</p>
+                </div>
+            </div>
+
+            <div class="categories-container">
+                <!-- Elixir Category -->
+                <div class="category-card">
+                    <div class="category-header">
+                        <h2 class="category-title">Elixir Applications</h2>
+                        <span class="speed-indicator medium-speed">⚖️</span>
+                        <span class="toggle-icon">▼</span>
+                    </div>
+                    <div class="category-description">
+                        <p>High-performance backend services and interactive applications built with Elixir.</p>
+                    </div>
+                    <div class="tools-grid expanded">
+                        <a class="tool-card" href="/tools/deepscape">
+                            <div class="tool-header">
+                                <h3 class="tool-name">Deepscape</h3>
+                            </div>
+                            <p class="tool-description">Pannable chartspace with editor nodes for visual data flows</p>
+                        </a>
+                        <a class="tool-card" href="/tools/pause-effect">
+                            <div class="tool-header">
+                                <h3 class="tool-name">Pause || Effect</h3>
+                            </div>
+                            <p class="tool-description">Dynamic multiplayer quests, maps, and stats engine</p>
+                        </a>
+                        <a class="tool-card" href="/tools/resolvinator">
+                            <div class="tool-header">
+                                <h3 class="tool-name">Resolvinator</h3>
+                            </div>
+                            <p class="tool-description">Data backend and form management system</p>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Python Category -->
+                <div class="category-card">
+                    <div class="category-header">
+                        <h2 class="category-title">Python Tools</h2>
+                        <span class="speed-indicator fast-speed">⚡</span>
+                        <span class="toggle-icon">▼</span>
+                    </div>
+                    <div class="category-description">
+                        <p>Python-based applications for development, media processing, and exploration.</p>
+                    </div>
+                    <div class="tools-grid expanded">
+                        <a class="tool-card" href="/tools/sledge">
+                            <div class="tool-header">
+                                <h3 class="tool-name">Sledge</h3>
+                            </div>
+                            <p class="tool-description">Web browser with anti-flashbang protection and better tabs</p>
+                        </a>
+                        <a class="tool-card" href="/tools/mediata">
+                            <div class="tool-header">
+                                <h3 class="tool-name">Mediata</h3>
+                            </div>
+                            <p class="tool-description">Multimedia and posting workflow management</p>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Web Applications -->
+                <div class="category-card">
+                    <div class="category-header">
+                        <h2 class="category-title">Web Applications</h2>
+                        <span class="speed-indicator fast-speed">⚡</span>
+                        <span class="toggle-icon">▼</span>
+                    </div>
+                    <div class="category-description">
+                        <p>Browser-based applications and services.</p>
+                    </div>
+                    <div class="tools-grid expanded">
+                        <a class="tool-card" href="https://findry.lovable.app" target="_blank">
+                            <div class="tool-header">
+                                <h3 class="tool-name">Findry</h3>
+                            </div>
+                            <p class="tool-description">Art and resource discovery platform</p>
+                        </a>
+                        <a class="tool-card" href="https://divvyqueue.lovable.app" target="_blank">
+                            <div class="tool-header">
+                                <h3 class="tool-name">DivvyQueue</h3>
+                            </div>
+                            <p class="tool-description">Multiparty contracts and breach management</p>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="about-section">
+                <h2>About This Toolset</h2>
+                <p>This collection represents tools at various stages of development, from experimental prototypes to production-ready applications. They're organized by primary language and performance characteristics.</p>
+                <div class="speed-legend">
+                    <div class="speed-item">
+                        <span class="speed-dot fast-speed">⚡</span>
+                        <span>Fast - Near-instant operations, lightweight</span>
+                    </div>
+                    <div class="speed-item">
+                        <span class="speed-dot medium-speed">⚖️</span>
+                        <span>Medium - Moderate processing, still responsive</span>
+                    </div>
+                    <div class="speed-item">
+                        <span class="speed-dot slow-speed">🐢</span>
+                        <span>Slow - Heavy processing or initialization</span>
+                    </div>
+                </div>
+            </div>
         </div>
 
-        <div class="debug-info"></div>
-
-        <script type="module">
-            import { main as todoMain } from './build/dev/javascript/tandemx_client/todomvc.mjs'
-            import { main as chartspaceMain } from "./build/dev/javascript/tandemx/main.mjs"
-            import { main as formAnalyzerMain } from "./build/dev/javascript/tandemx_client/form_analyzer.mjs"
-
-            let currentApp = null;
-
-            // Debug helper
-            function updateDebugInfo(info) {
-                const debugEl = document.querySelector('.debug-info');
-                debugEl.textContent = JSON.stringify(info, null, 2);
-            }
-
-            // Simple router
-            async function handleRoute() {
-                const hash = window.location.hash || '#/'
-                const pathname = window.location.pathname.slice(1)
-                const todoContainer = document.getElementById('todo-container')
-                const chartspaceContainer = document.getElementById('chartspace-container')
-                const formAnalyzerContainer = document.getElementById('form-analyzer-container')
-
-                // Hide all containers first
-                todoContainer.classList.remove('active')
-                chartspaceContainer.classList.remove('active')
-                formAnalyzerContainer.classList.remove('active')
-
-                // Clean up previous app if exists
-                if (currentApp && currentApp.cleanup) {
-                    currentApp.cleanup();
-                }
-                currentApp = null;
-
-                // Handle direct URLs
-                if (pathname === 'form-analyzer' || hash === '#/form-analyzer') {
-                    // Set route status and show container immediately
-                    document.body.setAttribute('data-current-route', 'form-analyzer');
-                    formAnalyzerContainer.classList.add('active');
-                    
-                    // Initialize container
-                    const appContainer = document.querySelector('[data-lustre-app="form-analyzer"]');
-                    if (appContainer) {
-                        appContainer.innerHTML = '';
-                        appContainer.setAttribute('data-app-status', 'initializing');
-                        // Force container to be visible
-                        appContainer.style.display = 'block';
-                    }
-
-                    // Wait for container to be ready in DOM
-                    await new Promise(resolve => setTimeout(resolve, 50));
-
-                    try {
-                        // Initialize app
-                        currentApp = await formAnalyzerMain();
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                // Toggle category expansion
+                const categoryHeaders = document.querySelectorAll('.category-header');
+                categoryHeaders.forEach(header => {
+                    header.addEventListener('click', function() {
+                        const toolsGrid = this.parentElement.querySelector('.tools-grid');
+                        const icon = this.querySelector('.toggle-icon');
                         
-                        // Double check container is still available
-                        const container = document.querySelector('[data-lustre-app="form-analyzer"]');
-                        if (!container) {
-                            throw new Error('Container lost during initialization');
+                        if (toolsGrid.classList.contains('expanded')) {
+                            toolsGrid.classList.remove('expanded');
+                            toolsGrid.classList.add('collapsed');
+                            icon.textContent = '►';
+                        } else {
+                            toolsGrid.classList.remove('collapsed');
+                            toolsGrid.classList.add('expanded');
+                            icon.textContent = '▼';
                         }
-                        
-                        // Update debug info
-                        updateDebugInfo({ 
-                            route: 'form-analyzer',
-                            status: 'initialized',
-                            container_status: container.getAttribute('data-app-status'),
-                            container_visible: container.offsetParent !== null,
-                            app: !!currentApp
-                        });
-
-                        // Update URL if needed
-                        if (pathname === 'form-analyzer') {
-                            window.history.replaceState(null, '', '/#/form-analyzer');
-                        }
-                    } catch (error) {
-                        console.error('Error initializing form analyzer:', error);
-                        updateDebugInfo({ 
-                            route: 'form-analyzer',
-                            status: 'error',
-                            error: error.message
-                        });
-                    }
-                    return;
-                } else if (pathname === 'chartspace' || hash === '#/chartspace') {
-                    chartspaceContainer.classList.add('active');
-                    document.body.setAttribute('data-current-route', 'chartspace');
-                    currentApp = await chartspaceMain();
-                    if (pathname === 'chartspace') {
-                        window.history.replaceState(null, '', '/#/chartspace');
-                    }
-                } else {
-                    todoContainer.classList.add('active');
-                    document.body.setAttribute('data-current-route', 'todo');
-                    currentApp = await todoMain();
-                }
-
-                updateDebugInfo({ 
-                    route: hash || pathname,
-                    status: 'mounted',
-                    app: !!currentApp
+                    });
                 });
-            }
-
-            // Handle navigation
-            window.addEventListener('hashchange', handleRoute);
-            window.addEventListener('popstate', handleRoute);
-
-            // Initial route handling
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', () => {
-                    updateDebugInfo({ status: 'loading' });
-                    handleRoute();
-                });
-            } else {
-                updateDebugInfo({ status: 'ready' });
-                handleRoute();
-            }
-
-            // Handle nav toggle
-            document.querySelector('.nav-toggle').addEventListener('click', () => {
-                document.querySelector('.navbar').classList.toggle('open')
-            })
+            });
         </script>
     </body>
 </html>

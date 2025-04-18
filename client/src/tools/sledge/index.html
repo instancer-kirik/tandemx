@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sledge - Web Browser | TandemX</title>
+    <link rel="stylesheet" href="/styles.css">
+    <link rel="stylesheet" href="/landing.css">
+    <style>
+        .tool-container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        .tool-header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+        
+        .tool-title {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: var(--primary-color-dark);
+            margin-bottom: 1rem;
+        }
+        
+        .tool-subtitle {
+            font-size: 1.25rem;
+            color: var(--text-color-light);
+        }
+        
+        .speed-indicator {
+            display: inline-block;
+            margin-left: 0.5rem;
+            vertical-align: middle;
+        }
+        
+        .tool-content {
+            background-color: var(--card-bg);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            padding: 2rem;
+        }
+        
+        .tool-section {
+            margin-bottom: 2rem;
+        }
+        
+        .tool-section-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: var(--primary-color);
+        }
+        
+        .feature-list {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .feature-item {
+            padding: 0.75rem 0;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        .feature-item:last-child {
+            border-bottom: none;
+        }
+        
+        .feature-icon {
+            color: var(--secondary-color);
+            font-size: 1.25rem;
+        }
+    </style>
+</head>
+<body>
+    <button class="nav-toggle" onclick="document.body.classList.toggle('nav-open')">☰</button>
+    
+    <div class="tool-container">
+        <div class="tool-header">
+            <h1 class="tool-title">Sledge <span class="speed-indicator fast-speed">⚡</span></h1>
+            <p class="tool-subtitle">Web browser with anti-flashbang protection and better tab management</p>
+        </div>
+        
+        <div class="tool-content">
+            <div class="tool-section">
+                <h2 class="tool-section-title">Overview</h2>
+                <p>Sledge is a PyQt-based web browser designed to solve common annoyances with standard browsers, particularly focusing on protecting users from sudden bright flashes and improving tab management.</p>
+            </div>
+            
+            <div class="tool-section">
+                <h2 class="tool-section-title">Key Features</h2>
+                <ul class="feature-list">
+                    <li class="feature-item">
+                        <span class="feature-icon">✓</span>
+                        <div>
+                            <strong>Anti-Flashbang Protection</strong>
+                            <p>Automatically detects and dims sudden bright screen changes to protect your eyes</p>
+                        </div>
+                    </li>
+                    <li class="feature-item">
+                        <span class="feature-icon">✓</span>
+                        <div>
+                            <strong>Enhanced Tab Management</strong>
+                            <p>Hierarchical tab organization and intelligent grouping</p>
+                        </div>
+                    </li>
+                    <li class="feature-item">
+                        <span class="feature-icon">✓</span>
+                        <div>
+                            <strong>Resource Management</strong>
+                            <p>Intelligently pauses unused tabs to save system resources</p>
+                        </div>
+                    </li>
+                    <li class="feature-item">
+                        <span class="feature-icon">✓</span>
+                        <div>
+                            <strong>PyQt Implementation</strong>
+                            <p>Built with Python and Qt for cross-platform compatibility</p>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+            
+            <div class="tool-section">
+                <h2 class="tool-section-title">Development Status</h2>
+                <p>Sledge is currently in active development. Some features are working in prototype form, while others are still being implemented.</p>
+                <p>The browser uses a QtWebEngine backend with custom Python handlers for the special features.</p>
+            </div>
+            
+            <div class="tool-section">
+                <h2 class="tool-section-title">Get Involved</h2>
+                <p>Sledge is not yet publicly available, but if you're interested in the project or would like to contribute, please <a href="mailto:contact@example.com">get in touch</a>.</p>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Handle back navigation
+            document.querySelector('.nav-toggle').addEventListener('click', function() {
+                document.body.classList.toggle('nav-open');
+            });
+        });
+    </script>
+</body>
+</html> 

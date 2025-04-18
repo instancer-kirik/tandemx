@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deepscape - Pannable Chart Editor | TandemX</title>
+    <link rel="stylesheet" href="/styles.css">
+    <link rel="stylesheet" href="/landing.css">
+    <style>
+        .tool-container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        .tool-header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+        
+        .tool-title {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: var(--primary-color-dark);
+            margin-bottom: 1rem;
+        }
+        
+        .tool-subtitle {
+            font-size: 1.25rem;
+            color: var(--text-color-light);
+        }
+        
+        .speed-indicator {
+            display: inline-block;
+            margin-left: 0.5rem;
+            vertical-align: middle;
+        }
+        
+        .tool-content {
+            background-color: var(--card-bg);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            padding: 2rem;
+        }
+        
+        .tool-section {
+            margin-bottom: 2rem;
+        }
+        
+        .tool-section-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: var(--primary-color);
+        }
+        
+        .feature-list {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .feature-item {
+            padding: 0.75rem 0;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        .feature-item:last-child {
+            border-bottom: none;
+        }
+        
+        .feature-icon {
+            color: var(--secondary-color);
+            font-size: 1.25rem;
+        }
+    </style>
+</head>
+<body>
+    <button class="nav-toggle" onclick="document.body.classList.toggle('nav-open')">☰</button>
+    
+    <div class="tool-container">
+        <div class="tool-header">
+            <h1 class="tool-title">Deepscape <span class="speed-indicator medium-speed">⚖️</span></h1>
+            <p class="tool-subtitle">Pannable chartspace with editor nodes for visual data flows</p>
+        </div>
+        
+        <div class="tool-content">
+            <div class="tool-section">
+                <h2 class="tool-section-title">Overview</h2>
+                <p>Deepscape is an Elixir-based data visualization and flow editor that allows users to create interactive, node-based data processing pipelines with an infinite canvas approach.</p>
+            </div>
+            
+            <div class="tool-section">
+                <h2 class="tool-section-title">Key Features</h2>
+                <ul class="feature-list">
+                    <li class="feature-item">
+                        <span class="feature-icon">✓</span>
+                        <div>
+                            <strong>Infinite Canvas</strong>
+                            <p>Pan and zoom through an unlimited workspace for visual data flows</p>
+                        </div>
+                    </li>
+                    <li class="feature-item">
+                        <span class="feature-icon">✓</span>
+                        <div>
+                            <strong>Node-Based Editing</strong>
+                            <p>Create data pipelines by connecting nodes with visual wires</p>
+                        </div>
+                    </li>
+                    <li class="feature-item">
+                        <span class="feature-icon">✓</span>
+                        <div>
+                            <strong>Real-Time Collaboration</strong>
+                            <p>Built on Elixir for multi-user editing and viewing</p>
+                        </div>
+                    </li>
+                    <li class="feature-item">
+                        <span class="feature-icon">✓</span>
+                        <div>
+                            <strong>Data Visualization</strong>
+                            <p>Integrated charts and graphs for immediate data insights</p>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+            
+            <div class="tool-section">
+                <h2 class="tool-section-title">Development Status</h2>
+                <p>Deepscape is currently at medium speed development status. The core architecture is functional, but there are performance optimizations still in progress for larger datasets.</p>
+                <p>WebSocket connectivity issues are currently being addressed to improve the real-time collaboration features.</p>
+            </div>
+            
+            <div class="tool-section">
+                <h2 class="tool-section-title">Get Involved</h2>
+                <p>If you're interested in data visualization or flow-based programming interfaces, we'd love to hear from you. Contact us to learn more about contributing to Deepscape.</p>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Handle nav toggle
+            document.querySelector('.nav-toggle').addEventListener('click', function() {
+                document.body.classList.toggle('nav-open');
+            });
+        });
+    </script>
+</body>
+</html> 

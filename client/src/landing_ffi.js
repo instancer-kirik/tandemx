@@ -1,17 +1,9 @@
-// Simple navigation function for the landing page
-export function setWindowLocation(path) {
-  // For in-app navigation, use the app's navigation event system
-  if (path.startsWith('/')) {
-    // Create and dispatch a custom event for navigation
-    const event = new CustomEvent('app:navigate', {
-      detail: { path }
-    });
-    document.dispatchEvent(event);
-    return;
-  }
-  
-  // For external links, use standard location change
+// landing_ffi.js - FFI functions for the landing page
+
+// Function to handle navigation
+export function navigate(path) {
   window.location.href = path;
+  return null; // Return null for Gleam compatibility
 }
 
 // Initialize any landing page specific functionality

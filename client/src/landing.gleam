@@ -11,16 +11,15 @@ import lustre/event
 
 pub type Msg {
   NavigateTo(String)
-  AddToCart(String)
-  NavigateToVendure(String)
+  ToggleCategory(String)
 }
 
 pub type Model {
-  Model
+  Model(expanded_categories: List(String))
 }
 
 pub fn init(_) -> #(Model, Effect(Msg)) {
-  #(Model, effect.none())
+  #(Model(expanded_categories: ["elixir", "web"]), effect.none())
 }
 
 pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
@@ -29,369 +28,555 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
       let _ = navigate(path)
       #(model, effect.none())
     }
-    AddToCart(product_id) -> {
-      let _ = add_to_cart(product_id)
-      #(model, effect.none())
-    }
-    NavigateToVendure(path) -> {
-      let _ = navigate_to_vendure(path)
-      #(model, effect.none())
+    ToggleCategory(category) -> {
+      case list.contains(model.expanded_categories, category) {
+        True -> #(
+          Model(
+            expanded_categories: list.filter(model.expanded_categories, fn(c) {
+              c != category
+            }),
+          ),
+          effect.none(),
+        )
+        False -> #(
+          Model(expanded_categories: [category, ..model.expanded_categories]),
+          effect.none(),
+        )
+      }
     }
   }
 }
 
-@external(javascript, "./app_ffi.js", "navigate")
+@external(javascript, "./landing_ffi.js", "navigate")
 fn navigate(path: String) -> Nil
 
-@external(javascript, "./app_ffi.js", "addToCart")
-fn add_to_cart(product_id: String) -> Nil
-
-@external(javascript, "./app_ffi.js", "navigateToVendure")
-fn navigate_to_vendure(path: String) -> Nil
-
-fn view_payment_section() -> Element(Msg) {
-  html.div([class("payment-section")], [
-    html.div([class("payment-content")], [
-      html.h2([class("payment-title")], [html.text("Support/Sponsor")]),
-      html.p([class("payment-subtitle")], [
+fn view_hero() -> Element(Msg) {
+  html.div([class("hero-section")], [
+    html.div([class("hero-content")], [
+      html.h1([class("hero-title")], [html.text("TandemX Developer Tools")]),
+      html.p([class("hero-subtitle")], [
         html.text(
-          "Also I am taking the hunter exam on March 29th, and still have software and gadgets to prepare. ",
+          "A suite of specialized tools for development, creativity, and business management.",
         ),
-        html.a([attribute.href("https://thehuntersassociation.com")], [
-          html.text("https://thehuntersassociation.com"),
+      ]),
+    ]),
+  ])
+}
+
+fn view_featured_tools() -> Element(Msg) {
+  html.div([class("featured-tools")], [
+    html.h2([class("section-title")], [html.text("Featured Tools")]),
+    html.div([class("featured-grid")], [
+      // Findry
+      html.a(
+        [
+          class("tool-card featured findry"),
+          attribute.href("https://findry.lovable.app"),
+        ],
+        [
+          html.div([class("featured-header")], [
+            html.h3([class("featured-title")], [html.text("Findry")]),
+            html.span([class("featured-badge")], [html.text("Popular")]),
+          ]),
+          html.div([class("featured-body")], [
+            html.p([class("featured-description")], [
+              html.text(
+                "Art and resource discovery platform with visual search capabilities and social features.",
+              ),
+            ]),
+          ]),
+          html.div([class("featured-footer")], [
+            html.span([class("tag-label")], [
+              html.span([class("tag tag-beta")], [html.text("Beta")]),
+            ]),
+            html.span([class("icon-arrow")], [html.text("→")]),
+          ]),
+        ],
+      ),
+      // Deepscape
+      html.a(
+        [
+          class("tool-card featured deepscape"),
+          attribute.href("/tools/deepscape"),
+        ],
+        [
+          html.div([class("featured-header")], [
+            html.h3([class("featured-title")], [html.text("Deepscape")]),
+            html.span([class("featured-badge")], [html.text("New")]),
+          ]),
+          html.div([class("featured-body")], [
+            html.p([class("featured-description")], [
+              html.text(
+                "Pannable chartspace with editor nodes for creating visual data flows and pipelines.",
+              ),
+            ]),
+          ]),
+          html.div([class("featured-footer")], [
+            html.span([class("tag-label")], [
+              html.span([class("tag tag-shelved")], [html.text("Shelved")]),
+            ]),
+            html.span([class("icon-arrow")], [html.text("→")]),
+          ]),
+        ],
+      ),
+      // DivvyQueue
+      html.a(
+        [
+          class("tool-card featured divvyqueue"),
+          attribute.href("https://divvyqueue.lovable.app"),
+        ],
+        [
+          html.div([class("featured-header")], [
+            html.h3([class("featured-title")], [html.text("DivvyQueue")]),
+            html.span([class("featured-badge")], [html.text("Stable")]),
+          ]),
+          html.div([class("featured-body")], [
+            html.p([class("featured-description")], [
+              html.text(
+                "Multiparty contracts and breach management system with automated workflows.",
+              ),
+            ]),
+          ]),
+          html.div([class("featured-footer")], [
+            html.span([class("tag-label")], [
+              html.span([class("tag tag-beta")], [html.text("Beta")]),
+            ]),
+            html.span([class("icon-arrow")], [html.text("→")]),
+          ]),
+        ],
+      ),
+      // Sledge
+      html.a(
+        [class("tool-card featured sledge"), attribute.href("/tools/sledge")],
+        [
+          html.div([class("featured-header")], [
+            html.h3([class("featured-title")], [html.text("Sledge")]),
+            html.span([class("featured-badge")], [html.text("Popular")]),
+          ]),
+          html.div([class("featured-body")], [
+            html.p([class("featured-description")], [
+              html.text(
+                "Web browser with anti-flashbang protection, improved tab management, and privacy features.",
+              ),
+            ]),
+          ]),
+          html.div([class("featured-footer")], [
+            html.span([class("tag-label")], [
+              html.span([class("tag tag-releasable")], [html.text("Releasable")]),
+            ]),
+            html.span([class("icon-arrow")], [html.text("→")]),
+          ]),
+        ],
+      ),
+      // Mediata
+      html.a(
+        [class("tool-card featured mediata"), attribute.href("/tools/mediata")],
+        [
+          html.div([class("featured-header")], [
+            html.h3([class("featured-title")], [html.text("Mediata")]),
+            html.span([class("featured-badge")], [html.text("Productivity")]),
+          ]),
+          html.div([class("featured-body")], [
+            html.p([class("featured-description")], [
+              html.text(
+                "Multimedia and posting workflow management for content creators and teams.",
+              ),
+            ]),
+          ]),
+          html.div([class("featured-footer")], [
+            html.span([class("tag-label")], [
+              html.span([class("tag tag-shelved")], [html.text("Shelved")]),
+            ]),
+            html.span([class("icon-arrow")], [html.text("→")]),
+          ]),
+        ],
+      ),
+    ]),
+  ])
+}
+
+fn view_tools_table() -> Element(Msg) {
+  html.div([], [
+    html.h2([class("section-title")], [html.text("Tools Directory")]),
+    html.table([class("tools-table")], [
+      html.thead([], [
+        html.tr([], [
+          html.th([], [html.text("Tool Name")]),
+          html.th([], [html.text("Description")]),
+          html.th([], [html.text("Category")]),
+          html.th([], [html.text("Status")]),
         ]),
       ]),
-      html.div([class("payment-options")], [
-        html.div([class("payment-option cashapp")], [
-          html.h3([], [html.text("Quick Support via Cash App")]),
-          html.a(
-            [
-              class("cashapp-button"),
-              attribute.href("https://cash.app/$Instancer"),
-              attribute.target("_blank"),
-            ],
-            [
-              html.span([class("cashapp-icon")], [html.text("")]),
-              html.text("Support via $Instancer"),
-            ],
-          ),
-        ]),
-        html.div([class("payment-option contact")], [
-          html.h3([], [html.text("Get in Touch")]),
-          html.p([], [
-            html.text("For business inquiries: "),
-            html.a(
-              [
-                class("email-link"),
-                attribute.href("mailto:kirik@instance.select"),
-              ],
-              [html.text("kirik@instance.select")],
-            ),
-            html.text(" or "),
-            html.a(
-              [
-                attribute.href(
-                  "https://bsky.app/profile/instancer-kirik.bsky.social",
-                ),
-              ],
-              [html.text("instancer-kirik.bsky.social")],
-            ),
-            html.text(" or "),
-            html.a([attribute.href("https://x.com/instance_select")], [
-              html.text("https://x.com/instance_select"),
-            ]),
-            html.text(" or "),
-            html.a(
-              [attribute.href("https://www.tiktok.com/@ultimate.starter.kit")],
-              [html.text("https://www.tiktok.com/@ultimate.starter.kit")],
-            ),
+      html.tbody([], [
+        // Web Applications
+        create_table_row(
+          "Findry",
+          "Art and resource discovery platform",
+          "Web",
+          "Beta",
+          "https://findry.lovable.app",
+        ),
+        create_table_row(
+          "DivvyQueue",
+          "Multiparty contracts and breach management",
+          "Web",
+          "Beta",
+          "https://divvyqueue.lovable.app",
+        ),
+        create_table_row(
+          "TandemX",
+          "Project access, calendar, store access",
+          "Web",
+          "Beta",
+          "/",
+        ),
+        // Elixir Applications
+        create_table_row(
+          "Deepscape",
+          "Pannable chartspace with editor nodes for visual data flows",
+          "Elixir",
+          "Shelved",
+          "/tools/deepscape",
+        ),
+        create_table_row(
+          "Pause || Effect",
+          "Dynamic multiplayer quests, maps, and stats engine",
+          "Elixir",
+          "Shelved",
+          "/tools/pause-effect",
+        ),
+        create_table_row(
+          "Resolvinator",
+          "Data backend and form management system",
+          "Elixir",
+          "Shelved",
+          "/tools/resolvinator",
+        ),
+        create_table_row(
+          "Fonce",
+          "D agent and Elixir multisecurity defense system",
+          "Elixir",
+          "Prototype",
+          "/tools/fonce",
+        ),
+        create_table_row(
+          "Seek",
+          "Searching and indexing links and resources",
+          "Elixir",
+          "Shelved",
+          "/tools/seek",
+        ),
+        create_table_row(
+          "Veix",
+          "The Elixir container and DAO LLC framework",
+          "Elixir",
+          "Planned",
+          "/tools/veix",
+        ),
+        // Python Tools
+        create_table_row(
+          "Sledge",
+          "Web browser with anti-flashbang protection and better tabs",
+          "Python",
+          "Releasable",
+          "/tools/sledge",
+        ),
+        create_table_row(
+          "Compyutinator Code",
+          "Computer Science platform IDE with custom diff/merge tools",
+          "Python",
+          "Releasable",
+          "/tools/compyutinator-code",
+        ),
+        create_table_row(
+          "Mediata",
+          "Multimedia and posting workflow management",
+          "Elixir",
+          "Shelved",
+          "/tools/mediata",
+        ),
+        create_table_row(
+          "Varchiver",
+          "Archives and gitconfig with skip patterns",
+          "Python",
+          "Stable",
+          "/tools/varchiver",
+        ),
+        // Blender Python
+        create_table_row(
+          "Bonify",
+          "Rigging a train or arrangement along curves",
+          "Blender",
+          "Prototype",
+          "/tools/bonify",
+        ),
+        create_table_row(
+          "Nomine",
+          "Blender Python utilities",
+          "Blender",
+          "Prototype",
+          "/tools/nomine",
+        ),
+        // C Tools
+        create_table_row(
+          "Cround",
+          "Bracelet Maker",
+          "C",
+          "Releasable",
+          "/tools/cround",
+        ),
+        create_table_row(
+          "Clipdirstructor",
+          "Visual tree layouts converted into directories",
+          "C",
+          "Releasable",
+          "/tools/clipdirstructor",
+        ),
+        // CLI Tools
+        create_table_row(
+          "Clipdirstructer",
+          "CLI structures from visual hierarchies",
+          "CLI",
+          "Releasable",
+          "/tools/clipdirstructer",
+        ),
+        create_table_row(
+          "Explorinator",
+          "Sort files by last modified (VSCode Plugin)",
+          "CLI",
+          "Stable",
+          "/tools/explorinator",
+        ),
+        // Zig Tools
+        create_table_row(
+          "Combocounter",
+          "Tracks variables and combination patterns",
+          "Zig",
+          "Prototype",
+          "/tools/combocounter",
+        ),
+        create_table_row(
+          "Video Editor",
+          "Zig to WASM video editing tool",
+          "Zig",
+          "Prototype",
+          "/tools/video-editor",
+        ),
+        create_table_row(
+          "Trout/Grouper",
+          "Group management tool",
+          "Zig",
+          "Prototype",
+          "/tools/grouper",
+        ),
+      ]),
+    ]),
+  ])
+}
+
+fn create_table_row(
+  name: String,
+  description: String,
+  category: String,
+  status: String,
+  link: String,
+) -> Element(Msg) {
+  let status_class = case status {
+    "Stable" -> "tag-stable"
+    "New" -> "tag-new"
+    "Beta" -> "tag-beta"
+    "Prototype" -> "tag-prototype"
+    "Shelved" -> "tag-shelved"
+    "Planned" -> "tag-planned"
+    "Releasable" -> "tag-releasable"
+    _ -> "tag-beta"
+  }
+
+  html.tr([], [
+    html.td([], [
+      html.a([class("tool-link"), attribute.href(link)], [html.text(name)]),
+    ]),
+    html.td([], [html.text(description)]),
+    html.td([], [html.text(category)]),
+    html.td([], [
+      html.span([class("tag " <> status_class)], [html.text(status)]),
+    ]),
+  ])
+}
+
+fn view_category_lists() -> Element(Msg) {
+  html.div([class("categories-container")], [
+    // Web Applications
+    view_tool_list(
+      "Web Applications",
+      "Browser-based applications and services.",
+      [
+        #(
+          "Findry",
+          "Art and resource discovery platform",
+          "https://findry.lovable.app",
+        ),
+        #(
+          "DivvyQueue",
+          "Multiparty contracts and breach management",
+          "https://divvyqueue.lovable.app",
+        ),
+        #("TandemX", "Project access, calendar, store access", "/"),
+      ],
+    ),
+    // Elixir Applications
+    view_tool_list(
+      "Elixir Applications",
+      "High-performance backend services and interactive applications built with Elixir.",
+      [
+        #(
+          "Deepscape",
+          "Pannable chartspace with editor nodes for visual data flows",
+          "/tools/deepscape",
+        ),
+        #(
+          "Pause || Effect",
+          "Dynamic multiplayer quests, maps, and stats engine",
+          "/tools/pause-effect",
+        ),
+        #(
+          "Resolvinator",
+          "Data backend and form management system",
+          "/tools/resolvinator",
+        ),
+        #(
+          "Fonce",
+          "D agent and Elixir multisecurity defense system",
+          "/tools/fonce",
+        ),
+        #("Seek", "Searching and indexing links and resources", "/tools/seek"),
+        #("Veix", "The Elixir container and DAO LLC framework", "/tools/veix"),
+      ],
+    ),
+    // Python Tools
+    view_tool_list(
+      "Python Tools",
+      "Python-based applications for development, media processing, and exploration.",
+      [
+        #(
+          "Sledge",
+          "Web browser with anti-flashbang protection and better tabs",
+          "/tools/sledge",
+        ),
+        #(
+          "Compyutinator Code",
+          "Computer Science platform IDE with custom diff/merge tools",
+          "/tools/compyutinator-code",
+        ),
+        #(
+          "Mediata",
+          "Multimedia and posting workflow management",
+          "/tools/mediata",
+        ),
+        #(
+          "Varchiver",
+          "Archives and gitconfig with skip patterns",
+          "/tools/varchiver",
+        ),
+      ],
+    ),
+    // Blender Python
+    view_tool_list(
+      "Blender Python",
+      "Blender extensions and tools written in Python.",
+      [
+        #(
+          "Bonify",
+          "Rigging a train or arrangement along curves",
+          "/tools/bonify",
+        ),
+        #("Nomine", "Blender Python utilities", "/tools/nomine"),
+      ],
+    ),
+  ])
+}
+
+fn view_tool_list(
+  title: String,
+  description: String,
+  tools: List(#(String, String, String)),
+) -> Element(Msg) {
+  html.div([class("tool-list")], [
+    html.div([class("tool-list-header")], [
+      html.h3([class("tool-list-title")], [html.text(title)]),
+    ]),
+    html.div([class("category-description")], [
+      html.p([], [html.text(description)]),
+    ]),
+    html.div(
+      [class("tool-list-container")],
+      list.map(tools, fn(tool) {
+        let #(name, description, link) = tool
+        html.div([class("tool-list-item")], [
+          html.a([class("tool-list-link"), attribute.href(link)], [
+            html.text(name),
           ]),
+          html.span([class("tool-list-description")], [html.text(description)]),
+        ])
+      }),
+    ),
+  ])
+}
+
+fn view_about_section() -> Element(Msg) {
+  html.div([class("about-section")], [
+    html.h2([], [html.text("About This Toolset")]),
+    html.p([], [
+      html.text(
+        "This collection represents tools at various stages of development, from experimental prototypes to production-ready applications. They're organized by primary language and purpose.",
+      ),
+    ]),
+    html.div([class("tag-legend")], [
+      html.div([class("tag-item")], [
+        html.span([class("tag tag-stable")], [html.text("Stable")]),
+        html.span([], [
+          html.text("Production-ready tools with complete features"),
         ]),
+      ]),
+      html.div([class("tag-item")], [
+        html.span([class("tag tag-releasable")], [html.text("Releasable")]),
+        html.span([], [html.text("Ready to use with minimal limitations")]),
+      ]),
+      html.div([class("tag-item")], [
+        html.span([class("tag tag-new")], [html.text("New")]),
+        html.span([], [html.text("Recently released stable tools")]),
+      ]),
+      html.div([class("tag-item")], [
+        html.span([class("tag tag-beta")], [html.text("Beta")]),
+        html.span([], [html.text("Functional but may have limited features")]),
+      ]),
+      html.div([class("tag-item")], [
+        html.span([class("tag tag-prototype")], [html.text("Prototype")]),
+        html.span([], [
+          html.text("Early development versions with basic functionality"),
+        ]),
+      ]),
+      html.div([class("tag-item")], [
+        html.span([class("tag tag-planned")], [html.text("Planned")]),
+        html.span([], [
+          html.text("Upcoming tools in planning or pre-development"),
+        ]),
+      ]),
+      html.div([class("tag-item")], [
+        html.span([class("tag tag-shelved")], [html.text("Shelved")]),
+        html.span([], [html.text("Development paused or temporarily inactive")]),
       ]),
     ]),
   ])
 }
 
 pub fn view(model: Model) -> Element(Msg) {
-  html.div([class("landing-page dashboard-layout")], [
-    view_nav(),
-    html.div([class("dashboard-container")], [
-      view_hero(),
-      view_dashboard_modules(),
-    ]),
-    view_payment_section(),
-    view_footer(),
-  ])
-}
-
-// New function that renders the landing page without its own navigation
-pub fn view_without_nav(model: Model) -> Element(Msg) {
-  html.div([class("landing-page dashboard-layout")], [
-    html.div([class("dashboard-container")], [
-      view_hero(),
-      view_dashboard_modules(),
-    ]),
-    view_payment_section(),
-    view_footer(),
-  ])
-}
-
-fn view_nav() -> Element(Msg) {
-  html.nav([class("main-nav")], [
-    html.div([class("nav-content")], [
-      html.a([class("logo"), attribute.href("/")], [html.text("TandemX")]),
-      html.div([class("nav-links")], [
-        html.a([class("nav-link"), attribute.href("/findry")], [
-          html.text("Findry"),
-        ]),
-        html.a([class("nav-link"), attribute.href("/divvyqueue")], [
-          html.text("DivvyQueue"),
-        ]),
-        html.a([class("nav-link"), attribute.href("/divvyqueue2")], [
-          html.text("DivvyQueue2"),
-        ]),
-        html.a([class("nav-link"), attribute.href("/projects")], [
-          html.text("Projects"),
-        ]),
-      ]),
-      html.div([class("nav-actions")], [
-        html.a([class("nav-btn login"), attribute.href("/login")], [
-          html.text("Log In(NOT IMPLEMENTED YET)"),
-        ]),
-        html.a([class("nav-btn signup"), attribute.href("/signup")], [
-          html.text("Sign Up(NOT IMPLEMENTED YET)"),
-        ]),
-      ]),
-    ]),
-  ])
-}
-
-fn view_hero() -> Element(Msg) {
-  html.div([class("hero-section dashboard-hero")], [
-    html.div([class("hero-content")], [
-      html.h1([class("hero-title")], [html.text("TandemX Dashboard")]),
-      html.p([class("hero-subtitle")], [
-        html.text(
-          "Your command center for creative collaboration and business operations. Access all your tools from one central hub.",
-        ),
-      ]),
-    ]),
-  ])
-}
-
-fn view_dashboard_modules() -> Element(Msg) {
-  html.div([class("dashboard-grid")], [
-    // Row 1: Main modules
-    html.div([class("dashboard-row")], [
-      // Creative tools
-      view_dashboard_card(
-        "Creative Tools",
-        [
-          #("Findry", "/findry", "Artist and space discovery platform"),
-          #("Events", "/events", "Event discovery and scheduling"),
-          #("ChartSpace", "/chartspace", "Visual data analytics"),
-          #("Digital Boards", "/digital-boards", "Visual organization tools"),
-        ],
-        "creative",
-      ),
-      // Business tools
-      view_dashboard_card(
-        "Business Tools",
-        [
-          #("DivvyQueue", "/divvyqueue", "Agreement management"),
-          #("DivvyQueue2", "/divvyqueue2", "Financial management"),
-          #("Compliance", "/compliance", "Regulatory compliance tools"),
-          #("Banking", "/banking", "Financial operations"),
-        ],
-        "business",
-      ),
-    ]),
-    // Row 2: Additional tools and quick stats
-    html.div([class("dashboard-row")], [
-      // Tasks and Calendar
-      view_dashboard_card(
-        "Organization",
-        [
-          #("Tasks", "/todos", "Task management system"),
-          #("Calendar", "/calendar", "Schedule and event management"),
-          #("Projects", "/projects", "Project management hub"),
-          #("Cards", "/cards", "Card-based management"),
-        ],
-        "organization",
-      ),
-      // Quick stats
-      view_stats_card(),
-    ]),
-    // Row 3: Products and marketplace
-    html.div([class("dashboard-row")], [
-      // Products showcase
-      view_dashboard_card(
-        "Products",
-        [
-          #(
-            "MT Clipboards",
-            "/mt-clipboards",
-            "Professional clipboard solutions",
-          ),
-          #("Sledge", "/sledge", "Developer browser"),
-          #("Hunter Exam Prep", "/hunter", "Training for the Hunter Exam"),
-          #("Digital Tools", "/tools", "Digital productivity tools"),
-        ],
-        "products",
-      ),
-      // Activity feed
-      view_activity_feed(),
-    ]),
-  ])
-}
-
-fn view_dashboard_card(
-  title: String,
-  links: List(#(String, String, String)),
-  card_type: String,
-) -> Element(Msg) {
-  html.div([class("dashboard-card " <> card_type)], [
-    html.h3([class("card-title")], [html.text(title)]),
-    html.div(
-      [class("card-links")],
-      list.map(links, fn(link_data) {
-        let #(name, link, description) = link_data
-        html.a(
-          [
-            class("dashboard-link"),
-            attribute.href(link),
-            attribute.title(description),
-          ],
-          [
-            html.div([class("link-content")], [
-              html.span([class("link-name")], [html.text(name)]),
-              html.span([class("link-description")], [html.text(description)]),
-            ]),
-          ],
-        )
-      }),
-    ),
-  ])
-}
-
-fn view_stats_card() -> Element(Msg) {
-  html.div([class("dashboard-card stats")], [
-    html.h3([class("card-title")], [html.text("Quick Stats")]),
-    html.div([class("stats-container")], [
-      html.div([class("stat-item")], [
-        html.span([class("stat-value")], [html.text("12")]),
-        html.span([class("stat-label")], [html.text("Active Projects")]),
-      ]),
-      html.div([class("stat-item")], [
-        html.span([class("stat-value")], [html.text("4")]),
-        html.span([class("stat-label")], [html.text("Pending Agreements")]),
-      ]),
-      html.div([class("stat-item")], [
-        html.span([class("stat-value")], [html.text("8")]),
-        html.span([class("stat-label")], [html.text("Upcoming Events")]),
-      ]),
-      html.div([class("stat-item")], [
-        html.span([class("stat-value")], [html.text("3")]),
-        html.span([class("stat-label")], [html.text("New Messages")]),
-      ]),
-    ]),
-  ])
-}
-
-fn view_activity_feed() -> Element(Msg) {
-  html.div([class("dashboard-card activity")], [
-    html.h3([class("card-title")], [html.text("Recent Activity")]),
-    html.ul([class("activity-feed")], [
-      html.li([class("activity-item")], [
-        html.span([class("activity-time")], [html.text("Today 10:45 AM")]),
-        html.span([class("activity-text")], [
-          html.text("New agreement proposal from Studio 721"),
-        ]),
-      ]),
-      html.li([class("activity-item")], [
-        html.span([class("activity-time")], [html.text("Yesterday 3:20 PM")]),
-        html.span([class("activity-text")], [
-          html.text("Task completed: Update project timeline"),
-        ]),
-      ]),
-      html.li([class("activity-item")], [
-        html.span([class("activity-time")], [html.text("March 12, 2:15 PM")]),
-        html.span([class("activity-text")], [
-          html.text("Event scheduled: Team planning session"),
-        ]),
-      ]),
-      html.li([class("activity-item")], [
-        html.span([class("activity-time")], [html.text("March 10, 11:30 AM")]),
-        html.span([class("activity-text")], [
-          html.text("New artist space match found in Brooklyn"),
-        ]),
-      ]),
-    ]),
-  ])
-}
-
-fn view_footer() -> Element(Msg) {
-  html.footer([class("main-footer")], [
-    html.div([class("footer-content")], [
-      html.div([class("footer-brand")], [
-        html.h3([class("footer-logo")], [html.text("TandemX")]),
-        html.p([class("footer-tagline")], [
-          html.text("Building the future of creative collaboration"),
-        ]),
-      ]),
-      html.div([class("footer-links")], [
-        view_footer_column("Products", [
-          #("MT Clipboards", "/mt-clipboards"),
-          #("Sledge", "/sledge"),
-          #("D.d", "/ddew"),
-          #("Shiny", "/shiny"),
-        ]),
-        view_footer_column("Development", [
-          #("Sledge", "/sledge"),
-          #("D.d", "/ddew"),
-          #("Shiny", "/shiny"),
-        ]),
-        view_footer_column("Creative", [
-          #("Findry", "/findry"),
-          #("DivvyQueue", "/divvyqueue"),
-          #("ChartSpace", "/chartspace"),
-        ]),
-        view_footer_column("Business", [
-          #("DivvyQueue2", "/divvyqueue2"),
-          #("CardCard", "/cards"),
-          #("Cumpliers", "/compliance"),
-        ]),
-        view_footer_column("Resources", [
-          #("Documentation", "/docs"),
-          #("Support", "/support"),
-          #("Status", "/status"),
-          #("Calendar", "/calendar"),
-          #("Projects", "/projects"),
-          #("About", "/about"),
-        ]),
-      ]),
-    ]),
-    html.div([class("footer-bottom")], [
-      html.p([], [html.text("© 2024 TandemX. All rights reserved.")]),
-    ]),
-  ])
-}
-
-fn view_footer_column(
-  title: String,
-  links: List(#(String, String)),
-) -> Element(Msg) {
-  html.div([class("footer-column")], [
-    html.h4([class("footer-column-title")], [html.text(title)]),
-    html.ul(
-      [class("footer-column-links")],
-      list.map(links, fn(link) {
-        let #(text, path) = link
-        html.li([], [
-          html.a([class("footer-link"), attribute.href(path)], [html.text(text)]),
-        ])
-      }),
-    ),
+  html.div([class("landing-page")], [
+    view_hero(),
+    view_featured_tools(),
+    view_tools_table(),
+    view_category_lists(),
+    view_about_section(),
   ])
 }
 

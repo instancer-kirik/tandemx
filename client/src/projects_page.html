@@ -274,83 +274,10 @@
                     <div class="tab" hx-get="/projects/business" hx-target="#projects-container" hx-trigger="click">Business</div>
                 </div>
                 
-                <div id="projects-container" class="projects-grid">
-                    <!-- Projects will be loaded here via HTMX -->
-                    <!-- Fallback content that will be replaced via HTMX -->
-                    <div class="project-card">
-                        <div class="project-header">
-                            <span class="project-emoji">📋</span>
-                            <h3 class="project-name">MT Clipboards</h3>
-                        </div>
-                        <p class="project-description">Professional clipboard solutions for businesses and individuals</p>
-                        <ul class="project-features">
-                            <li><span class="feature-check">✓</span> Premium quality materials</li>
-                            <li><span class="feature-check">✓</span> Custom branding options</li>
-                            <li><span class="feature-check">✓</span> Bulk ordering available</li>
-                            <li><span class="feature-check">✓</span> Corporate gift solutions</li>
-                            <li><span class="feature-check">✓</span> Eco-friendly options</li>
-                        </ul>
-                        <div class="project-actions">
-                            <a href="/mt-clipboards" class="project-link">Learn More</a>
-                            <a href="/checkout?product=mt-clipboards" class="interest-btn">Buy Now</a>
-                        </div>
-                    </div>
-                    
-                    <div class="project-card">
-                        <div class="project-header">
-                            <span class="project-emoji">🌐</span>
-                            <h3 class="project-name">Sledge</h3>
-                        </div>
-                        <p class="project-description">A web browser made by developers, for developers, with advanced privacy features and developer tools</p>
-                        <ul class="project-features">
-                            <li><span class="feature-check">✓</span> Privacy-focused architecture with sandboxing</li>
-                            <li><span class="feature-check">✓</span> QWebEngine with Chromium support</li>
-                            <li><span class="feature-check">✓</span> Group-based memory-state tab management</li>
-                            <li><span class="feature-check">✓</span> Anti-flashbang and force dark mode</li>
-                            <li><span class="feature-check">✓</span> V3 extensions and Manifest V2 support</li>
-                        </ul>
-                        <div class="project-actions">
-                            <a href="/sledge" class="project-link">Learn More</a>
-                            <a href="/checkout?product=sledge" class="interest-btn">Buy Now</a>
-                        </div>
-                    </div>
-                    
-                    <div class="project-card">
-                        <div class="project-header">
-                            <span class="project-emoji">🎨</span>
-                            <h3 class="project-name">Findry</h3>
-                        </div>
-                        <p class="project-description">Art and resource discovery platform connecting creative spaces with artists</p>
-                        <ul class="project-features">
-                            <li><span class="feature-check">✓</span> Artist/Offerer Discovery</li>
-                            <li><span class="feature-check">✓</span> Space/Equipment marketplace</li>
-                            <li><span class="feature-check">✓</span> Interactive virtual space tours</li>
-                            <li><span class="feature-check">✓</span> Event scheduling and organizing</li>
-                            <li><span class="feature-check">✓</span> Brand-managed events</li>
-                        </ul>
-                        <div class="project-actions">
-                            <a href="/findry" class="project-link">Learn More</a>
-                            <a href="/checkout?product=findry" class="interest-btn">Buy Now</a>
-                        </div>
-                    </div>
-                    
-                    <div class="project-card">
-                        <div class="project-header">
-                            <span class="project-emoji">📊</span>
-                            <h3 class="project-name">DivvyQueue</h3>
-                        </div>
-                        <p class="project-description">Corporeal-Incorporation agreement management platform</p>
-                        <ul class="project-features">
-                            <li><span class="feature-check">✓</span> Multiparty agreements with document support</li>
-                            <li><span class="feature-check">✓</span> Timeline tracking and breach handling</li>
-                            <li><span class="feature-check">✓</span> Smart contract integration</li>
-                            <li><span class="feature-check">✓</span> Cross-discipline project tools</li>
-                            <li><span class="feature-check">✓</span> Real-time collaboration</li>
-                        </ul>
-                        <div class="project-actions">
-                            <a href="/divvyqueue" class="project-link">Learn More</a>
-                            <a href="/checkout?product=divvyqueue" class="interest-btn">Buy Now</a>
-                        </div>
+                <div id="projects-container" class="projects-grid" hx-get="/projects/all" hx-trigger="load">
+                    <!-- Projects will be loaded dynamically via HTMX -->
+                    <div class="loading-indicator">
+                        <p>Loading projects...</p>
                     </div>
                 </div>
             </div>
@@ -379,9 +306,6 @@
                     tab.classList.add('active');
                 });
             });
-            
-            // Load initial projects
-            htmx.trigger('#projects-container', 'htmx:load');
         });
     </script>
 </body>

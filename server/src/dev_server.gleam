@@ -298,14 +298,11 @@ pub fn main() {
       segments -> {
         case segments {
           ["landing"] -> serve_html("landing.html")
-          ["divvyqueue"] -> serve_html("divvyqueue.html")
-          ["bizpay"] -> serve_html("bizpay.html")
-          ["bizpay", "features"] -> serve_html("bizpay.html")
-          ["bizpay", "pricing"] -> serve_html("bizpay.html")
-          ["bizpay", "docs"] -> serve_html("bizpay.html")
-          ["bizpay", "demo"] -> serve_html("bizpay.html")
-          ["bizpay", "contact"] -> serve_html("bizpay.html")
-          ["bizpay", "interest"] -> handle_interest_form("bizpay")
+
+          ["pricing"] -> serve_html("pricing.html")
+          ["terms-and-conditions"] -> serve_html("terms-and-conditions.html")
+          ["poemsmith"] -> serve_html("landing.html")
+          // Temporary redirect until PoemSmith is ready
           ["bizpay", "api", "submit-interest"] -> {
             case req.method {
               http.Post -> {

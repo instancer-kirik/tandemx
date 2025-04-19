@@ -1,5 +1,5 @@
 # Use official Gleam image
-FROM ghcr.io/gleam-lang/gleam:v1.8.1-erlang
+FROM ghcr.io/gleam-lang/gleam:v1.9.1-erlang
 
 # Set working directory
 WORKDIR /app

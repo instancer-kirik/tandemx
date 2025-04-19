@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TandemX - Pricing</title>
+    <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+    <link rel="stylesheet" href="landing.css">
+    <style>
+        .pricing-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+        }
+        
+        .pricing-header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+        
+        .pricing-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: var(--primary-color-dark);
+        }
+        
+        .pricing-subtitle {
+            font-size: 1.25rem;
+            color: var(--text-color-light);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        .pricing-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-bottom: 4rem;
+        }
+        
+        .pricing-card {
+            background: white;
+            border-radius: 0.75rem;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+        
+        .pricing-card.popular {
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+            transform: translateY(-8px);
+            border: 1px solid var(--primary-color-light);
+        }
+        
+        .pricing-card.popular::before {
+            content: 'Most Popular';
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background: var(--primary-color);
+            color: white;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+        }
+        
+        .pricing-header-card {
+            padding: 2rem;
+            border-bottom: 1px solid var(--border-color);
+            background: var(--bg-color-dark);
+        }
+        
+        .pricing-name {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--text-color);
+        }
+        
+        .pricing-description {
+            color: var(--text-color-light);
+            margin-bottom: 1.5rem;
+            font-size: 0.95rem;
+        }
+        
+        .pricing-price {
+            font-size: 3rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-bottom: 0.25rem;
+        }
+        
+        .pricing-period {
+            color: var(--text-color-light);
+            font-size: 0.95rem;
+        }
+        
+        .pricing-features {
+            padding: 2rem;
+            flex-grow: 1;
+        }
+        
+        .pricing-features-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: var(--text-color);
+        }
+        
+        .features-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .features-list li {
+            padding: 0.5rem 0;
+            display: flex;
+            align-items: flex-start;
+            gap: 0.5rem;
+        }
+        
+        .features-list li::before {
+            content: '✓';
+            color: var(--primary-color);
+            font-weight: bold;
+        }
+        
+        .pricing-cta {
+            padding: 1.5rem 2rem;
+            background: var(--bg-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .pricing-button {
+            display: inline-block;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            width: 100%;
+            text-align: center;
+            cursor: pointer;
+        }
+        
+        .pricing-button:hover {
+            background: var(--primary-color-dark);
+            transform: translateY(-2px);
+        }
+        
+        .pricing-button.secondary {
+            background: white;
+            color: var(--primary-color);
+            border: 2px solid var(--primary-color);
+        }
+        
+        .pricing-button.secondary:hover {
+            background: var(--primary-color-light);
+            color: white;
+        }
+        
+        .ebook-section {
+            margin-top: 4rem;
+            padding: 3rem;
+            background: var(--bg-color-dark);
+            border-radius: 1rem;
+        }
+        
+        .ebook-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+        
+        .ebook-title {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: var(--primary-color-dark);
+        }
+        
+        .ebook-description {
+            margin-bottom: 2rem;
+            color: var(--text-color);
+        }
+        
+        .faq-section {
+            margin-top: 5rem;
+        }
+        
+        .faq-title {
+            text-align: center;
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 3rem;
+            color: var(--primary-color-dark);
+        }
+        
+        .faq-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .faq-item {
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 1.5rem;
+        }
+        
+        .faq-question {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-color);
+            margin-bottom: 0.75rem;
+        }
+        
+        .faq-answer {
+            color: var(--text-color-light);
+        }
+        
+        @media (max-width: 768px) {
+            .pricing-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .pricing-card.popular {
+                transform: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="hero-section">
+        <div class="hero-content">
+            <h1 class="hero-title">Products & Pricing</h1>
+            <p class="hero-subtitle">Choose the plan that works best for you and your creative needs.</p>
+        </div>
+    </div>
+    
+    <div class="pricing-container">
+        <div class="pricing-header">
+            <h2 class="pricing-title">PoemSmith Subscriptions</h2>
+            <p class="pricing-subtitle">Access our poetry creation and management platform with tools designed for poets and writers.</p>
+        </div>
+        
+        <div class="pricing-grid">
+            <!-- Basic Plan -->
+            <div class="pricing-card">
+                <div class="pricing-header-card">
+                    <h3 class="pricing-name">Basic</h3>
+                    <p class="pricing-description">Perfect for hobby poets and beginners</p>
+                    <div class="pricing-price">$5</div>
+                    <div class="pricing-period">per month</div>
+                </div>
+                <div class="pricing-features">
+                    <h4 class="pricing-features-title">What's included:</h4>
+                    <ul class="features-list">
+                        <li>Unlimited poem storage</li>
+                        <li>Basic formatting tools</li>
+                        <li>Export to PDF and plain text</li>
+                        <li>Monthly writing prompts</li>
+                        <li>Limited community features</li>
+                    </ul>
+                </div>
+                <div class="pricing-cta">
+                    <button class="pricing-button" id="paddle-basic">Subscribe Now</button>
+                </div>
+            </div>
+            
+            <!-- Pro Plan -->
+            <div class="pricing-card popular">
+                <div class="pricing-header-card">
+                    <h3 class="pricing-name">Pro</h3>
+                    <p class="pricing-description">For dedicated poets who want advanced features</p>
+                    <div class="pricing-price">$12</div>
+                    <div class="pricing-period">per month</div>
+                </div>
+                <div class="pricing-features">
+                    <h4 class="pricing-features-title">Everything in Basic, plus:</h4>
+                    <ul class="features-list">
+                        <li>Advanced formatting and styling</li>
+                        <li>Poem revision history</li>
+                        <li>Rhyme and meter analysis tools</li>
+                        <li>Personal portfolio page</li>
+                        <li>Feedback and critique exchanges</li>
+                        <li>Publishing guides and resources</li>
+                    </ul>
+                </div>
+                <div class="pricing-cta">
+                    <button class="pricing-button" id="paddle-pro">Subscribe Now</button>
+                </div>
+            </div>
+            
+            <!-- Premium Plan -->
+            <div class="pricing-card">
+                <div class="pricing-header-card">
+                    <h3 class="pricing-name">Premium</h3>
+                    <p class="pricing-description">The complete package for serious poets</p>
+                    <div class="pricing-price">$25</div>
+                    <div class="pricing-period">per month</div>
+                </div>
+                <div class="pricing-features">
+                    <h4 class="pricing-features-title">Everything in Pro, plus:</h4>
+                    <ul class="features-list">
+                        <li>Professional editor feedback (monthly)</li>
+                        <li>Priority submission to partner journals</li>
+                        <li>AI-assisted composition tools</li>
+                        <li>Custom collection creation and design</li>
+                        <li>Exclusive webinars with published poets</li>
+                        <li>Publishing assistance services</li>
+                    </ul>
+                </div>
+                <div class="pricing-cta">
+                    <button class="pricing-button" id="paddle-premium">Subscribe Now</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Ebook Preorder Section -->
+        <div class="ebook-section">
+            <div class="ebook-container">
+                <h2 class="ebook-title">Coming Soon: Poetry in Motion</h2>
+                <p class="ebook-description">
+                    Our first curated collection of contemporary poetry showcasing emerging voices. 
+                    Pre-order now to get a 20% discount and exclusive bonus content.
+                </p>
+                <div class="pricing-price">$18.99</div>
+                <p class="pricing-period">Pre-order price (Regular: $24.99)</p>
+                <div style="margin-top: 2rem;">
+                    <button class="pricing-button" id="paddle-ebook">Pre-order Now</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- FAQ Section -->
+        <div class="faq-section">
+            <h2 class="faq-title">Frequently Asked Questions</h2>
+            <div class="faq-container">
+                <div class="faq-item">
+                    <h3 class="faq-question">Can I cancel my subscription at any time?</h3>
+                    <p class="faq-answer">Yes, you can cancel your subscription at any time. Your access will continue until the end of your current billing period.</p>
+                </div>
+                <div class="faq-item">
+                    <h3 class="faq-question">How do I access PoemSmith after subscribing?</h3>
+                    <p class="faq-answer">After subscribing, you'll receive an email with login details. You can access PoemSmith through our web platform or mobile app.</p>
+                </div>
+                <div class="faq-item">
+                    <h3 class="faq-question">When will the ebook be released?</h3>
+                    <p class="faq-answer">The ebook is scheduled for release in Summer 2025. Pre-order customers will receive access one week early.</p>
+                </div>
+                <div class="faq-item">
+                    <h3 class="faq-question">Is there a discount for annual subscriptions?</h3>
+                    <p class="faq-answer">Yes, we offer a 20% discount when you choose annual billing for any subscription tier.</p>
+                </div>
+                <div class="faq-item">
+                    <h3 class="faq-question">What payment methods do you accept?</h3>
+                    <p class="faq-answer">We accept all major credit cards, PayPal, and Apple Pay through our secure payment processor.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.paddle.com/paddle/paddle.js"></script>
+    <script>
+        // Initialize Paddle
+        Paddle.Setup({ vendor: 12345 }); // Replace with your Paddle vendor ID
+        
+        // Handle subscription buttons
+        document.getElementById('paddle-basic').addEventListener('click', function() {
+            Paddle.Checkout.open({
+                product: 123456, // Replace with your actual product ID
+                title: 'PoemSmith Basic Subscription'
+            });
+        });
+        
+        document.getElementById('paddle-pro').addEventListener('click', function() {
+            Paddle.Checkout.open({
+                product: 123457, // Replace with your actual product ID
+                title: 'PoemSmith Pro Subscription'
+            });
+        });
+        
+        document.getElementById('paddle-premium').addEventListener('click', function() {
+            Paddle.Checkout.open({
+                product: 123458, // Replace with your actual product ID
+                title: 'PoemSmith Premium Subscription'
+            });
+        });
+        
+        document.getElementById('paddle-ebook').addEventListener('click', function() {
+            Paddle.Checkout.open({
+                product: 123459, // Replace with your actual product ID
+                title: 'Poetry in Motion - Ebook Pre-order'
+            });
+        });
+    </script>
+</body>
+</html> 

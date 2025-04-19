@@ -2,12 +2,23 @@ import gleam/dynamic
 import gleam/float
 import gleam/list
 import gleam/result
+import gleam/string
 import lustre
 import lustre/attribute.{type Attribute, class}
 import lustre/effect.{type Effect}
 import lustre/element.{type Element}
 import lustre/element/html
 import lustre/event
+import project_catalog.{type ProjectInfo}
+
+// Helper function for joining a list of strings with a separator
+fn join_strings(strings: List(String), separator: String) -> String {
+  case strings {
+    [] -> ""
+    [only] -> only
+    [first, ..rest] -> first <> separator <> join_strings(rest, separator)
+  }
+}
 
 pub type Msg {
   NavigateTo(String)
@@ -207,169 +218,69 @@ fn view_tools_table() -> Element(Msg) {
           html.th([], [html.text("Status")]),
         ]),
       ]),
-      html.tbody([], [
-        // Web Applications
-        create_table_row(
-          "Findry",
-          "Art and resource discovery platform",
-          "Web",
-          "Beta",
-          "https://findry.lovable.app",
-        ),
-        create_table_row(
-          "DivvyQueue",
-          "Multiparty contracts and breach management",
-          "Web",
-          "Beta",
-          "https://divvyqueue.lovable.app",
-        ),
-        create_table_row(
-          "TandemX",
-          "Project access, calendar, store access",
-          "Web",
-          "Beta",
-          "/",
-        ),
-        // Elixir Applications
-        create_table_row(
-          "Deepscape",
-          "Pannable chartspace with editor nodes for visual data flows",
-          "Elixir",
-          "Shelved",
-          "/tools/deepscape",
-        ),
-        create_table_row(
-          "Pause || Effect",
-          "Dynamic multiplayer quests, maps, and stats engine",
-          "Elixir",
-          "Shelved",
-          "/tools/pause-effect",
-        ),
-        create_table_row(
-          "Resolvinator",
-          "Data backend and form management system",
-          "Elixir",
-          "Shelved",
-          "/tools/resolvinator",
-        ),
-        create_table_row(
-          "Fonce",
-          "D agent and Elixir multisecurity defense system",
-          "Elixir",
-          "Prototype",
-          "/tools/fonce",
-        ),
-        create_table_row(
-          "Seek",
-          "Searching and indexing links and resources",
-          "Elixir",
-          "Shelved",
-          "/tools/seek",
-        ),
-        create_table_row(
-          "Veix",
-          "The Elixir container and DAO LLC framework",
-          "Elixir",
-          "Planned",
-          "/tools/veix",
-        ),
-        // Python Tools
-        create_table_row(
-          "Sledge",
-          "Web browser with anti-flashbang protection and better tabs",
-          "Python",
-          "Releasable",
-          "/tools/sledge",
-        ),
-        create_table_row(
-          "Compyutinator Code",
-          "Computer Science platform IDE with custom diff/merge tools",
-          "Python",
-          "Releasable",
-          "/tools/compyutinator-code",
-        ),
-        create_table_row(
-          "Mediata",
-          "Multimedia and posting workflow management",
-          "Elixir",
-          "Shelved",
-          "/tools/mediata",
-        ),
-        create_table_row(
-          "Varchiver",
-          "Archives and gitconfig with skip patterns",
-          "Python",
-          "Stable",
-          "/tools/varchiver",
-        ),
-        // Blender Python
-        create_table_row(
-          "Bonify",
-          "Rigging a train or arrangement along curves",
-          "Blender",
-          "Prototype",
-          "/tools/bonify",
-        ),
-        create_table_row(
-          "Nomine",
-          "Blender Python utilities",
-          "Blender",
-          "Prototype",
-          "/tools/nomine",
-        ),
-        // C Tools
-        create_table_row(
-          "Cround",
-          "Bracelet Maker",
-          "C",
-          "Releasable",
-          "/tools/cround",
-        ),
-        create_table_row(
-          "Clipdirstructor",
-          "Visual tree layouts converted into directories",
-          "C",
-          "Releasable",
-          "/tools/clipdirstructor",
-        ),
-        // CLI Tools
-        create_table_row(
-          "Clipdirstructer",
-          "CLI structures from visual hierarchies",
-          "CLI",
-          "Releasable",
-          "/tools/clipdirstructer",
-        ),
-        create_table_row(
-          "Explorinator",
-          "Sort files by last modified (VSCode Plugin)",
-          "CLI",
-          "Stable",
-          "/tools/explorinator",
-        ),
-        // Zig Tools
-        create_table_row(
-          "Combocounter",
-          "Tracks variables and combination patterns",
-          "Zig",
-          "Prototype",
-          "/tools/combocounter",
-        ),
-        create_table_row(
-          "Video Editor",
-          "Zig to WASM video editing tool",
-          "Zig",
-          "Prototype",
-          "/tools/video-editor",
-        ),
-        create_table_row(
-          "Trout/Grouper",
-          "Group management tool",
-          "Zig",
-          "Prototype",
-          "/tools/grouper",
-        ),
-      ]),
+      html.tbody(
+        [],
+        // Generate table rows from project catalog
+        list.map(project_catalog.get_projects(), fn(project) {
+          // Extract main technology for category column
+          let tech_string = join_strings(project.tech_stack, " ")
+          let tech_lower = string.lowercase(tech_string)
+
+          // Determine display category
+          let category = case project.domain {
+            "Development Tools & Environments" -> {
+              case
+                string.contains(tech_lower, "python")
+                || string.contains(tech_lower, "pyqt")
+              {
+                True -> "Python"
+                False ->
+                  case string.contains(tech_lower, "gleam") {
+                    True -> "Gleam"
+                    False ->
+                      case string.contains(tech_lower, "elixir") {
+                        True -> "Elixir"
+                        False ->
+                          case string.contains(tech_lower, "zig") {
+                            True -> "Zig"
+                            False ->
+                              case
+                                string.contains(tech_lower, "c ")
+                                || tech_lower == "c"
+                              {
+                                True -> "C"
+                                False -> "Dev"
+                              }
+                          }
+                      }
+                  }
+              }
+            }
+            "Creative Tools" -> "Creative"
+            "Project Management" -> "PM"
+            "Data & Search" -> "Data"
+            "System Tools" -> "System"
+            "Language Tools" -> "Lang"
+            "Gaming & Entertainment" -> "Gaming"
+            "Business & Contracts" -> "Business"
+            _ -> "Other"
+          }
+
+          // Map status for display
+          let display_status = case project.status {
+            "Active" -> "Beta"
+            status -> status
+          }
+
+          create_table_row(
+            project.name,
+            project.description,
+            category,
+            display_status,
+            project.path,
+          )
+        }),
+      ),
     ]),
   ])
 }
@@ -389,6 +300,8 @@ fn create_table_row(
     "Shelved" -> "tag-shelved"
     "Planned" -> "tag-planned"
     "Releasable" -> "tag-releasable"
+    "Active" -> "tag-beta"
+    // Map Active status to Beta for display
     _ -> "tag-beta"
   }
 
@@ -405,93 +318,79 @@ fn create_table_row(
 }
 
 fn view_category_lists() -> Element(Msg) {
+  let projects = project_catalog.get_projects()
+
+  // Get Web Applications
+  let web_apps =
+    projects
+    |> list.filter(fn(p) {
+      let tech_string = join_strings(p.tech_stack, ", ")
+      string.contains(tech_string, "eb")
+    })
+    |> list.take(3)
+    |> list.map(fn(p) { #(p.name, p.description, p.path) })
+
+  // Get Elixir Applications
+  let elixir_apps =
+    projects
+    |> list.filter(fn(p) {
+      let tech_string =
+        join_strings(p.tech_stack, ", ")
+        |> string.lowercase
+      string.contains(tech_string, "elixir")
+    })
+    |> list.take(6)
+    |> list.map(fn(p) { #(p.name, p.description, p.path) })
+
+  // Get Python Tools
+  let python_tools =
+    projects
+    |> list.filter(fn(p) {
+      let tech_string =
+        join_strings(p.tech_stack, ", ")
+        |> string.lowercase
+      string.contains(tech_string, "python")
+      || string.contains(tech_string, "pyqt")
+    })
+    |> list.take(4)
+    |> list.map(fn(p) { #(p.name, p.description, p.path) })
+
+  // Get Blender Python
+  let blender_tools =
+    projects
+    |> list.filter(fn(p) {
+      let tech_string =
+        join_strings(p.tech_stack, ", ")
+        |> string.lowercase
+      string.contains(tech_string, "blender")
+    })
+    |> list.take(3)
+    |> list.map(fn(p) { #(p.name, p.description, p.path) })
+
   html.div([class("categories-container")], [
     // Web Applications
     view_tool_list(
       "Web Applications",
       "Browser-based applications and services.",
-      [
-        #(
-          "Findry",
-          "Art and resource discovery platform",
-          "https://findry.lovable.app",
-        ),
-        #(
-          "DivvyQueue",
-          "Multiparty contracts and breach management",
-          "https://divvyqueue.lovable.app",
-        ),
-        #("TandemX", "Project access, calendar, store access", "/"),
-      ],
+      web_apps,
     ),
     // Elixir Applications
     view_tool_list(
       "Elixir Applications",
       "High-performance backend services and interactive applications built with Elixir.",
-      [
-        #(
-          "Deepscape",
-          "Pannable chartspace with editor nodes for visual data flows",
-          "/tools/deepscape",
-        ),
-        #(
-          "Pause || Effect",
-          "Dynamic multiplayer quests, maps, and stats engine",
-          "/tools/pause-effect",
-        ),
-        #(
-          "Resolvinator",
-          "Data backend and form management system",
-          "/tools/resolvinator",
-        ),
-        #(
-          "Fonce",
-          "D agent and Elixir multisecurity defense system",
-          "/tools/fonce",
-        ),
-        #("Seek", "Searching and indexing links and resources", "/tools/seek"),
-        #("Veix", "The Elixir container and DAO LLC framework", "/tools/veix"),
-      ],
+      elixir_apps,
     ),
     // Python Tools
     view_tool_list(
       "Python Tools",
       "Python-based applications for development, media processing, and exploration.",
-      [
-        #(
-          "Sledge",
-          "Web browser with anti-flashbang protection and better tabs",
-          "/tools/sledge",
-        ),
-        #(
-          "Compyutinator Code",
-          "Computer Science platform IDE with custom diff/merge tools",
-          "/tools/compyutinator-code",
-        ),
-        #(
-          "Mediata",
-          "Multimedia and posting workflow management",
-          "/tools/mediata",
-        ),
-        #(
-          "Varchiver",
-          "Archives and gitconfig with skip patterns",
-          "/tools/varchiver",
-        ),
-      ],
+      python_tools,
     ),
     // Blender Python
     view_tool_list(
       "Blender Python",
       "Blender extensions and tools written in Python.",
-      [
-        #(
-          "Bonify",
-          "Rigging a train or arrangement along curves",
-          "/tools/bonify",
-        ),
-        #("Nomine", "Blender Python utilities", "/tools/nomine"),
-      ],
+      blender_tools,
     ),
   ])
 }

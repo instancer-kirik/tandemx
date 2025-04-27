@@ -502,6 +502,7 @@
                     <button class="category-tab" data-category="controllers">Controllers</button>
                     <button class="category-tab" data-category="sensors">Sensors</button>
                     <button class="category-tab" data-category="vehicles">Vehicles</button>
+                    <button class="category-tab" data-category="paint-cans">Paint Cans</button>
                     <button class="category-tab" data-category="accessories">Accessories</button>
                 </div>
                 
@@ -563,17 +564,116 @@
             
             // Fetch products from API
             async function fetchProducts() {
-                try {
-                    const response = await fetch(`/api/wishlist/products`);
-                    if (!response.ok) {
-                        throw new Error('Failed to fetch products');
+                // In a real app, this would be fetched from the server
+                // For now, we'll use mock data
+                return [
+                    // Paint Cans
+                    {
+                        id: 'paintcan1',
+                        name: 'Empty Rust-Orange Paint Can (1970s)',
+                        description: 'Vintage empty paint can from the 1970s with authentic rust patina. Perfect for steampunk projects.',
+                        price: 12.99,
+                        category: 'paint-cans',
+                        image: '/images/wishlist/placeholder.svg',
+                        badge: 'vintage',
+                        specs: {
+                            'Condition': 'Used/Empty',
+                            'Decade': '1970s',
+                            'Rust Level': 'Moderate',
+                            'Height': '6 inches'
+                        }
+                    },
+                    {
+                        id: 'paintcan2',
+                        name: 'Empty Industrial Gray Paint Can (1980s)',
+                        description: 'Weathered empty paint can with industrial aesthetic. Great for robot body components.',
+                        price: 9.99,
+                        category: 'paint-cans',
+                        image: '/images/wishlist/placeholder.svg',
+                        specs: {
+                            'Condition': 'Used/Empty',
+                            'Decade': '1980s',
+                            'Rust Level': 'Light',
+                            'Height': '5 inches'
+                        }
+                    },
+                    {
+                        id: 'paintcan3',
+                        name: 'Antique Lead Paint Can (Pre-1960)',
+                        description: 'Rare empty lead paint can from pre-1960 era. Historical collector\'s item.',
+                        price: 24.99,
+                        salePrice: 19.99,
+                        category: 'paint-cans',
+                        image: '/images/wishlist/placeholder.svg',
+                        badge: 'sale',
+                        specs: {
+                            'Condition': 'Used/Empty',
+                            'Era': 'Pre-1960',
+                            'Historical Value': 'High',
+                            'Height': '7 inches'
+                        }
+                    },
+                    {
+                        id: 'paintcan4',
+                        name: 'Navy Blue Workshop Paint Can',
+                        description: 'Empty workshop paint can with faded navy blue exterior. Authentic workshop patina.',
+                        price: 8.99,
+                        category: 'paint-cans',
+                        image: '/images/wishlist/placeholder.svg',
+                        specs: {
+                            'Condition': 'Used/Empty',
+                            'Color': 'Navy Blue (faded)',
+                            'Rust Level': 'Minimal',
+                            'Height': '6 inches'
+                        }
+                    },
+                    {
+                        id: 'paintcan5',
+                        name: 'Red Barn Paint Bucket (Galvanized)',
+                        description: 'Large empty galvanized bucket that contained red barn paint. Sturdy construction.',
+                        price: 18.99,
+                        category: 'paint-cans',
+                        image: '/images/wishlist/placeholder.svg',
+                        badge: 'new',
+                        specs: {
+                            'Condition': 'Used/Empty',
+                            'Material': 'Galvanized Metal',
+                            'Size': 'Large (2 gallon)',
+                            'Handle': 'Metal bail handle'
+                        }
+                    },
+                    // Robot Parts
+                    {
+                        id: 'servo1',
+                        name: 'High-Torque Servo Motor',
+                        description: 'Powerful servo motor for robotic arms and precision movement applications.',
+                        price: 24.99,
+                        category: 'robot-parts',
+                        image: '/images/wishlist/servo-motor.svg',
+                        specs: {
+                            'Torque': '15kg/cm',
+                            'Speed': '0.15sec/60°',
+                            'Weight': '60g',
+                            'Voltage': '6-7.4V'
+                        }
+                    },
+                    {
+                        id: 'arduino1',
+                        name: 'Arduino Nano Board',
+                        description: 'Compact development board for small-scale robotics projects.',
+                        price: 12.99,
+                        salePrice: 9.99,
+                        category: 'controllers',
+                        image: '/images/wishlist/arduino-nano.svg',
+                        badge: 'sale',
+                        specs: {
+                            'Microcontroller': 'ATmega328P',
+                            'Clock Speed': '16 MHz',
+                            'Digital I/O Pins': '14',
+                            'Analog Pins': '8'
+                        }
                     }
-                    return await response.json();
-                } catch (error) {
-                    console.error('Error fetching products:', error);
-                    showToast('Error loading products', 'error');
-                    return [];
-                }
+                ];
             }
             
             // Fetch user's wishlist

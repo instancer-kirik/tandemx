@@ -64,12 +64,98 @@ fn navigate(path: String) -> Nil
 fn view_hero() -> Element(Msg) {
   html.div([class("hero-section")], [
     html.div([class("hero-content")], [
-      html.h1([class("hero-title")], [html.text("TandemX Developer Tools")]),
+      html.h1([class("hero-title")], [html.text("instance.select Spaceport")]),
       html.p([class("hero-subtitle")], [
         html.text(
-          "A suite of specialized tools for development, creativity, and business management.",
+          "Launch your development journey with our specialized tools and platforms.",
         ),
       ]),
+    ]),
+  ])
+}
+
+fn view_featured_articles() -> Element(Msg) {
+  html.div([class("featured-articles")], [
+    html.h2([class("section-title")], [html.text("Featured Articles")]),
+    html.div([class("articles-grid")], [
+      // Article 1
+      html.a(
+        [
+          class("article-card card-item"),
+          attribute.href("/blog/spaceport-launch"),
+        ],
+        [
+          html.div([class("article-header")], [
+            html.span([class("article-category")], [html.text("Announcement")]),
+            html.h3([class("article-title")], [
+              html.text("instance.select Spaceport Launch"),
+            ]),
+          ]),
+          html.div([class("article-content")], [
+            html.p([class("article-excerpt")], [
+              html.text(
+                "Introducing our new dark mode interface for developers, built to enhance your workflow with a space-inspired theme.",
+              ),
+            ]),
+          ]),
+          html.div([class("article-footer")], [
+            html.span([class("article-date")], [html.text("July 15, 2024")]),
+            html.span([class("article-read-more")], [html.text("Read more →")]),
+          ]),
+        ],
+      ),
+      // Article 2
+      html.a(
+        [
+          class("article-card card-item"),
+          attribute.href("/blog/chart-space-navigation"),
+        ],
+        [
+          html.div([class("article-header")], [
+            html.span([class("article-category")], [html.text("Tutorial")]),
+            html.h3([class("article-title")], [
+              html.text("Navigating Chart Space"),
+            ]),
+          ]),
+          html.div([class("article-content")], [
+            html.p([class("article-excerpt")], [
+              html.text(
+                "Learn how to effectively use the new Chart Space feature to visualize complex data flows and relationships.",
+              ),
+            ]),
+          ]),
+          html.div([class("article-footer")], [
+            html.span([class("article-date")], [html.text("July 10, 2024")]),
+            html.span([class("article-read-more")], [html.text("Read more →")]),
+          ]),
+        ],
+      ),
+      // Article 3
+      html.a(
+        [
+          class("article-card card-item"),
+          attribute.href("/blog/multiverse-development"),
+        ],
+        [
+          html.div([class("article-header")], [
+            html.span([class("article-category")], [html.text("Development")]),
+            html.h3([class("article-title")], [
+              html.text("Multi-Verse Development"),
+            ]),
+          ]),
+          html.div([class("article-content")], [
+            html.p([class("article-excerpt")], [
+              html.text(
+                "Exploring parallel development environments for maximum productivity and experimental workflows.",
+              ),
+            ]),
+          ]),
+          html.div([class("article-footer")], [
+            html.span([class("article-date")], [html.text("July 5, 2024")]),
+            html.span([class("article-read-more")], [html.text("Read more →")]),
+          ]),
+        ],
+      ),
     ]),
   ])
 }
@@ -469,13 +555,231 @@ fn view_about_section() -> Element(Msg) {
   ])
 }
 
+// Create a navigation component for the landing page
+fn view_navigation() -> Element(Msg) {
+  html.nav([class("main-nav")], [
+    html.div([class("nav-content")], [
+      // Logo/Brand
+      html.a([class("logo"), attribute.href("/")], [html.text("TandemX")]),
+      // Navigation Links
+      html.div([class("nav-links")], [
+        html.a(
+          [
+            class("nav-link"),
+            attribute.href("/"),
+            event.on_click(NavigateTo("/")),
+          ],
+          [html.text("Home")],
+        ),
+        html.a(
+          [
+            class("nav-link"),
+            attribute.href("/projects"),
+            event.on_click(NavigateTo("/projects")),
+          ],
+          [html.text("Projects")],
+        ),
+        html.a(
+          [
+            class("nav-link"),
+            attribute.href("/blog"),
+            event.on_click(NavigateTo("/blog")),
+          ],
+          [html.text("Blog")],
+        ),
+        html.a(
+          [
+            class("nav-link"),
+            attribute.href("/calendar"),
+            event.on_click(NavigateTo("/calendar")),
+          ],
+          [html.text("Calendar")],
+        ),
+        html.a(
+          [
+            class("nav-link"),
+            attribute.href("/pricing"),
+            event.on_click(NavigateTo("/pricing")),
+          ],
+          [html.text("Pricing")],
+        ),
+        html.a(
+          [
+            class("nav-link"),
+            attribute.href("/terms"),
+            event.on_click(NavigateTo("/terms")),
+          ],
+          [html.text("Terms")],
+        ),
+      ]),
+      // Action Buttons
+      html.div([class("nav-actions")], [
+        html.a(
+          [
+            class("nav-btn login"),
+            attribute.href("/login"),
+            event.on_click(NavigateTo("/login")),
+          ],
+          [html.text("Log in")],
+        ),
+        html.a(
+          [
+            class("nav-btn signup"),
+            attribute.href("/signup"),
+            event.on_click(NavigateTo("/signup")),
+          ],
+          [html.text("Sign up")],
+        ),
+      ]),
+    ]),
+  ])
+}
+
+// Create a footer component with the same links
+fn view_footer() -> Element(Msg) {
+  html.footer([class("main-footer")], [
+    html.div([class("footer-content")], [
+      // Brand Section
+      html.div([class("footer-brand")], [
+        html.a([class("footer-logo"), attribute.href("/")], [
+          html.text("TandemX"),
+        ]),
+        html.p([class("footer-tagline")], [
+          html.text("Tools for creative business"),
+        ]),
+      ]),
+      // Footer Links Columns
+      html.div([class("footer-links")], [
+        // Column 1: Products
+        html.div([class("footer-column")], [
+          html.h4([class("footer-column-title")], [html.text("Products")]),
+          html.ul([class("footer-column-links")], [
+            html.li([], [
+              html.a(
+                [
+                  class("footer-link"),
+                  attribute.href("/findry"),
+                  event.on_click(NavigateTo("/findry")),
+                ],
+                [html.text("Findry")],
+              ),
+            ]),
+            html.li([], [
+              html.a(
+                [
+                  class("footer-link"),
+                  attribute.href("/sledge"),
+                  event.on_click(NavigateTo("/sledge")),
+                ],
+                [html.text("Sledge")],
+              ),
+            ]),
+            html.li([], [
+              html.a(
+                [
+                  class("footer-link"),
+                  attribute.href("/divvyqueue"),
+                  event.on_click(NavigateTo("/divvyqueue")),
+                ],
+                [html.text("DivvyQueue")],
+              ),
+            ]),
+          ]),
+        ]),
+        // Column 2: Resources
+        html.div([class("footer-column")], [
+          html.h4([class("footer-column-title")], [html.text("Resources")]),
+          html.ul([class("footer-column-links")], [
+            html.li([], [
+              html.a(
+                [
+                  class("footer-link"),
+                  attribute.href("/calendar"),
+                  event.on_click(NavigateTo("/calendar")),
+                ],
+                [html.text("Calendar")],
+              ),
+            ]),
+            html.li([], [
+              html.a(
+                [
+                  class("footer-link"),
+                  attribute.href("/projects"),
+                  event.on_click(NavigateTo("/projects")),
+                ],
+                [html.text("All Projects")],
+              ),
+            ]),
+            html.li([], [
+              html.a(
+                [
+                  class("footer-link"),
+                  attribute.href("/docs"),
+                  event.on_click(NavigateTo("/docs")),
+                ],
+                [html.text("Documentation")],
+              ),
+            ]),
+          ]),
+        ]),
+        // Column 3: Company
+        html.div([class("footer-column")], [
+          html.h4([class("footer-column-title")], [html.text("Company")]),
+          html.ul([class("footer-column-links")], [
+            html.li([], [
+              html.a(
+                [
+                  class("footer-link"),
+                  attribute.href("/about"),
+                  event.on_click(NavigateTo("/about")),
+                ],
+                [html.text("About")],
+              ),
+            ]),
+            html.li([], [
+              html.a(
+                [
+                  class("footer-link"),
+                  attribute.href("/pricing"),
+                  event.on_click(NavigateTo("/pricing")),
+                ],
+                [html.text("Pricing")],
+              ),
+            ]),
+            html.li([], [
+              html.a(
+                [
+                  class("footer-link"),
+                  attribute.href("/terms"),
+                  event.on_click(NavigateTo("/terms")),
+                ],
+                [html.text("Terms & Conditions")],
+              ),
+            ]),
+          ]),
+        ]),
+      ]),
+    ]),
+    // Footer Bottom with Copyright
+    html.div([class("footer-bottom")], [
+      html.p([], [html.text("© 2024 TandemX. All rights reserved.")]),
+    ]),
+  ])
+}
+
+// Update the main view function to include the navigation and footer
 pub fn view(model: Model) -> Element(Msg) {
   html.div([class("landing-page")], [
+    view_navigation(),
+    html.div([class("nav-spacer")], []),
+    // Add spacing to prevent content from hiding under fixed nav
     view_hero(),
+    view_featured_articles(),
     view_featured_tools(),
     view_tools_table(),
     view_category_lists(),
     view_about_section(),
+    view_footer(),
   ])
 }
 

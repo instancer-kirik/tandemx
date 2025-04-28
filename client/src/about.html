@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>About TandemX - instance.select</title>
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/landing.css">
+  <!-- Add specific about page styles -->
+  <script src="/app_ffi.js" defer></script>
+  <style>
+    .about-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem;
+      color: #333;
+    }
+    
+    .about-header {
+      text-align: center;
+      margin-bottom: 4rem;
+      padding: 2rem 0;
+      background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+      border-radius: 8px;
+    }
+    
+    .about-title {
+      font-size: 3rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+      color: #2c3e50;
+    }
+    
+    .about-subtitle {
+      font-size: 1.5rem;
+      color: #6c757d;
+      font-weight: 300;
+    }
+    
+    .about-content {
+      display: grid;
+      gap: 3rem;
+    }
+    
+    .about-section {
+      padding: 2rem;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      transition: transform 0.2s ease;
+    }
+    
+    .about-section:hover {
+      transform: translateY(-5px);
+    }
+    
+    .about-section h2 {
+      font-size: 2rem;
+      color: #2c3e50;
+      margin-bottom: 1.5rem;
+      border-bottom: 2px solid #e9ecef;
+      padding-bottom: 0.5rem;
+    }
+    
+    .about-section p {
+      font-size: 1.1rem;
+      line-height: 1.6;
+      color: #495057;
+    }
+    
+    .features-list {
+      list-style: none;
+      padding: 0;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1.5rem;
+    }
+    
+    .features-list li {
+      padding: 1rem;
+      background: #f8f9fa;
+      border-radius: 6px;
+      font-size: 1.1rem;
+      color: #495057;
+      text-align: center;
+      transition: background-color 0.2s ease;
+    }
+    
+    .features-list li:hover {
+      background: #e9ecef;
+    }
+    
+    .about-section a {
+      color: #007bff;
+      text-decoration: none;
+      font-weight: 500;
+      transition: color 0.2s ease;
+    }
+    
+    .about-section a:hover {
+      color: #0056b3;
+      text-decoration: underline;
+    }
+    
+    .contact-button-container {
+      display: flex;
+      justify-content: center;
+      margin-top: 1.5rem;
+    }
+    
+    .contact-button {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      background-color: #007bff;
+      color: white !important;
+      padding: 0.8rem 1.5rem;
+      border-radius: 4px;
+      text-decoration: none;
+      font-weight: 500;
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    
+    .contact-button:hover {
+      background-color: #0056b3;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+      text-decoration: none !important;
+    }
+    
+    .contact-icon {
+      margin-right: 0.5rem;
+    }
+    
+    /* Navigation Styles */
+    .blog-nav {
+      display: flex;
+      justify-content: center;
+      gap: 1.5rem;
+      margin-top: 1.5rem;
+    }
+    
+    .blog-nav .nav-link {
+      color: #495057;
+      text-decoration: none;
+      font-weight: 500;
+      padding: 0.5rem 0.75rem;
+      border-radius: 4px;
+      transition: all 0.2s ease;
+    }
+    
+    .blog-nav .nav-link:hover {
+      color: #007bff;
+      background-color: rgba(0, 123, 255, 0.1);
+    }
+    
+    .blog-nav .nav-link.active {
+      color: #007bff;
+      background-color: rgba(0, 123, 255, 0.1);
+    }
+    
+    .about-footer {
+      margin-top: 4rem;
+      padding-top: 2rem;
+      border-top: 1px solid #dee2e6;
+      text-align: center;
+      color: #6c757d;
+      font-size: 0.9rem;
+    }
+    
+    @media (max-width: 768px) {
+      .about-container {
+        padding: 1rem;
+      }
+      
+      .about-title {
+        font-size: 2.5rem;
+      }
+      
+      .about-subtitle {
+        font-size: 1.2rem;
+      }
+      
+      .features-list {
+        grid-template-columns: 1fr;
+      }
+      
+      .about-section {
+        padding: 1.5rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div class="about-container">
+      <header class="about-header">
+        <h1 class="about-title">About TandemX</h1>
+        <p class="about-subtitle">A Project by instance.select</p>
+        <nav class="blog-nav">
+          <a href="/" class="nav-link">Home</a>
+          <a href="/blog" class="nav-link">Blog</a>
+          <a href="/about" class="nav-link active">About</a>
+          <a href="/projects" class="nav-link">Projects</a>
+        </nav>
+      </header>
+      <div class="about-content">
+        <section class="about-section">
+          <h2>About Us</h2>
+          <p>Welcome to the hub of my projects, tools, and creative works. I'm known as Ultimate Starter Kit or instancer-kirik, and this platform serves as an index for everything I'm working on.</p>
+        </section>
+        
+        <section class="about-section">
+          <h2>Contact</h2>
+          <p>Have questions or want to collaborate? Get in touch with me.</p>
+          <div class="contact-button-container">
+            <a href="mailto:instance.select@gmail.com" class="contact-button">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="contact-icon">
+                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                <polyline points="22,6 12,13 2,6"></polyline>
+              </svg>
+              instance.select@gmail.com
+            </a>
+          </div>
+        </section>
+        <section class="about-section">
+          <h2>Get Started</h2>
+          <p>Ready to explore our projects and tools? <a href="/projects">Browse projects</a> or <a href="/tools">check out our tools</a>.</p>
+        </section>
+      </div>
+      <footer class="about-footer">
+        <p>© 2025 Veix DAO LLC. All rights reserved.</p>
+      </footer>
+    </div>
+  </div>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      console.log('About page loaded successfully');
+    });
+  </script>
+</body>
+</html> 

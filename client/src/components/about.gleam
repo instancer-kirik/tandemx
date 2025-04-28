@@ -12,40 +12,31 @@ pub fn view() -> Element(msg) {
     html.div([attribute.class("about-header")], [
       html.h1([attribute.class("about-title")], [html.text("About TandemX")]),
       html.p([attribute.class("about-subtitle")], [
-        html.text("Your Collaborative Calendar Solution"),
+        html.text("A Project by instance.select"),
       ]),
     ]),
     html.div([attribute.class("about-content")], [
       html.section([attribute.class("about-section")], [
-        html.h2([], [html.text("Our Mission")]),
+        html.h2([], [html.text("About Us")]),
         html.p([], [
           html.text(
-            "TandemX is designed to simplify the way teams schedule and manage meetings. We believe in making collaboration effortless, allowing you to focus on what matters most - your work and your team.",
+            "Welcome to the hub of my projects, tools, and creative works. I'm known as Ultimate Starter Kit or instancer-kirik, and this platform serves as an index for everything I'm working on.",
           ),
-        ]),
-      ]),
-      html.section([attribute.class("about-section")], [
-        html.h2([], [html.text("Key Features")]),
-        html.ul([attribute.class("features-list")], [
-          html.li([], [html.text("Smart Calendar Management")]),
-          html.li([], [html.text("Seamless Team Scheduling")]),
-          html.li([], [html.text("Intuitive Meeting Organization")]),
-          html.li([], [html.text("Real-time Updates")]),
         ]),
       ]),
       html.section([attribute.class("about-section")], [
         html.h2([], [html.text("Get Started")]),
         html.p([], [
-          html.text("Ready to transform your team's scheduling experience? "),
-          html.a([attribute.href("/signup")], [html.text("Sign up now")]),
+          html.text("Ready to explore our projects and tools? "),
+          html.a([attribute.href("/projects")], [html.text("Browse projects")]),
           html.text(" or "),
-          html.a([attribute.href("/")], [html.text("explore our features")]),
+          html.a([attribute.href("/tools")], [html.text("check out our tools")]),
           html.text("."),
         ]),
       ]),
     ]),
     html.footer([attribute.class("about-footer")], [
-      html.p([], [html.text("© 2024 TandemX. All rights reserved.")]),
+      html.p([], [html.text("© 2025 Veix DAO LLC. All rights reserved.")]),
     ]),
   ])
 }

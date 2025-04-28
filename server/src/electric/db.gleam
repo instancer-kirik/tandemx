@@ -92,6 +92,7 @@ pub fn insert_node(db: Database, x: Float, y: Float) -> Result(Node, DbError) {
 
   case httpc.send(req) {
     Ok(resp) -> {
+      let resp: Response(String) = resp
       case resp.status {
         200 -> {
           let data = decode_json(resp.body)
@@ -125,6 +126,7 @@ pub fn update_node_position(
 
   case httpc.send(req) {
     Ok(resp) -> {
+      let resp: Response(String) = resp
       case resp.status {
         200 -> {
           Ok(Node(
@@ -164,6 +166,7 @@ pub fn update_node_status(
 
   case httpc.send(req) {
     Ok(resp) -> {
+      let resp: Response(String) = resp
       case resp.status {
         200 -> {
           Ok(Node(
@@ -195,6 +198,7 @@ pub fn delete_node(db: Database, node_id: String) -> Result(Nil, DbError) {
 
   case httpc.send(req) {
     Ok(resp) -> {
+      let resp: Response(String) = resp
       case resp.status {
         200 -> Ok(Nil)
         _ -> Error(ConnectionError("Failed to delete node"))
@@ -270,6 +274,7 @@ pub fn insert_connection(
 
   case httpc.send(req) {
     Ok(resp) -> {
+      let resp: Response(String) = resp
       case resp.status {
         200 -> Ok(connection)
         _ -> Error(ConnectionError("Failed to insert connection"))
@@ -291,6 +296,7 @@ pub fn delete_connection(
 
   case httpc.send(req) {
     Ok(resp) -> {
+      let resp: Response(String) = resp
       case resp.status {
         200 -> Ok(Nil)
         _ -> Error(ConnectionError("Failed to delete connection"))
@@ -314,6 +320,7 @@ pub fn subscribe_nodes(
 
   case httpc.send(req) {
     Ok(resp) -> {
+      let resp: Response(String) = resp
       case resp.status {
         200 -> {
           let data = decode_json(resp.body)
@@ -341,6 +348,7 @@ pub fn subscribe_connections(
 
   case httpc.send(req) {
     Ok(resp) -> {
+      let resp: Response(String) = resp
       case resp.status {
         200 -> {
           let data = decode_json(resp.body)

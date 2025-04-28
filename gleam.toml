@@ -3,11 +3,17 @@ version = "1.0.0"
 target = "javascript"
 
 [dependencies]
-gleam_stdlib = ">= 0.55.0 and < 2.0.0"
+gleam_stdlib = "~> 0.32"
 gleam_http = "~> 3.5"
-mist = "~> 4.0.6"
-simplifile = ">= 2.2.0 and < 3.0.0"
+mist = "~> 0.14"
+simplifile = "~> 1.0"
+gleam_json = "~> 0.7"
+gleam_erlang = "~> 0.24"
+supabase = "~> 0.2"
 lustre = "~> 4.6.4"
+
+[dev-dependencies]
+gleeunit = "~> 1.0"
 
 [javascript]
 typescript_declarations = true

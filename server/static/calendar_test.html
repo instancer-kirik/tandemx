@@ -1,0 +1,62 @@
+f<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calendar Test</title>
+    <link rel="stylesheet" href="src/components/calendar/calendar.css">
+    <link rel="stylesheet" href="src/components/calendar/mayan_calendar.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f8;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 20px;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Calendar Test</h1>
+        <div id="calendar-root"></div>
+    </div>
+
+    <!-- Load the necessary JavaScript files -->
+    <script src="build/dev/javascript/prelude.mjs" type="module"></script>
+    <script src="src/components/calendar/calendar_system_selector.js"></script>
+    <script src="src/components/calendar/calendar_translation.js"></script>
+    <script src="src/components/calendar/mayan_calendar.js"></script>
+
+    <!-- Initialize the calendar -->
+    <script type="module">
+        import { main } from '../client/build/dev/javascript/tandemx_client/calendar.mjs';
+        
+        // Wait for DOM to be ready
+        document.addEventListener('DOMContentLoaded', () => {
+            // Create a calendar root if it doesn't exist
+            if (!document.getElementById('calendar-root')) {
+                const root = document.createElement('div');
+                root.id = 'calendar-root';
+                document.body.appendChild(root);
+            }
+            
+            // Initialize the calendar
+            main();
+            
+            console.log('Calendar initialized from test page');
+        });
+    </script>
+</body>
+</html> 

@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Blog - instance.select</title>
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/landing.css">
+  <link rel="stylesheet" href="/blog.css">
+  
+  <!-- Load app_ffi.js first -->
+  <script src="/app_ffi.js"></script>
+  
+  <!-- Marked.js for Markdown parsing -->
+  <script src="https://cdn.jsdelivr.net/npm/marked@4.3.0/marked.min.js"></script>
+  
+  <!-- Supabase client -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  
+  <!-- Import our blog scripts -->
+  <script src="/blog/markdown_parser.js"></script>
+  <script src="/blog/blog_renderer.js"></script>
+  
+  <script>
+    // Initialize after DOM content is loaded
+    window.addEventListener('DOMContentLoaded', () => {
+      console.log('DOM loaded, initializing blog...');
+      
+      // Initialize app_ffi first
+      if (typeof window.app_ffi !== 'undefined' && typeof window.app_ffi.init === 'function') {
+        console.log('Initializing app_ffi...');
+        window.app_ffi.init();
+      } else {
+        console.error('app_ffi not found');
+      }
+      
+      // Initialize blog after everything is loaded
+      if (typeof window.initBlog === 'function') {
+        console.log('Initializing blog...');
+        window.initBlog();
+      } else {
+        console.error('Blog initialization function not found');
+      }
+    });
+  </script>
+</head>
+<body>
+  <div id="app">
+    <div class="blog-container">
+      <header class="blog-header">
+        <h1 class="blog-title">instance.select Blog</h1>
+        <p class="blog-subtitle">Insights, updates, and explorations</p>
+        <nav class="blog-nav">
+          <a href="/" class="nav-link">Home</a>
+          <a href="/blog" class="nav-link active">Blog</a>
+          <a href="/about" class="nav-link">About</a>
+          <a href="/projects" class="nav-link">Projects</a>
+        </nav>
+      </header>
+
+      <main class="blog-content">
+        <div class="blog-sidebar">
+          <div class="sidebar-section">
+            <h3>Categories</h3>
+            <ul class="category-list">
+              <li><a href="#" data-category="all" class="active">All Posts</a></li>
+              <li><a href="#" data-category="technology">Technology</a></li>
+              <li><a href="#" data-category="projects">Projects</a></li>
+              <li><a href="#" data-category="updates">Updates</a></li>
+              <li><a href="#" data-category="tutorials">Tutorials</a></li>
+            </ul>
+          </div>
+          <div class="sidebar-section">
+            <h3>Recent Posts</h3>
+            <ul class="recent-posts" id="recent-posts-list">
+              <!-- This will be populated dynamically -->
+              <li><a href="#" class="recent-post-link">Loading posts...</a></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="blog-main">
+          <div id="blog-post-list" class="blog-post-list">
+            <!-- Posts will be loaded here -->
+            <div class="loading-posts">Loading blog posts...</div>
+          </div>
+
+          <!-- Admin control panel for creating markdown posts -->
+          <div class="admin-controls" id="admin-controls">
+            <button id="admin-login-btn" class="secondary-button">Admin Access</button>
+            
+            <div id="admin-login-form" class="admin-login-form hidden">
+              <input type="password" id="admin-password" placeholder="Enter admin password">
+              <button id="login-submit-btn" class="primary-button">Login</button>
+              <button id="cancel-login-btn" class="secondary-button">Cancel</button>
+            </div>
+            
+            <button id="create-post-btn" class="primary-button hidden">Create New Post</button>
+          </div>
+          
+          <!-- Simple markdown post creator (hidden by default) -->
+          <div id="markdown-editor" class="markdown-editor hidden">
+            <h2>Create New Markdown Post</h2>
+            
+            <div class="editor-form">
+              <div class="form-group">
+                <label for="post-title">Title</label>
+                <input type="text" id="post-title" placeholder="Enter post title">
+              </div>
+              
+              <div class="form-group">
+                <label for="post-id">Post ID (for URL)</label>
+                <input type="text" id="post-id" placeholder="my-awesome-post">
+                <small>Use lowercase letters, numbers and hyphens only. This will appear in the URL.</small>
+              </div>
+              
+              <div class="form-group">
+                <label for="post-date">Date</label>
+                <input type="date" id="post-date">
+              </div>
+              
+              <div class="form-group">
+                <label for="post-category">Category</label>
+                <select id="post-category">
+                  <option value="technology">Technology</option>
+                  <option value="projects">Projects</option>
+                  <option value="updates">Updates</option>
+                  <option value="tutorials">Tutorials</option>
+                </select>
+              </div>
+              
+              <div class="form-group">
+                <label for="post-excerpt">Excerpt</label>
+                <textarea id="post-excerpt" rows="3" placeholder="Brief summary of the post (will appear in listings)"></textarea>
+              </div>
+              
+              <div class="form-group">
+                <label for="post-content">Markdown Content</label>
+                <textarea id="post-content" rows="15" placeholder="Write your post in Markdown format..."></textarea>
+                <small>
+                  Markdown Guide: 
+                  # Header 1, ## Header 2, **bold**, *italic*, 
+                  [link text](url), ![alt text](image-url), 
+                  ```code block```, `inline code`
+                </small>
+              </div>
+              
+              <div class="form-group">
+                <label for="post-image">Featured Image (URL)</label>
+                <input type="text" id="post-image" placeholder="https://example.com/image.jpg">
+              </div>
+              
+              <div class="editor-actions">
+                <button id="save-markdown-btn" class="primary-button">Generate Markdown</button>
+                <button id="preview-post-btn" class="secondary-button">Preview</button>
+                <button id="submit-post-btn" class="primary-button">Create Post</button>
+                <button id="cancel-markdown-btn" class="secondary-button">Cancel</button>
+              </div>
+              
+              <!-- Preview area -->
+              <div id="post-preview" class="post-preview hidden">
+                <h3>Preview</h3>
+                <div id="preview-content"></div>
+              </div>
+              
+              <!-- Generated markdown will appear here -->
+              <div id="generated-markdown" class="generated-markdown hidden">
+                <h3>Generated Markdown File</h3>
+                <p>Save this content to a markdown file in the /blog/posts/ directory:</p>
+                <pre id="markdown-output"></pre>
+                <button id="copy-markdown-btn" class="secondary-button">Copy to Clipboard</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      <footer class="blog-footer">
+        <p>© 2024 instance.select. All rights reserved.</p>
+      </footer>
+    </div>
+  </div>
+
+  <script>
+    // Additional editor functionality
+    document.addEventListener('DOMContentLoaded', function() {
+      const createPostBtn = document.getElementById('create-post-btn');
+      const markdownEditor = document.getElementById('markdown-editor');
+      const cancelMarkdownBtn = document.getElementById('cancel-markdown-btn');
+      const saveMarkdownBtn = document.getElementById('save-markdown-btn');
+      const previewPostBtn = document.getElementById('preview-post-btn');
+      const postPreview = document.getElementById('post-preview');
+      const previewContent = document.getElementById('preview-content');
+      const generatedMarkdown = document.getElementById('generated-markdown');
+      const markdownOutput = document.getElementById('markdown-output');
+      const copyMarkdownBtn = document.getElementById('copy-markdown-btn');
+      const submitPostBtn = document.getElementById('submit-post-btn');
+      
+      // Admin authentication elements
+      const adminLoginBtn = document.getElementById('admin-login-btn');
+      const adminLoginForm = document.getElementById('admin-login-form');
+      const adminPassword = document.getElementById('admin-password');
+      const loginSubmitBtn = document.getElementById('login-submit-btn');
+      const cancelLoginBtn = document.getElementById('cancel-login-btn');
+      
+      // Admin password - you should change this to something secure
+      const correctPassword ='access-granted';
+      
+      // Show admin login form
+      if (adminLoginBtn) {
+        adminLoginBtn.addEventListener('click', function() {
+          adminLoginForm.classList.remove('hidden');
+          adminLoginBtn.classList.add('hidden');
+        });
+      }
+      
+      // Cancel login
+      if (cancelLoginBtn) {
+        cancelLoginBtn.addEventListener('click', function() {
+          adminLoginForm.classList.add('hidden');
+          adminLoginBtn.classList.remove('hidden');
+          adminPassword.value = '';
+        });
+      }
+      
+      // Verify admin password
+      if (loginSubmitBtn) {
+        loginSubmitBtn.addEventListener('click', function() {
+          if (adminPassword.value === correctPassword) {
+            // Show the create post button on successful login
+            createPostBtn.classList.remove('hidden');
+            adminLoginForm.classList.add('hidden');
+            adminLoginBtn.classList.add('hidden');
+            
+            // Store authentication in session
+            sessionStorage.setItem('blogAdminAuthenticated', 'true');
+          } else {
+            alert('Incorrect password');
+            adminPassword.value = '';
+          }
+        });
+      }
+      
+      // Check if already authenticated on page load
+      if (sessionStorage.getItem('blogAdminAuthenticated') === 'true') {
+        createPostBtn.classList.remove('hidden');
+        adminLoginBtn.classList.add('hidden');
+      }
+      
+      // Set default date to today
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('post-date').value = today;
+      
+      // Show the markdown editor
+      if (createPostBtn) {
+        createPostBtn.addEventListener('click', function() {
+          markdownEditor.classList.remove('hidden');
+        });
+      }
+      
+      // Hide the markdown editor
+      if (cancelMarkdownBtn) {
+        cancelMarkdownBtn.addEventListener('click', function() {
+          markdownEditor.classList.add('hidden');
+          postPreview.classList.add('hidden');
+          generatedMarkdown.classList.add('hidden');
+        });
+      }
+      
+      // Generate and display markdown
+      if (saveMarkdownBtn) {
+        saveMarkdownBtn.addEventListener('click', function() {
+          const title = document.getElementById('post-title').value;
+          const id = document.getElementById('post-id').value;
+          const date = document.getElementById('post-date').value;
+          const category = document.getElementById('post-category').value;
+          const excerpt = document.getElementById('post-excerpt').value;
+          const content = document.getElementById('post-content').value;
+          const imageUrl = document.getElementById('post-image').value;
+          
+          if (!title || !id || !date || !content) {
+            alert('Please fill in all required fields (Title, ID, Date, and Content)');
+            return;
+          }
+          
+          // Generate frontmatter and markdown content
+          const frontmatter = [
+            '---',
+            `title: ${title}`,
+            `date: ${date}`,
+            `author: instance.select`,
+            `category: ${category}`,
+            `excerpt: ${excerpt}`,
+            imageUrl ? `image: ${imageUrl}` : '',
+            '---',
+            '',
+            content
+          ].filter(line => line !== '').join('\n');
+          
+          // Display generated markdown
+          markdownOutput.textContent = frontmatter;
+          generatedMarkdown.classList.remove('hidden');
+        });
+      }
+      
+      // Copy markdown to clipboard
+      if (copyMarkdownBtn) {
+        copyMarkdownBtn.addEventListener('click', function() {
+          const markdown = markdownOutput.textContent;
+          navigator.clipboard.writeText(markdown)
+            .then(() => {
+              copyMarkdownBtn.textContent = 'Copied!';
+              setTimeout(() => {
+                copyMarkdownBtn.textContent = 'Copy to Clipboard';
+              }, 2000);
+            })
+            .catch(err => {
+              console.error('Failed to copy: ', err);
+              alert('Failed to copy to clipboard. Please select and copy manually.');
+            });
+        });
+      }
+      
+      // Preview post
+      if (previewPostBtn) {
+        previewPostBtn.addEventListener('click', function() {
+          const title = document.getElementById('post-title').value;
+          const content = document.getElementById('post-content').value;
+          
+          if (!title || !content) {
+            alert('Please enter at least a title and content to preview');
+            return;
+          }
+          
+          // Convert markdown to HTML
+          const htmlContent = marked.parse(content);
+          
+          // Create preview
+          previewContent.innerHTML = `
+            <h1>${title}</h1>
+            <div class="preview-body">
+              ${htmlContent}
+            </div>
+          `;
+          
+          postPreview.classList.remove('hidden');
+          
+          // Scroll to preview
+          postPreview.scrollIntoView({ behavior: 'smooth' });
+        });
+      }
+      
+      // Auto-generate slug from title
+      const titleInput = document.getElementById('post-title');
+      const idInput = document.getElementById('post-id');
+      
+      if (titleInput && idInput) {
+        titleInput.addEventListener('input', function() {
+          // Only auto-generate if user hasn't manually entered an ID
+          if (!idInput.value || idInput.dataset.autogenerated === 'true') {
+            const slug = titleInput.value
+              .toLowerCase()
+              .replace(/[^\w\s-]/g, '') // Remove special chars
+              .replace(/\s+/g, '-')     // Replace spaces with hyphens
+              .replace(/-+/g, '-');     // Replace multiple hyphens with single
+            
+            idInput.value = slug;
+            idInput.dataset.autogenerated = 'true';
+          }
+        });
+        
+        // Mark as manually edited if user changes the ID directly
+        idInput.addEventListener('input', function() {
+          idInput.dataset.autogenerated = 'false';
+        });
+      }
+
+      // Function to submit post to server
+      async function submitPost() {
+        const postData = {
+          id: document.getElementById('post-id').value,
+          title: document.getElementById('post-title').value,
+          date: document.getElementById('post-date').value,
+          author: 'instance.select', // You might want to make this dynamic
+          category: document.getElementById('post-category').value,
+          excerpt: document.getElementById('post-excerpt').value,
+          content: document.getElementById('post-content').value,
+          image: document.getElementById('post-image').value || null
+        };
+
+        try {
+          const response = await fetch('/api/blog/create', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(postData)
+          });
+
+          const result = await response.json();
+          
+          if (response.ok) {
+            alert('Post created successfully!');
+            // Clear the form
+            document.getElementById('post-id').value = '';
+            document.getElementById('post-title').value = '';
+            document.getElementById('post-excerpt').value = '';
+            document.getElementById('post-content').value = '';
+            document.getElementById('post-image').value = '';
+            // Hide the editor
+            markdownEditor.classList.add('hidden');
+            // Refresh the post list
+            window.initBlog();
+          } else {
+            alert('Error creating post: ' + result.error);
+          }
+        } catch (error) {
+          alert('Error creating post: ' + error.message);
+        }
+      }
+
+      // Add submit button handler
+      if (submitPostBtn) {
+        submitPostBtn.addEventListener('click', submitPost);
+      }
+    });
+  </script>
+</body>
+</html> 

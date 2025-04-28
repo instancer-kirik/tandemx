@@ -161,4 +161,43 @@ CREATE TRIGGER update_matches_updated_at
 CREATE TRIGGER update_bookings_updated_at
   BEFORE UPDATE ON bookings
   FOR EACH ROW
-  EXECUTE FUNCTION update_updated_at_column(); 
+  EXECUTE FUNCTION update_updated_at_column();
+
+-- Create a table for blog posts
+CREATE TABLE blog_posts (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  title text NOT NULL,
+  content text NOT NULL,
+  created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL,
+  updated_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL,
+  author_id uuid REFERENCES auth.users(id),
+  published boolean DEFAULT false
+);
+
+-- Enable Row Level Security
+ALTER TABLE blog_posts ENABLE ROW LEVEL SECURITY;
+
+-- Create policies
+CREATE POLICY "Anyone can read published posts" ON blog_posts
+  FOR SELECT USING (published = true);
+
+CREATE POLICY "Users can create posts" ON blog_posts
+  FOR INSERT WITH CHECK (auth.uid() = author_id);
+
+CREATE POLICY "Users can update their own posts" ON blog_posts
+  FOR UPDATE USING (auth.uid() = author_id);
+
+-- Create function to handle updated_at
+CREATE OR REPLACE FUNCTION handle_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = now();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Create trigger for updated_at
+CREATE TRIGGER handle_updated_at
+  BEFORE UPDATE ON blog_posts
+  FOR EACH ROW
+  EXECUTE FUNCTION handle_updated_at(); 

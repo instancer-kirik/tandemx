@@ -1,0 +1,61 @@
+import gleam/io
+import gleam/string
+
+/// Email notification type
+/// Used to represent an email to be sent
+pub type EmailNotification {
+  EmailNotification(to: String, subject: String, body: String, from: String)
+}
+
+/// Initialize the email service
+/// This will use environment variables for configuration
+pub fn init() {
+  io.println("Initializing email service")
+  io.println(
+    "Email service is running in mock mode (no actual emails will be sent)",
+  )
+  io.println("To run with JavaScript version and SendGrid:")
+  io.println("1. Update gleam.toml target to javascript")
+  io.println("2. Rename email_service_js.gleam.bak to email_service.gleam")
+
+  Nil
+}
+
+/// Mask API key for logging (only show first few characters)
+fn mask_api_key(key: String) -> String {
+  // Only show the first 8 characters of the API key
+  case key {
+    "" -> "[empty]"
+    _ -> {
+      let visible_part = case string.length(key) > 8 {
+        True -> string.slice(key, 0, 8)
+        False -> key
+      }
+      visible_part <> "***********"
+    }
+  }
+}
+
+/// Send an email notification (mock implementation)
+pub fn send_email(notification: EmailNotification) {
+  // Mock implementation
+  io.println("\nSending email (MOCK - not actually sent):")
+  io.println("From: " <> notification.from)
+  io.println("To: " <> notification.to)
+  io.println("Subject: " <> notification.subject)
+  io.println("Body:\n" <> notification.body)
+  io.println("---")
+  Nil
+}
+
+/// Send a meeting invitation email (mock implementation)
+pub fn send_meeting_invitation(notification: EmailNotification) {
+  // Mock implementation
+  io.println("\nSending meeting invitation (MOCK - not actually sent):")
+  io.println("From: " <> notification.from)
+  io.println("To: " <> notification.to)
+  io.println("Subject: " <> notification.subject)
+  io.println("Body:\n" <> notification.body)
+  io.println("---")
+  Nil
+}

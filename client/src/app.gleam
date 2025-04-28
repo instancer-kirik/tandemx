@@ -18,7 +18,7 @@ pub type Model {
 
 // Initialize the app with default state
 pub fn init(_) -> #(Model, Effect(Msg)) {
-  #(Model(page: "home", title: "TandemX"), effect.none())
+  #(Model(page: "home", title: "instance.select"), effect.none())
 }
 
 // Handle messages and update the model accordingly
@@ -71,7 +71,7 @@ fn view_main_content(model: Model) -> Element(Msg) {
 // Home page content
 fn view_home_page() -> Element(Msg) {
   html.div([attribute.class("page home-page")], [
-    html.h2([], [html.text("Welcome to TandemX")]),
+    html.h2([], [html.text("Welcome to instance.select")]),
     html.p([], [
       html.text(
         "A collection of specialized development and creative tools organized by language and purpose.",
@@ -91,10 +91,10 @@ fn view_tools_page() -> Element(Msg) {
 // About page content
 fn view_about_page() -> Element(Msg) {
   html.div([attribute.class("page about-page")], [
-    html.h2([], [html.text("About TandemX")]),
+    html.h2([], [html.text("About instance.select")]),
     html.p([], [
       html.text(
-        "TandemX provides specialized tools for developers and creative professionals.",
+        "instance.select provides specialized tools for developers and creative professionals.",
       ),
     ]),
   ])

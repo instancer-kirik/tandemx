@@ -4,9 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Calendar - TandemX</title>
-    <link rel="stylesheet" href="/src/calendar.css">
-    <link rel="stylesheet" href="/src/mayan_calendar.css">
-    <script type="module" src="/src/calendar_ffi.js"></script>
+    <link rel="stylesheet" href="/styles.css">
+    <link rel="stylesheet" href="/src/components/calendar/calendar.css">
+    <link rel="stylesheet" href="/src/components/calendar/mayan_calendar.css">
+    <script type="module" src="/src/components/calendar/calendar_ffi.js"></script>
 </head>
 <body>
     <div id="calendar-root" class="mayan-calendar-container">
@@ -144,8 +145,8 @@
     
     <script type="module">
         import * as calendarModule from '/build/dev/javascript/tandemx_client/calendar.mjs';
-        import * as calendarSystemSelector from '/src/calendar_system_selector.js';
-        import * as mayanCalendar from '/src/mayan_calendar.js';
+        import * as calendarSystemSelector from '/src/components/calendar/calendar_system_selector.js';
+        import * as mayanCalendar from '/src/components/calendar/mayan_calendar.js';
         
         window.addEventListener('DOMContentLoaded', () => {
             // Initialize main calendar module
@@ -167,7 +168,7 @@
         // Function to update the Mayan info panel
         function updateMayanInfoPanel(date) {
             // Import necessary modules
-            import('/src/mayan_calendar.js')
+            import('/src/components/calendar/mayan_calendar.js')
                 .then(mayanCalendar => {
                     // Get today's Mayan date
                     const mayanDate = mayanCalendar.gregorianToMayan(date);
@@ -302,7 +303,7 @@
             document.getElementById('meeting-date').textContent = dateStr;
             
             // Get Mayan date info
-            import('/src/mayan_calendar.js')
+            import('/src/components/calendar/mayan_calendar.js')
                 .then(mayanCalendar => {
                     const date = new Date(dateStr);
                     const mayanDate = mayanCalendar.gregorianToMayan(date);
@@ -327,7 +328,7 @@
                     document.getElementById('meeting-scheduler').style.display = 'block';
                     
                     // Generate a meeting link
-                    import('/src/calendar_ffi.js')
+                    import('/src/components/calendar/calendar_ffi.js')
                         .then(calendarFfi => {
                             const virtualLocationInput = document.getElementById('virtual-location');
                             if (virtualLocationInput && !virtualLocationInput.value) {
@@ -342,7 +343,7 @@
         // Function to schedule meeting with Mayan info
         function scheduleMeetingWithMayanInfo(meeting) {
             // Import the calendar FFI module
-            import('/src/calendar_ffi.js')
+            import('/src/components/calendar/calendar_ffi.js')
                 .then(calendarFfi => {
                     // Schedule the meeting
                     if (calendarFfi.scheduleMeeting) {
@@ -401,7 +402,7 @@
                 const system = button.getAttribute('data-system');
                 
                 // Convert calendar display
-                import('/src/calendar_ffi.js')
+                import('/src/components/calendar/calendar_ffi.js')
                     .then(calendarFfi => {
                         if (calendarFfi.convertCalendarDisplay) {
                             calendarFfi.convertCalendarDisplay(system);

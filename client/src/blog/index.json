@@ -1,0 +1,28 @@
+{
+  "posts": [
+    {
+      "id": "getting-started-with-tandemx",
+      "title": "Getting Started with instance.select",
+      "date": "2024-04-22",
+      "author": "instance.select",
+      "category": "updates",
+      "excerpt": "Welcome to instance.select! This platform provides various tools and features to help you manage projects, collaborate with teams, and more."
+    },
+    {
+      "id": "calendar-management-tips",
+      "title": "Calendar Management Tips",
+      "date": "2024-04-20",
+      "author": "instance.select",
+      "category": "technology",
+      "excerpt": "Effective calendar management is crucial for productivity. Here are some tips for utilizing instance.select's calendar features."
+    },
+    {
+      "id": "markdown-blog-system",
+      "title": "Creating a Markdown Blog System",
+      "date": "2024-05-01",
+      "author": "instance.select",
+      "category": "tutorials",
+      "excerpt": "Learn how to create a flexible blog system using markdown files for content management and easy editing."
+    }
+  ]
+} 

@@ -1,13 +1,20 @@
 // app_ffi.js - FFI functions for the main app
 
 // Initialize the application
-export function init() {
+function init() {
   console.log('Initializing TandemX application from app_ffi.js');
   return null;
 }
 
+// Make init function globally available
+window.app_ffi = {
+  init: init,
+  navigate: navigate,
+  showToast: showToast
+};
+
 // Navigate to a new route
-export function navigate(path) {
+function navigate(path) {
   console.log(`Navigating to: ${path}`);
   
   // Use history API for internal navigation
@@ -23,7 +30,7 @@ export function navigate(path) {
 }
 
 // Show a toast notification
-export function showToast(message, type = 'info') {
+function showToast(message, type = 'info') {
   console.log(`Toast (${type}): ${message}`);
   
   // In a real app, this would display a visible toast notification

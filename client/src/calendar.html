@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calendar - TandemX</title>
+    <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+    <link rel="stylesheet" href="landing.css">
+    <!-- Load environment configuration -->
+    <script src="/env-config.js"></script>
+    <style>
+        .calendar-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+        }
+        
+        .calendar-header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+        
+        .calendar-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: var(--primary-color-dark);
+        }
+        
+        .calendar-subtitle {
+            font-size: 1.25rem;
+            color: var(--text-color-light);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        .calendar-actions {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+        
+        .calendar-button {
+            padding: 0.75rem 1.5rem;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+        
+        .calendar-button:hover {
+            background-color: var(--primary-color-dark);
+            transform: translateY(-2px);
+        }
+        
+        .calendar-button.secondary {
+            background-color: white;
+            color: var(--primary-color);
+            border: 2px solid var(--primary-color);
+        }
+        
+        .calendar-button.secondary:hover {
+            background-color: var(--primary-color-light);
+            color: white;
+        }
+        
+        .calendar-section {
+            margin-bottom: 4rem;
+        }
+        
+        .section-title {
+            font-size: 1.75rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            color: var(--text-color);
+        }
+        
+        .calendar-features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+        
+        .feature-card {
+            background: white;
+            border-radius: 0.75rem;
+            padding: 2rem;
+            box-shadow: var(--shadow);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .feature-icon {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            color: var(--primary-color);
+        }
+        
+        .feature-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+            color: var(--text-color);
+        }
+        
+        .feature-description {
+            color: var(--text-color-light);
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation gets inserted by JavaScript -->
+    <div id="navigation-placeholder"></div>
+    
+    <div class="hero-section">
+        <div class="hero-content">
+            <h1 class="hero-title">TandemX Calendar</h1>
+            <p class="hero-subtitle">Manage your schedule and synchronize with the broader TandemX ecosystem.</p>
+        </div>
+    </div>
+    
+    <div class="calendar-container">
+        <div class="calendar-header">
+            <h2 class="calendar-title">Your Unified Calendar</h2>
+            <p class="calendar-subtitle">View all your project deadlines, meetings, and events in one place. Synchronize with your team and access from anywhere.</p>
+            
+            <div class="calendar-actions">
+                <a href="/components/calendar/calendar_page.html" class="calendar-button">Open Calendar</a>
+                <a href="/pricing" class="calendar-button secondary">View Plans</a>
+            </div>
+        </div>
+        
+        <div class="calendar-section">
+            <h3 class="section-title">Key Features</h3>
+            
+            <div class="calendar-features">
+                <div class="feature-card">
+                    <div class="feature-icon">🔄</div>
+                    <h4 class="feature-title">Multi-device Sync</h4>
+                    <p class="feature-description">Seamless synchronization across all your devices with real-time updates.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">👥</div>
+                    <h4 class="feature-title">Team Scheduling</h4>
+                    <p class="feature-description">Share your availability and coordinate meetings with team members.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">🔔</div>
+                    <h4 class="feature-title">Smart Notifications</h4>
+                    <p class="feature-description">Get timely reminders and notifications for upcoming events and deadlines.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">🔗</div>
+                    <h4 class="feature-title">Project Integration</h4>
+                    <p class="feature-description">Connect with your TandemX projects to automatically schedule important milestones.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Footer gets inserted by JavaScript -->
+    <div id="footer-placeholder"></div>
+    
+    <script>
+        // Function to inject navigation and footer
+        async function injectSharedComponents() {
+            try {
+                // Redirect to the main calendar component
+                const urlParams = new URLSearchParams(window.location.search);
+                if (urlParams.get('open') === 'true') {
+                    window.location.href = '/components/calendar/calendar_page.html';
+                    return;
+                }
+                
+                // If we have a navigation component available, we'd insert it here
+                // This is a placeholder for future implementation
+                document.getElementById('navigation-placeholder').innerHTML = `
+                    <nav class="main-nav">
+                        <div class="nav-content">
+                            <a href="/" class="logo">TandemX</a>
+                            <div class="nav-links">
+                                <a href="/" class="nav-link">Home</a>
+                                <a href="/projects" class="nav-link">Projects</a>
+                                <a href="/calendar" class="nav-link">Calendar</a>
+                                <a href="/pricing" class="nav-link">Pricing</a>
+                                <a href="/terms-and-conditions" class="nav-link">Terms</a>
+                            </div>
+                            <div class="nav-actions">
+                                <a href="/login" class="nav-btn login">Log in</a>
+                                <a href="/signup" class="nav-btn signup">Sign up</a>
+                            </div>
+                        </div>
+                    </nav>
+                    <div class="nav-spacer"></div>
+                `;
+                
+                // Insert footer
+                document.getElementById('footer-placeholder').innerHTML = `
+                    <footer class="main-footer">
+                        <div class="footer-content">
+                            <div class="footer-brand">
+                                <a href="/" class="footer-logo">TandemX</a>
+                                <p class="footer-tagline">Tools for creative business</p>
+                            </div>
+                            <div class="footer-links">
+                                <div class="footer-column">
+                                    <h4 class="footer-column-title">Products</h4>
+                                    <ul class="footer-column-links">
+                                        <li><a href="/findry" class="footer-link">Findry</a></li>
+                                        <li><a href="/sledge" class="footer-link">Sledge</a></li>
+                                        <li><a href="/divvyqueue" class="footer-link">DivvyQueue</a></li>
+                                    </ul>
+                                </div>
+                                <div class="footer-column">
+                                    <h4 class="footer-column-title">Resources</h4>
+                                    <ul class="footer-column-links">
+                                        <li><a href="/calendar" class="footer-link">Calendar</a></li>
+                                        <li><a href="/projects" class="footer-link">All Projects</a></li>
+                                        <li><a href="/docs" class="footer-link">Documentation</a></li>
+                                    </ul>
+                                </div>
+                                <div class="footer-column">
+                                    <h4 class="footer-column-title">Company</h4>
+                                    <ul class="footer-column-links">
+                                        <li><a href="/about" class="footer-link">About</a></li>
+                                        <li><a href="/pricing" class="footer-link">Pricing</a></li>
+                                        <li><a href="/terms-and-conditions" class="footer-link">Terms & Conditions</a></li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="footer-bottom">
+                            <p>© 2024 TandemX. All rights reserved.</p>
+                        </div>
+                    </footer>
+                `;
+            } catch (error) {
+                console.error('Error injecting shared components:', error);
+            }
+        }
+        
+        // Call the function when the DOM is fully loaded
+        if (document.readyState !== 'loading') {
+            injectSharedComponents();
+        } else {
+            document.addEventListener('DOMContentLoaded', injectSharedComponents);
+        }
+    </script>
+</body>
+</html> 

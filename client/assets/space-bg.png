@@ -1,0 +1,4 @@
+// This is a placeholder file.
+// Replace this with an actual space background image (PNG format).
+// Recommended: A deep space background with stars and subtle nebulae.
+// The CSS references this file at: background: var(--bg-primary) url('/assets/space-bg.png') no-repeat center center fixed; 

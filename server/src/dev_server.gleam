@@ -411,6 +411,76 @@ pub fn main() {
           ["compliance", "audit"] -> serve_html("compliance.html")
           ["compliance", "reports"] -> serve_html("compliance.html")
           ["compliance", "tax"] -> serve_html("compliance.html")
+          ["blog"] -> serve_html("blog.html")
+          ["blog", ..rest] -> {
+            // Handle individual post view
+            case rest {
+              // Special asset routes
+              ["markdown_parser.js"] ->
+                serve_file("blog/markdown_parser.js", "text/javascript")
+              ["blog_renderer.js"] ->
+                serve_file("blog/blog_renderer.js", "text/javascript")
+              ["index.json"] ->
+                serve_file("blog/index.json", "application/json")
+
+              // Single post view URL - serve the blog.html to allow client-side routing
+              [_post_id] -> serve_html("blog.html")
+
+              // Fallback for other paths
+              _ -> serve_html("blog.html")
+            }
+          }
+          ["blog.css"] -> serve_css("blog.css")
+
+          // Serve blog images from assets directory
+          ["assets", "blog-images", ..rest] -> {
+            let file_path = string.join(rest, "/")
+            case try_serve_static_file("assets/blog-images/" <> file_path) {
+              Ok(response) -> response
+              Error(_) -> serve_404()
+            }
+          }
+
+          // Blog API endpoint for creating posts
+          ["api", "blog", "create"] -> {
+            case req.method {
+              http.Post -> {
+                case mist.read_body(req, 1024 * 1024) {
+                  Ok(req) -> {
+                    // Just log the post creation request for now
+                    io.println("\nBlog post creation request received")
+                    io.println("Request body: " <> string.inspect(req.body))
+
+                    // Return success response
+                    response.new(200)
+                    |> response.set_header("content-type", "application/json")
+                    |> response.set_body(
+                      Bytes(bytes_tree.from_string(
+                        "{\"status\":\"success\",\"message\":\"Post created successfully\"}",
+                      )),
+                    )
+                  }
+                  Error(_) ->
+                    response.new(400)
+                    |> response.set_header("content-type", "application/json")
+                    |> response.set_body(
+                      Bytes(bytes_tree.from_string(
+                        "{\"error\":\"Invalid request body\"}",
+                      )),
+                    )
+                }
+              }
+              _ ->
+                response.new(405)
+                |> response.set_header("content-type", "application/json")
+                |> response.set_body(
+                  Bytes(bytes_tree.from_string(
+                    "{\"error\":\"Method not allowed\"}",
+                  )),
+                )
+            }
+          }
+
           ["debug", "files"] -> {
             let assert Ok(files) = simplifile.read_directory("../client/build")
             let content = string.join(files, "\n")
@@ -530,7 +600,11 @@ fn decode_interest_submission(
 
 fn serve_file(filename: String, content_type: String) -> Response(ResponseData) {
   case try_serve_static_file(filename) {
-    Ok(response) -> response
+    Ok(response) -> {
+      // Apply the content type specified
+      response
+      |> response.set_header("content-type", content_type)
+    }
     Error(_) -> serve_404()
   }
 }

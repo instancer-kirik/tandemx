@@ -13,6 +13,7 @@
 // Version: 1.0.0
 
 import gleam/dynamic
+import gleam/dynamic/decode
 import gleam/int
 import gleam/io
 import gleam/list
@@ -219,7 +220,7 @@ pub fn view_share_panel(
       html.h3([], [html.text("Share Link")]),
       html.div([class("share-actions")], [
         html.button(
-          [event.on("click", fn(_) { Ok(GenerateShareLink(setlist_id)) })],
+          [event.on("click", decode.success(GenerateShareLink(setlist_id)))],
           [html.text("Generate Link")],
         ),
         case model.current_share_link {
@@ -232,7 +233,7 @@ pub fn view_share_panel(
                 class("share-link-input"),
               ]),
               html.button(
-                [event.on("click", fn(_) { Ok(CopyToClipboard(link)) })],
+                [event.on("click", decode.success(CopyToClipboard(link)))],
                 [html.text("Copy")],
               ),
             ])
@@ -245,21 +246,24 @@ pub fn view_share_panel(
       html.h3([], [html.text("Export")]),
       html.div([class("export-formats")], [
         html.button(
-          [event.on("click", fn(_) { Ok(ExportSetlist(setlist_id, PDF)) })],
+          [event.on("click", decode.success(ExportSetlist(setlist_id, PDF)))],
           [html.text("PDF")],
         ),
         html.button(
           [
-            event.on("click", fn(_) { Ok(ExportSetlist(setlist_id, PlainText)) }),
+            event.on(
+              "click",
+              decode.success(ExportSetlist(setlist_id, PlainText)),
+            ),
           ],
           [html.text("Text")],
         ),
         html.button(
-          [event.on("click", fn(_) { Ok(ExportSetlist(setlist_id, JSON)) })],
+          [event.on("click", decode.success(ExportSetlist(setlist_id, JSON)))],
           [html.text("JSON")],
         ),
         html.button(
-          [event.on("click", fn(_) { Ok(ExportSetlist(setlist_id, CSV)) })],
+          [event.on("click", decode.success(ExportSetlist(setlist_id, CSV)))],
           [html.text("CSV")],
         ),
       ]),
@@ -273,27 +277,27 @@ pub fn view_share_panel(
             attribute.type_("email"),
             attribute.placeholder("Enter email address"),
             class("email-input"),
-            event.on("input", fn(e) {
-              // Simplify the event handling to avoid dynamic errors
-              Ok(InviteCollaborator(""))
-            }),
+            event.on("input", decode.success(InviteCollaborator(""))),
           ]),
           html.button(
             [
-              event.on("click", fn(_) {
-                // In a real implementation, we would get the email from the input field
-                Ok(ShareVia(setlist_id, Email("collaborator@example.com")))
-              }),
+              event.on(
+                "click",
+                decode.success(ShareVia(
+                  setlist_id,
+                  Email("collaborator@example.com"),
+                )),
+              ),
             ],
             [html.text("Share via Email")],
           ),
         ]),
         html.button(
-          [event.on("click", fn(_) { Ok(ShareVia(setlist_id, Link)) })],
+          [event.on("click", decode.success(ShareVia(setlist_id, Link)))],
           [html.text("Copy Link")],
         ),
         html.button(
-          [event.on("click", fn(_) { Ok(ShareVia(setlist_id, QRCode)) })],
+          [event.on("click", decode.success(ShareVia(setlist_id, QRCode)))],
           [html.text("QR Code")],
         ),
       ]),
@@ -304,13 +308,12 @@ pub fn view_share_panel(
       html.div([class("permissions-container")], [
         html.select(
           [
-            event.on("change", fn(e) {
-              // Simplify the event handling to avoid dynamic errors
-              Ok(UpdatePermissions(setlist_id, ReadOnly))
-            }),
+            event.on(
+              "change",
+              decode.success(UpdatePermissions(setlist_id, ReadOnly)),
+            ),
           ],
           [
-            // Fix option elements - they need a string as the second argument
             html.option([attribute.value("readonly")], "Read Only"),
             html.option([attribute.value("readwrite")], "Read/Write"),
             html.option([attribute.value("owner")], "Owner"),

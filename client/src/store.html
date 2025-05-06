@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TandemX - Store</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="/css/store.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>TandemX Store</h1>
+            <nav>
+                <a href="/">Home</a>
+                <a href="/store" class="active">Store</a>
+                <a href="/profile">Profile</a>
+            </nav>
+        </header>
+
+        <main class="store-content">
+            <section class="tokens-section">
+                <h2>Tokens</h2>
+                <div class="tokens-grid" id="tokens-grid">
+                    <!-- Tokens will be loaded here -->
+                </div>
+            </section>
+
+            <section class="upgrades-section">
+                <h2>Truck Upgrades</h2>
+                <div class="upgrades-grid" id="upgrades-grid">
+                    <!-- Upgrades will be loaded here -->
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Purchase Modal -->
+    <div id="purchase-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" onclick="closeModal()">&times;</span>
+            <h2 id="modal-title">Purchase Item</h2>
+            <div id="modal-item-details">
+                <!-- Item details will be populated here -->
+            </div>
+
+            <h3>Payment Method</h3>
+            <div class="payment-options">
+                <label>
+                    <input type="radio" name="paymentMethod" value="paddle" checked onchange="updatePaymentDetails()">
+                    Paddle (Default)
+                </label>
+                <label>
+                    <input type="radio" name="paymentMethod" value="crypto" onchange="updatePaymentDetails()">
+                    Crypto
+                </label>
+                <label>
+                    <input type="radio" name="paymentMethod" value="bank" onchange="updatePaymentDetails()">
+                    Bank Transfer
+                </label>
+            </div>
+
+            <div id="payment-details-paddle" class="payment-details">
+                <p>Proceed with Paddle checkout.</p>
+                 <!-- Paddle integration elements would go here -->
+            </div>
+
+            <div id="payment-details-crypto" class="payment-details" style="display: none;">
+                <p>Send payment to one of the following addresses:</p>
+                <ul id="crypto-addresses">
+                    <!-- Crypto addresses will be loaded here -->
+                </ul>
+                <label for="crypto-tx-id">Transaction ID:</label>
+                <input type="text" id="crypto-tx-id" name="cryptoTxId">
+            </div>
+
+            <div id="payment-details-bank" class="payment-details" style="display: none;">
+                <p id="bank-instructions"><!-- Bank instructions will be loaded here --></p>
+            </div>
+
+            <h3>Shipping Address (Optional)</h3>
+            <div class="address-form">
+                 <label for="street">Street:</label>
+                 <input type="text" id="street" name="street">
+                 <label for="city">City:</label>
+                 <input type="text" id="city" name="city">
+                 <label for="state">State:</label>
+                 <input type="text" id="state" name="state">
+                 <label for="zip">Zip Code:</label>
+                 <input type="text" id="zip" name="zip">
+                 <label for="country">Country:</label>
+                 <input type="text" id="country" name="country">
+            </div>
+
+            <h3>Redemption Instructions/Description (Optional)</h3>
+            <textarea id="redemption-instructions" name="redemptionInstructions" rows="3"></textarea>
+
+            <button id="confirm-purchase-button" class="purchase-button" onclick="confirmPurchase()">Confirm Purchase</button>
+        </div>
+    </div>
+
+    <script src="/js/store.js"></script>
+</body>
+</html> 

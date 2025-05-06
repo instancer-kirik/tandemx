@@ -1,8 +1,6 @@
-import chat/types.{
-  type ChatMessage, type ChatRoom, type MessageContent, type Participant,
-  type RoomType,
-}
-import gleam/dict.{type Dict}
+import chat/types.{type ChatMessage, type ChatRoom, type Participant}
+import gleam/dict
+import gleam/dynamic/decode
 import gleam/int
 import gleam/list
 import gleam/option.{type Option, None, Some}
@@ -153,7 +151,7 @@ pub fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
                 let existing_reaction =
                   list.find(msg.reactions, fn(r) { r.emoji == emoji })
                 case existing_reaction {
-                  Ok(reaction) ->
+                  Ok(_) ->
                     types.ChatMessage(
                       ..msg,
                       reactions: list.map(msg.reactions, fn(r) {
@@ -456,18 +454,28 @@ fn view_message(message: ChatMessage, model: Model) -> Element(Msg) {
             list.map(message.reactions, fn(reaction) {
               html.button(
                 [
-                  attribute.class(case
-                    list.contains(reaction.participants, model.current_user.id)
-                  {
-                    True -> "reaction active"
-                    False -> "reaction"
-                  }),
-                  event.on_click(case
-                    list.contains(reaction.participants, model.current_user.id)
-                  {
-                    True -> RemoveReaction(message.id, reaction.emoji)
-                    False -> AddReaction(message.id, reaction.emoji)
-                  }),
+                  attribute.class(
+                    case
+                      list.contains(
+                        reaction.participants,
+                        model.current_user.id,
+                      )
+                    {
+                      True -> "reaction active"
+                      False -> "reaction"
+                    },
+                  ),
+                  event.on_click(
+                    case
+                      list.contains(
+                        reaction.participants,
+                        model.current_user.id,
+                      )
+                    {
+                      True -> RemoveReaction(message.id, reaction.emoji)
+                      False -> AddReaction(message.id, reaction.emoji)
+                    },
+                  ),
                 ],
                 [
                   html.span([attribute.class("emoji")], [
@@ -535,8 +543,8 @@ fn view_input(model: Model) -> Element(Msg) {
           attribute.placeholder("Type a message..."),
           attribute.value(model.draft_message),
           event.on_input(UpdateDraft),
-          event.on("focus", fn(_) { Ok(StartTyping) }),
-          event.on("blur", fn(_) { Ok(StopTyping) }),
+          event.on("focus", decode.success(StartTyping)),
+          event.on("blur", decode.success(StopTyping)),
         ],
         "",
       ),

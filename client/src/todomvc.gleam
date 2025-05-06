@@ -1,13 +1,16 @@
+import access_content.{type FetchState, Errored, Idle, Loaded, Loading}
 import components/nav
 import gleam/bool
 import gleam/dict.{type Dict}
 import gleam/dynamic
 import gleam/dynamic/decode
+import gleam/option.{type Option, None, Some}
+
 import gleam/int
 import gleam/list
-import gleam/option.{type Option, None, Some}
 import gleam/order
 import gleam/result
+import gleam/string
 import lustre
 import lustre/attribute.{type Attribute}
 import lustre/effect.{type Effect}
@@ -83,7 +86,7 @@ pub type Msg {
 }
 
 fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
-  let Model(todos, _, last_id, new_todo_input, existing_todo_input, nav_open) =
+  let Model(todos, _, last_id, new_todo_input, existing_todo_input, _nav_open) =
     model
 
   case msg {
@@ -173,8 +176,14 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
 
     NavMsg(nav_msg) -> {
       case nav_msg {
-        nav.ToggleNav -> {
-          #(Model(..model, nav_open: !model.nav_open), effect.none())
+        nav.Navigated(_) -> {
+          #(model, effect.none())
+        }
+        nav.LoginAttempted -> {
+          #(model, effect.none())
+        }
+        nav.LogoutAttempted -> {
+          #(model, effect.none())
         }
       }
     }
@@ -192,7 +201,7 @@ fn view(model: Model) -> Element(Msg) {
       }),
     ],
     [
-      element.map(nav.view(), NavMsg),
+      element.map(nav.view(Loaded(option.None)), NavMsg),
       html.div([attribute.class("todoapp")], [
         header(model),
         main_content(model),
@@ -224,7 +233,7 @@ fn main_content(model: Model) -> Element(Msg) {
       |> list.filter(fn(i) { i.completed })
       |> list.sort(compare)
   }
-  let input =
+  let _input =
     input(
       on_enter: UserAddedTodo,
       on_input: UserUpdatedNewInput,
@@ -381,6 +390,29 @@ fn clear_completed(model: Model) -> Element(Msg) {
   )
 }
 
+fn delete_todo(id: Int) -> Effect(Msg) {
+  use dispatch <- effect.from
+  dispatch(UserDeletedTodo(id))
+}
+
+fn focus_edit_input() -> Effect(msg) {
+  use _ <- effect.from
+  use <- after_render
+  focus(".todo-list .edit")
+}
+
+@external(javascript, "./todomvc_ffi.mjs", "focus")
+fn focus(selector: String) -> Nil
+
+@external(javascript, "./todomvc_ffi.mjs", "after_render")
+fn after_render(do: fn() -> a) -> Nil
+
+fn info_footer() -> Element(msg) {
+  html.footer([attribute.class("info")], [
+    html.p([], [html.text("Double-click to edit a todo")]),
+  ])
+}
+
 fn input(
   on_enter on_enter: Msg,
   on_input on_input: fn(String) -> Msg,
@@ -414,42 +446,10 @@ fn input(
   ])
 }
 
-fn info_footer() -> Element(msg) {
-  html.footer([attribute.class("info")], [
-    html.p([], [html.text("Double-click to edit a todo")]),
-  ])
-}
-
-fn delete_todo(id: Int) -> Effect(Msg) {
-  use dispatch <- effect.from
-  dispatch(UserDeletedTodo(id))
-}
-
 fn on_double_click(msg: Msg) -> Attribute(Msg) {
-  use _ <- event.on("dblclick")
-  Ok(msg)
+  event.on("dblclick", decode.success(msg))
 }
-
-fn focus_edit_input() -> Effect(msg) {
-  use _ <- effect.from
-  use <- after_render
-  focus(".todo-list .edit")
-}
-
-@external(javascript, "./todomvc_ffi.mjs", "focus")
-fn focus(selector: String) -> Nil
-
-@external(javascript, "./todomvc_ffi.mjs", "after_render")
-fn after_render(do: fn() -> a) -> Nil
 
 fn on_enter_down(msg: Msg) -> Attribute(Msg) {
-  use event <- event.on("keydown")
-  event
-  |> dynamic.field("key", dynamic.string)
-  |> result.try(fn(key) {
-    case key {
-      "Enter" -> Ok(msg)
-      _ -> Error([])
-    }
-  })
+  event.on("keydown", decode.success(msg))
 }

@@ -50,4 +50,38 @@ function showToast(message, type = 'info') {
   }, 3000);
   
   return null;
+}
+
+// FFI implementations for app.gleam
+
+export function getCurrentUser() {
+  // In a real app, you'd interact with Supabase Auth here
+  // For now, simulate no user or a specific user
+  console.log("FFI: getCurrentUser called (simulating)");
+  // return { type: 'Ok', 0: { type: 'None' } }; // Simulate no user
+  // return { type: 'Ok', 0: { type: 'Some', 0: { id: 'user-123', email: { type: 'Some', 0: 'test@example.com' } } } }; // Simulate logged-in user
+  // Simulate admin user for testing features
+  return { type: 'Ok', 0: { type: 'Some', 0: { id: 'admin-user-777', email: { type: 'Some', 0: 'admin@example.com' } } } }; 
+}
+
+export function signInWithGitHub() {
+  console.log("FFI: signInWithGitHub called (simulating)");
+  // In a real app, call Supabase signInWithOAuth({ provider: 'github' })
+  // This would redirect. For simulation, we just return Ok.
+  // Or simulate an error:
+  // return { type: 'Error', 0: 'Simulated GitHub sign-in error' };
+  return { type: 'Ok', 0: null }; 
+}
+
+export function signOutUser() {
+  console.log("FFI: signOutUser called (simulating)");
+  // In a real app, call Supabase auth.signOut()
+  // return { type: 'Error', 0: 'Simulated sign-out error' };
+  return { type: 'Ok', 0: null };
+}
+
+// FFI function to get the current browser path
+export function getCurrentPath() {
+  console.log(`FFI: getCurrentPath called, path is: ${window.location.pathname}`);
+  return window.location.pathname;
 } 

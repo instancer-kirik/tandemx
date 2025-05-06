@@ -1,3 +1,4 @@
+import access_content.{type FetchState, type SupabaseUser}
 import components/nav
 import gleam/dict.{type Dict}
 import gleam/float
@@ -8,7 +9,7 @@ import gleam/result
 import gleam/string
 import lustre
 import lustre/attribute
-import lustre/effect
+import lustre/effect.{type Effect}
 import lustre/element.{type Element}
 import lustre/element/html
 import lustre/event
@@ -20,7 +21,6 @@ pub type Model {
     interactions: Dict(Int, Interaction),
     reports: Dict(Int, Report),
     last_id: Int,
-    nav_open: Bool,
   )
 }
 
@@ -161,13 +161,7 @@ pub type Msg {
   NavMsg(nav.Msg)
 }
 
-pub fn main() {
-  let app = lustre.application(init, update, view)
-  let assert Ok(_) = lustre.start(app, "#app", Nil)
-  Nil
-}
-
-pub fn init(_) {
+pub fn init(_flags: Nil) -> #(Model, Effect(Msg)) {
   let sample_partners =
     [
       #(
@@ -218,13 +212,12 @@ pub fn init(_) {
       interactions: dict.new(),
       reports: dict.new(),
       last_id: 1,
-      nav_open: False,
     ),
     effect.none(),
   )
 }
 
-pub fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
+pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
   case msg {
     AddPartner(partner) -> {
       let last_id = model.last_id + 1
@@ -352,60 +345,45 @@ pub fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
     }
 
     NavMsg(nav_msg) -> {
-      case nav_msg {
-        nav.ToggleNav -> #(
-          Model(..model, nav_open: !model.nav_open),
-          effect.none(),
-        )
-      }
+      #(model, effect.none())
     }
   }
 }
 
-pub fn view(model: Model) -> Element(Msg) {
-  html.div(
-    [
-      attribute.class(case model.nav_open {
-        True -> "app-container nav-open"
-        False -> "app-container"
-      }),
-    ],
-    [
-      element.map(nav.view(), NavMsg),
-      html.main([attribute.class("partner-progress-app")], [
-        view_header(),
-        html.div([attribute.class("dashboard-grid")], [
-          // Left sidebar with quick actions and stats
-          html.div([attribute.class("dashboard-sidebar")], [
-            view_quick_stats(model),
-            view_action_menu(),
+pub fn view(
+  model: Model,
+  user_state: FetchState(Option(SupabaseUser)),
+) -> Element(Msg) {
+  html.div([attribute.class("app-container")], [
+    element.map(nav.view(user_state), NavMsg),
+    html.main([attribute.class("partner-progress-app")], [
+      view_header(),
+      html.div([attribute.class("dashboard-grid")], [
+        html.div([attribute.class("dashboard-sidebar")], [
+          view_quick_stats(model),
+          view_action_menu(),
+        ]),
+        html.div([attribute.class("dashboard-main")], [
+          html.div([attribute.class("dashboard-cards")], [
+            view_goals_overview(model),
+            view_recent_activity(model),
+            view_upcoming_deadlines(model),
           ]),
-          // Main content area
-          html.div([attribute.class("dashboard-main")], [
-            // Top row of cards
-            html.div([attribute.class("dashboard-cards")], [
-              view_goals_overview(model),
-              view_recent_activity(model),
-              view_upcoming_deadlines(model),
+          html.section([attribute.class("tools-section")], [
+            html.h2([], [html.text("Tools & Resources")]),
+            html.div([attribute.class("tools-grid")], [
+              view_document_center(),
+              view_support_resources(),
+              view_collaboration_tools(),
             ]),
-            // Tools and resources section
-            html.section([attribute.class("tools-section")], [
-              html.h2([], [html.text("Tools & Resources")]),
-              html.div([attribute.class("tools-grid")], [
-                view_document_center(),
-                view_support_resources(),
-                view_collaboration_tools(),
-              ]),
-            ]),
-            // Detailed sections
-            view_goals_section(model),
-            view_interactions_section(model),
-            view_reports_section(model),
           ]),
+          view_goals_section(model),
+          view_interactions_section(model),
+          view_reports_section(model),
         ]),
       ]),
-    ],
-  )
+    ]),
+  ])
 }
 
 fn view_header() -> Element(Msg) {
@@ -678,13 +656,11 @@ fn view_goal_card(goal: Goal) -> Element(Msg) {
           html.div([attribute.class("metric-progress")], [
             html.div(
               [
-                attribute.style([
-                  #(
-                    "width",
-                    float.to_string(metric.current /. metric.target *. 100.0)
-                      <> "%",
-                  ),
-                ]),
+                attribute.style(
+                  "width",
+                  float.to_string(metric.current /. metric.target *. 100.0)
+                    <> "%",
+                ),
                 attribute.class("progress-bar"),
               ],
               [],

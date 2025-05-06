@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Access Content - TandemX</title>
+  <!-- Basic Styles -->
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/landing.css">
+  <link rel="stylesheet" href="/access_content.css">
+
+  <!-- Tiptap/ProseMirror Styles -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tiptap/core@2.4.0/dist/tiptap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tiptap/starter-kit@2.4.0/dist/style.css">
+
+  <!-- Supabase client (needed by FFI) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- Tiptap Core & StarterKit (needed by FFI) -->
+  <!-- Note: Using UMD versions now as ES modules might be harder to coordinate with Lustre FFI loading -->
+  <script src="https://cdn.jsdelivr.net/npm/@tiptap/core@2.4.0/dist/tiptap-core.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tiptap/starter-kit@2.4.0/dist/tiptap-starter-kit.umd.min.js"></script>
+
+  <!-- Add app_ffi if it contains globally needed functions like showToast -->
+  <script src="/app_ffi.js"></script>
+
+</head>
+<body>
+  <!-- Mount point for the Lustre application -->
+  <div id="app"></div>
+
+  <!-- Load and run the Lustre application -->
+  <script type="module">
+    // Ensure Lustre runtime is available if not bundled
+    // import * as lustre from "/path/to/lustre/runtime.mjs"; 
+    // Adjust path if needed, or if Lustre is globally available
+
+    // Import the main function from the compiled Gleam module
+    // The path might differ based on your build setup
+    // Use an absolute path from the web root
+    import { main } from "/build/dev/javascript/tandemx_client/access_content.mjs"; 
+    
+    // Run the Lustre app
+    main();
+  </script>
+</body>
+</html> 

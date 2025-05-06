@@ -2,11 +2,24 @@
   display: flex;
   height: 100%;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-}
+}rror: Unknown module value
+┌─ /home/kirik/Code/tandemx/client/src/todomvc.gleam:178:9
+│
+178 │         nav.ToggleNav -> {
+│         ^^^^^^^^^^^^^
+
+The module `components/nav` does not have a `ToggleNav` value.
+
+error: Incorrect arity
+┌─ /home/kirik/Code/tandemx/client/src/todomvc.gleam:197:19
+│
+197 │       element.map(nav.view(), NavMsg),
+│                   ^^^^^^^^^^ Expected 1 argument, got 0
+
+
 
 .setlist-header {
-  display: flex;
-  justify-content: space-between;
+  display: flex;NavMsg
   align-items: center;
   padding: 1rem;
   background-color: #f5f5f5;

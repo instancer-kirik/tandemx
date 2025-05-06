@@ -536,4 +536,62 @@
 .status-deprecated {
   background: var(--danger-light);
   color: var(--danger);
+}
+
+/* Basic Nav Dropdown & Megamenu Styling */
+.nav-item {
+  position: relative;
+}
+
+.dropdown-menu, .megamenu {
+  display: none;
+  position: absolute;
+  left: 0;
+  top: 100%;
+  background-color: #ffffff;
+  box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+  z-index: 100;
+  min-width: 200px;
+  border-radius: 4px;
+  padding: 0.5rem 0; /* Add some padding */
+}
+
+.megamenu {
+  min-width: 500px; /* Wider for megamenu */
+  padding: 1rem; /* More padding */
+  display: none; /* Ensure it starts hidden */
+  flex-direction: row; /* Arrange columns horizontally */
+  gap: 1rem; /* Space between columns */
+}
+
+.megamenu-column {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem; /* Space between links in a column */
+}
+
+.megamenu-column h4 {
+  margin: 0 0 0.75rem 0;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #eee;
+  font-size: 1rem;
+  color: #555;
+}
+
+.nav-item:hover > .dropdown-menu,
+.nav-item:hover > .megamenu {
+  display: flex; /* Changed to flex for megamenu columns */
+}
+
+.dropdown-menu a, .megamenu a {
+  display: block;
+  padding: 0.75rem 1rem;
+  color: #333;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.dropdown-menu a:hover, .megamenu a:hover {
+  background-color: #f8f9fa;
+  color: #1b1eb4;
 } 

@@ -3,8 +3,8 @@ import gleam/float
 import gleam/int
 import gleam/list
 import gleam/option.{type Option, None, Some}
+import gleam/result
 import gleam/string
-import lustre
 import lustre/attribute
 import lustre/effect
 import lustre/element.{type Element}
@@ -93,8 +93,8 @@ fn parse_cart_state(msg: String) -> Option(Dict(Int, CartItem)) {
         })
         |> list.map(fn(result) {
           case result {
-            Ok(item) -> item
-            Error(_) -> panic("This should never happen due to filter")
+            Ok(cart_items) -> cart_items
+            Error(_) -> panic as "This should never happen due to filter"
           }
         })
         |> dict.from_list()

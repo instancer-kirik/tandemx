@@ -1,4 +1,5 @@
 import gleam/dynamic
+import gleam/dynamic/decode
 import gleam/float
 import gleam/int
 import gleam/io
@@ -467,13 +468,14 @@ fn render_node(
   html.div(
     [
       class(string.join(node_classes, " ")),
-      style(pos_style),
-      event.on("click", fn(_) { Ok(SelectNodeMsg(node)) }),
-      event.on("mousedown", fn(_) { Ok(StartDragging(node.id)) }),
-      event.on("mouseup", fn(_) {
+      style("left", float.to_string(node.position.x) <> "px"),
+      style("top", float.to_string(node.position.y) <> "px"),
+      event.on_click(SelectNodeMsg(node)),
+      event.on_mouse_down(StartDragging(node.id)),
+      event.on_mouse_up({
         case connecting {
-          Some(_) -> Ok(CompleteConnection(node.id))
-          None -> Ok(StopDragging)
+          Some(_) -> CompleteConnection(node.id)
+          None -> StopDragging
         }
       }),
     ],
@@ -530,11 +532,11 @@ pub fn render(model: Model) -> Element(Msg) {
     html.div(
       [
         class("canvas"),
-        style([#("transform", "scale(" <> float.to_string(model.scale) <> ")")]),
-        event.on("mousemove", fn(evt) {
-          // For now, use fixed position for cursor movement
-          Ok(UpdateCursor(Position(x: 100.0, y: 100.0)))
-        }),
+        style("transform", "scale(" <> float.to_string(model.scale) <> ")"),
+        event.on(
+          "mousemove",
+          decode.success(UpdateCursor(Position(x: 100.0, y: 100.0))),
+        ),
       ],
       list.append(
         list.map(model.connections, fn(conn) {
@@ -564,18 +566,16 @@ fn render_palette_item(
   html.div(
     [
       class("palette-item palette-" <> type_),
-      event.on("click", fn(_) {
-        Ok(
-          AddNode(case type_ {
-            "goal" -> Goal
-            "task" -> Task
-            "resource" -> Resource
-            "outcome" -> Outcome
-            "milestone" -> Milestone
-            _ -> Task
-          }),
-        )
-      }),
+      event.on_click(
+        AddNode(case type_ {
+          "goal" -> Goal
+          "task" -> Task
+          "resource" -> Resource
+          "outcome" -> Outcome
+          "milestone" -> Milestone
+          _ -> Task
+        }),
+      ),
     ],
     [
       html.div([class("palette-item-icon")], []),
@@ -600,10 +600,7 @@ fn render_node_details(node: Node) -> Element(Msg) {
         html.input([
           attribute.type_("text"),
           attribute.value(node.label),
-          event.on("input", fn(evt) {
-            let assert Ok(value) = dynamic.string(evt)
-            Ok(UpdateNodeLabel(node.id, value))
-          }),
+          event.on_input(fn(value) { UpdateNodeLabel(node.id, value) }),
         ]),
       ]),
       html.div([class("form-group")], [
@@ -611,10 +608,7 @@ fn render_node_details(node: Node) -> Element(Msg) {
         html.input([
           attribute.type_("text"),
           attribute.value(node.description),
-          event.on("input", fn(evt) {
-            let assert Ok(value) = dynamic.string(evt)
-            Ok(UpdateNodeDescription(node.id, value))
-          }),
+          event.on_input(fn(value) { UpdateNodeDescription(node.id, value) }),
         ]),
       ]),
       html.div([class("form-group")], [
@@ -628,16 +622,21 @@ fn render_node_details(node: Node) -> Element(Msg) {
                 attribute.type_("radio"),
                 attribute.name("status"),
                 attribute.value(value),
-                event.on("change", fn(_) {
-                  Ok(
-                    UpdateNodeStatus(node.id, case value {
-                      "not-started" -> NotStarted
-                      "in-progress" -> InProgress
-                      "completed" -> Completed
-                      "blocked" -> Blocked
-                      _ -> NotStarted
-                    }),
-                  )
+                attribute.checked(case node.status {
+                  NotStarted if value == "not-started" -> True
+                  InProgress if value == "in-progress" -> True
+                  Completed if value == "completed" -> True
+                  Blocked if value == "blocked" -> True
+                  _ -> False
+                }),
+                event.on_change(fn(_) {
+                  UpdateNodeStatus(node.id, case value {
+                    "not-started" -> NotStarted
+                    "in-progress" -> InProgress
+                    "completed" -> Completed
+                    "blocked" -> Blocked
+                    _ -> NotStarted
+                  })
                 }),
               ]),
               html.label([], [html.text(label)]),
@@ -653,10 +652,7 @@ fn render_node_details(node: Node) -> Element(Msg) {
             Some(date) -> attribute.value(date)
             None -> attribute.value("")
           },
-          event.on("input", fn(evt) {
-            let assert Ok(value) = dynamic.string(evt)
-            Ok(UpdateNodeDeadline(node.id, value))
-          }),
+          event.on_input(fn(value) { UpdateNodeDeadline(node.id, value) }),
         ]),
       ]),
     ]),

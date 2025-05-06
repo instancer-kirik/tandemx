@@ -15,6 +15,7 @@
 // Version: 1.0.0
 
 import gleam/dynamic
+import gleam/dynamic/decode
 import gleam/int
 import gleam/io
 import gleam/list
@@ -414,10 +415,10 @@ fn view_header(model: Model) -> Element(Msg) {
   html.div([class("setlist-header")], [
     html.h1([], [html.text("Setlist Manager")]),
     html.div([class("setlist-actions")], [
-      html.button([event.on("click", fn(_) { Ok(CreateNewSetlist) })], [
+      html.button([event.on("click", decode.success(CreateNewSetlist))], [
         html.text("New Setlist"),
       ]),
-      html.button([event.on("click", fn(_) { Ok(SaveSetlist) })], [
+      html.button([event.on("click", decode.success(SaveSetlist))], [
         html.text("Save"),
       ]),
       // Only show share button if a setlist is selected
@@ -425,7 +426,7 @@ fn view_header(model: Model) -> Element(Msg) {
         Some(_) ->
           html.button(
             [
-              event.on("click", fn(_) { Ok(ToggleSharePanel) }),
+              event.on("click", decode.success(ToggleSharePanel)),
               class(case model.show_share_panel {
                 True -> "active"
                 False -> ""
@@ -457,7 +458,7 @@ fn view_setlist_sidebar(model: Model) -> Element(Msg) {
         attribute.type_("text"),
         attribute.placeholder("Search setlists..."),
         attribute.value(model.filter_text),
-        event.on("input", fn(e) { Ok(FilterSetlists(model.filter_text)) }),
+        event.on("input", decode.success(FilterSetlists(model.filter_text))),
       ]),
     ]),
     html.ul(
@@ -471,7 +472,7 @@ fn view_setlist_sidebar(model: Model) -> Element(Msg) {
         html.li([class("setlist-item " <> active_class)], [
           html.a(
             [
-              event.on("click", fn(_) { Ok(LoadSetlist(setlist.id)) }),
+              event.on("click", decode.success(LoadSetlist(setlist.id))),
               class("setlist-link"),
             ],
             [
@@ -493,7 +494,7 @@ fn view_setlist_editor(setlist: Setlist) -> Element(Msg) {
       html.input([
         attribute.type_("text"),
         attribute.value(setlist.name),
-        event.on("input", fn(e) { Ok(UpdateSetlistName(setlist.name)) }),
+        event.on("input", decode.success(UpdateSetlistName(setlist.name))),
         class("setlist-title-input"),
       ]),
     ]),
@@ -523,9 +524,10 @@ fn view_setlist_editor(setlist: Setlist) -> Element(Msg) {
                 html.input([
                   attribute.type_("text"),
                   attribute.value(song.name),
-                  event.on("input", fn(e) {
-                    Ok(UpdateSongName(index, song.name))
-                  }),
+                  event.on(
+                    "input",
+                    decode.success(UpdateSongName(index, song.name)),
+                  ),
                   class("song-name-input"),
                 ]),
               ]),
@@ -533,18 +535,20 @@ fn view_setlist_editor(setlist: Setlist) -> Element(Msg) {
                 html.input([
                   attribute.type_("text"),
                   attribute.value(song.duration),
-                  event.on("input", fn(e) {
-                    Ok(UpdateSongDuration(index, song.duration))
-                  }),
+                  event.on(
+                    "input",
+                    decode.success(UpdateSongDuration(index, song.duration)),
+                  ),
                   class("song-duration-input"),
                 ]),
               ]),
               html.td([], [
                 html.textarea(
                   [
-                    event.on("input", fn(e) {
-                      Ok(UpdateSongNotes(index, song.notes))
-                    }),
+                    event.on(
+                      "input",
+                      decode.success(UpdateSongNotes(index, song.notes)),
+                    ),
                     class("song-notes-input"),
                   ],
                   song.notes,
@@ -553,21 +557,21 @@ fn view_setlist_editor(setlist: Setlist) -> Element(Msg) {
               html.td([class("song-actions")], [
                 html.button(
                   [
-                    event.on("click", fn(_) { Ok(MoveSongUp(index)) }),
+                    event.on("click", decode.success(MoveSongUp(index))),
                     class("song-action-btn"),
                   ],
                   [html.text("↑")],
                 ),
                 html.button(
                   [
-                    event.on("click", fn(_) { Ok(MoveSongDown(index)) }),
+                    event.on("click", decode.success(MoveSongDown(index))),
                     class("song-action-btn"),
                   ],
                   [html.text("↓")],
                 ),
                 html.button(
                   [
-                    event.on("click", fn(_) { Ok(RemoveSong(index)) }),
+                    event.on("click", decode.success(RemoveSong(index))),
                     class("song-action-btn"),
                   ],
                   [html.text("✕")],
@@ -579,7 +583,7 @@ fn view_setlist_editor(setlist: Setlist) -> Element(Msg) {
       ]),
       html.div([class("add-song-container")], [
         html.button(
-          [event.on("click", fn(_) { Ok(AddSong) }), class("add-song-btn")],
+          [event.on("click", decode.success(AddSong)), class("add-song-btn")],
           [html.text("Add Song")],
         ),
       ]),
@@ -590,7 +594,7 @@ fn view_setlist_editor(setlist: Setlist) -> Element(Msg) {
 fn view_empty_state() -> Element(Msg) {
   html.div([class("empty-state")], [
     html.p([], [html.text("No setlist selected.")]),
-    html.button([event.on("click", fn(_) { Ok(CreateNewSetlist) })], [
+    html.button([event.on("click", decode.success(CreateNewSetlist))], [
       html.text("Create New Setlist"),
     ]),
   ])

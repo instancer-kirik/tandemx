@@ -76,13 +76,13 @@ fn view_hero() -> Element(Msg) {
 
 fn view_featured_articles() -> Element(Msg) {
   html.div([class("featured-articles")], [
-    html.h2([class("section-title")], [html.text("Featured Articles")]),
+    html.h2([class("section-title")], [html.text("Featured Content")]),
     html.div([class("articles-grid")], [
       // Article 1
       html.a(
         [
           class("article-card card-item"),
-          attribute.href("/blog/spaceport-launch"),
+          attribute.href("/access-content/spaceport-launch"),
         ],
         [
           html.div([class("article-header")], [
@@ -108,7 +108,7 @@ fn view_featured_articles() -> Element(Msg) {
       html.a(
         [
           class("article-card card-item"),
-          attribute.href("/blog/chart-space-navigation"),
+          attribute.href("/access-content/chart-space-navigation"),
         ],
         [
           html.div([class("article-header")], [
@@ -134,7 +134,7 @@ fn view_featured_articles() -> Element(Msg) {
       html.a(
         [
           class("article-card card-item"),
-          attribute.href("/blog/multiverse-development"),
+          attribute.href("/access-content/multiverse-development"),
         ],
         [
           html.div([class("article-header")], [
@@ -582,10 +582,10 @@ fn view_navigation() -> Element(Msg) {
         html.a(
           [
             class("nav-link"),
-            attribute.href("/blog"),
-            event.on_click(NavigateTo("/blog")),
+            attribute.href("/access-content"),
+            event.on_click(NavigateTo("/access-content")),
           ],
-          [html.text("Blog")],
+          [html.text("Content")],
         ),
         html.a(
           [

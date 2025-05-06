@@ -1,10 +1,12 @@
+import access_content.{type FetchState, type SupabaseUser}
 import components/nav
 import gleam/dict.{type Dict}
+import gleam/dynamic/decode
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import lustre
 import lustre/attribute
-import lustre/effect
+import lustre/effect.{type Effect}
 import lustre/element.{type Element}
 import lustre/element/html
 import lustre/event
@@ -26,7 +28,6 @@ pub type Theme {
 pub type Model {
   Model(
     theme: Theme,
-    nav_open: Bool,
     preferences: Dict(String, String),
     custom_colors: Dict(String, String),
     ad_platforms: Dict(String, Bool),
@@ -45,17 +46,10 @@ pub type Msg {
   NavMsg(nav.Msg)
 }
 
-pub fn main() {
-  let app = lustre.application(init, update, view)
-  let assert Ok(_) = lustre.start(app, "#app", Nil)
-  Nil
-}
-
-pub fn init(_) {
+pub fn init(_: Nil) -> #(Model, Effect(Msg)) {
   #(
     Model(
       theme: System,
-      nav_open: False,
       preferences: dict.new(),
       custom_colors: dict.from_list([
         #("primary", "#2563eb"),
@@ -86,7 +80,7 @@ pub fn init(_) {
   )
 }
 
-pub fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
+pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
   case msg {
     SetTheme(theme) -> {
       #(Model(..model, theme: theme), effect.none())
@@ -117,12 +111,7 @@ pub fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
     }
 
     NavMsg(nav_msg) -> {
-      case nav_msg {
-        nav.ToggleNav -> #(
-          Model(..model, nav_open: !model.nav_open),
-          effect.none(),
-        )
-      }
+      #(model, effect.none())
     }
   }
 }
@@ -174,14 +163,17 @@ fn view_theme_button(model: Model, theme: Theme, label: String) -> Element(Msg) 
         current_theme if current_theme == theme -> "theme-btn selected"
         _ -> "theme-btn"
       }),
-      event.on("click", fn(_) { Ok(SetTheme(theme)) }),
+      event.on("click", decode.success(SetTheme(theme))),
     ],
     [html.text(label)],
   )
 }
 
-pub fn view(model: Model) -> Element(Msg) {
-  let nav_element = element.map(nav.view(), NavMsg)
+pub fn view(
+  model: Model,
+  user_state: FetchState(Option(SupabaseUser)),
+) -> Element(Msg) {
+  let nav_element = element.map(nav.view(user_state), NavMsg)
   let main_content =
     html.main([attribute.class("settings-app")], [
       html.header([attribute.class("app-header")], [
@@ -214,72 +206,61 @@ pub fn view(model: Model) -> Element(Msg) {
               html.div(
                 [
                   attribute.class("color-swatch primary"),
-                  attribute.style([
-                    #(
-                      "background-color",
-                      option.unwrap(
-                        option.from_result(dict.get(
-                          model.custom_colors,
-                          "primary",
-                        )),
-                        "#2563eb",
-                      ),
+                  attribute.style(
+                    "background-color",
+                    option.unwrap(
+                      option.from_result(dict.get(
+                        model.custom_colors,
+                        "primary",
+                      )),
+                      "#2563eb",
                     ),
-                  ]),
+                  ),
                 ],
                 [],
               ),
               html.div(
                 [
                   attribute.class("color-swatch success"),
-                  attribute.style([
-                    #(
-                      "background-color",
-                      option.unwrap(
-                        option.from_result(dict.get(
-                          model.custom_colors,
-                          "success",
-                        )),
-                        "#16a34a",
-                      ),
+                  attribute.style(
+                    "background-color",
+                    option.unwrap(
+                      option.from_result(dict.get(
+                        model.custom_colors,
+                        "success",
+                      )),
+                      "#16a34a",
                     ),
-                  ]),
+                  ),
                 ],
                 [],
               ),
               html.div(
                 [
                   attribute.class("color-swatch warning"),
-                  attribute.style([
-                    #(
-                      "background-color",
-                      option.unwrap(
-                        option.from_result(dict.get(
-                          model.custom_colors,
-                          "warning",
-                        )),
-                        "#ca8a04",
-                      ),
+                  attribute.style(
+                    "background-color",
+                    option.unwrap(
+                      option.from_result(dict.get(
+                        model.custom_colors,
+                        "warning",
+                      )),
+                      "#ca8a04",
                     ),
-                  ]),
+                  ),
                 ],
                 [],
               ),
               html.div(
                 [
                   attribute.class("color-swatch danger"),
-                  attribute.style([
-                    #(
-                      "background-color",
-                      option.unwrap(
-                        option.from_result(dict.get(
-                          model.custom_colors,
-                          "danger",
-                        )),
-                        "#dc2626",
-                      ),
+                  attribute.style(
+                    "background-color",
+                    option.unwrap(
+                      option.from_result(dict.get(model.custom_colors, "danger")),
+                      "#dc2626",
                     ),
-                  ]),
+                  ),
                 ],
                 [],
               ),
@@ -429,10 +410,7 @@ pub fn view(model: Model) -> Element(Msg) {
 
   html.div(
     [
-      attribute.class(case model.nav_open {
-        True -> "app-container nav-open"
-        False -> "app-container"
-      }),
+      attribute.class("app-container-settings-only"),
       attribute.data("theme", case model.theme {
         Light(_) -> "light"
         Dark(_) -> "dark"

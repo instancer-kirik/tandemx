@@ -1,3 +1,4 @@
+import gleam/dynamic/decode
 import gleam/int
 import gleam/io
 import gleam/list
@@ -415,7 +416,7 @@ pub fn view(model: Model) -> Element(Msg) {
               button(
                 [
                   class("control-btn prev-month"),
-                  event.on("click", fn(_) { Ok(ChangeMonth("prev")) }),
+                  event.on("click", decode.success(ChangeMonth("prev"))),
                 ],
                 [text("Previous")],
               ),
@@ -427,7 +428,7 @@ pub fn view(model: Model) -> Element(Msg) {
               button(
                 [
                   class("control-btn next-month"),
-                  event.on("click", fn(_) { Ok(ChangeMonth("next")) }),
+                  event.on("click", decode.success(ChangeMonth("next"))),
                 ],
                 [text("Next")],
               ),
@@ -436,20 +437,22 @@ pub fn view(model: Model) -> Element(Msg) {
         ]),
         div([id("calendar-view"), class("calendar-view")], [
           // Calendar grid
-          div([id("calendar-grid"), class("calendar-grid")], [
+          div([id("calendar-grid weekdays"), class("calendar-grid")], [
             // Weekdays header
             div(
               [
                 class("weekdays"),
-                attribute.style([#("grid-template-columns", "repeat(7, 1fr)")]),
+                attribute.style("grid-template-columns", "repeat(7, 1fr)"),
               ],
               render_weekdays(),
             ),
+          ]),
+          div([id("calendar-grid days"), class("calendar-grid")], [
             // Days grid
             div(
               [
                 class("days"),
-                attribute.style([#("grid-template-columns", "repeat(7, 1fr)")]),
+                attribute.style("grid-template-columns", "repeat(7, 1fr)"),
               ],
               render_days(model),
             ),
@@ -503,8 +506,9 @@ fn render_days(model: Model) -> List(Element(Msg)) {
 
       div(
         [
-          class(day_classes),
-          event.on("click", fn(_) { Ok(SelectDate(day.date)) }),
+          attribute.class(day_classes),
+          event.on("click", decode.success(SelectDate(day.date))),
+          id("day-" <> day.date),
         ],
         [
           div([class("day-header")], [
@@ -523,8 +527,8 @@ fn render_days(model: Model) -> List(Element(Msg)) {
               div([class("day-actions")], [
                 button(
                   [
-                    class("schedule-btn"),
-                    event.on("click", fn(_) { Ok(OpenScheduler(day.date)) }),
+                    attribute.class("schedule-button"),
+                    event.on("click", decode.success(OpenScheduler(day.date))),
                   ],
                   [text("+")],
                 ),

@@ -157,8 +157,8 @@ fn get_user_wishlist(user_id: String) -> Response(mist.ResponseData) {
 }
 
 fn add_to_wishlist(
-  user_id: String,
-  product_id: String,
+  _user_id: String,
+  _product_id: String,
 ) -> Response(mist.ResponseData) {
   // Mock success response
   let resp_json =
@@ -188,7 +188,7 @@ fn remove_from_wishlist(
   |> response.set_body(mist.Bytes(bytes_tree.from_string(body)))
 }
 
-fn get_user_cart(user_id: String) -> Response(mist.ResponseData) {
+fn get_user_cart(_user_id: String) -> Response(mist.ResponseData) {
   // Return empty list - will be managed on client side
   let body = json.to_string(json.array([], fn(x) { x }))
   response.new(200)
@@ -197,8 +197,8 @@ fn get_user_cart(user_id: String) -> Response(mist.ResponseData) {
 }
 
 fn add_to_cart(
-  user_id: String,
-  product_id: String,
+  _user_id: String,
+  _product_id: String,
 ) -> Response(mist.ResponseData) {
   // Mock success response
   let resp_json =
@@ -213,8 +213,8 @@ fn add_to_cart(
 }
 
 fn remove_from_cart(
-  user_id: String,
-  product_id: String,
+  _user_id: String,
+  _product_id: String,
 ) -> Response(mist.ResponseData) {
   // Mock success response
   let resp_json =

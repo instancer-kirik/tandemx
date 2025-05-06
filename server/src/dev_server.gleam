@@ -2,6 +2,7 @@ import argv
 import chartspace_server
 import gleam/bytes_tree
 import gleam/dynamic
+import gleam/erlang/os
 import gleam/erlang/process
 import gleam/http.{Get, Post}
 import gleam/http/request.{type Request}
@@ -14,11 +15,14 @@ import gleam/option.{type Option, None, Some}
 import gleam/otp/actor
 import gleam/result
 import gleam/string
+import glenvy/dotenv
+import glenvy/env
 import mist.{
   type Connection, type ResponseData, type WebsocketConnection,
   type WebsocketMessage, Bytes, Text, websocket,
 }
 import simplifile
+import token_upgrade_api
 
 //add gravatar (glevatar)for easy multiprofiles with links and payment opts
 pub type CartState {
@@ -117,7 +121,47 @@ fn should_ignore_db_errors(args: List(String)) -> Bool {
   check_file_exists(".disable_db")
 }
 
+// Helper to get env var or use a default/error
+fn get_env(variable_name: String, default: String) -> String {
+  // Use glenvy/env.get_string which returns Result(String, env.VariableError)
+  case env.get_string(variable_name) {
+    Ok(value) -> value
+    Error(_) -> {
+      // Handle env.VariableError (NotPresent, InvalidUtf8)
+      // Log a warning in a real app if a required env var is missing
+      io.println(
+        "Warning: Environment variable "
+        <> variable_name
+        <> " not set or invalid. Using default.",
+      )
+      default
+    }
+  }
+}
+
 pub fn main() {
+  // Load environment variables from .env file using glenvy/dotenv
+  let _ = dotenv.load()
+  // Use glenvy's dotenv.load()
+
+  // Read Supabase config from environment variables
+  let supabase_url = get_env("SUPABASE_URL", "")
+  // Provide empty default or placeholder
+  let supabase_anon_key = get_env("SUPABASE_ANON_KEY", "")
+  // Provide empty default
+
+  // Warn if essential config is missing
+  case supabase_url == "" {
+    True -> io.println("Warning: SUPABASE_URL is not set!")
+    False -> Nil
+    // Do nothing if set
+  }
+  case supabase_anon_key == "" {
+    True -> io.println("Warning: SUPABASE_ANON_KEY is not set!")
+    False -> Nil
+    // Do nothing if set
+  }
+
   // Get all arguments
   let args = argv.load().arguments
   io.println("\nArguments: " <> string.join(args, ", "))
@@ -188,6 +232,7 @@ pub fn main() {
   let handler = fn(req: Request(Connection)) {
     case request.path_segments(req) {
       [] -> serve_html("landing.html")
+
       ["ws", "cart"] -> {
         let selector = process.new_selector()
         websocket(
@@ -220,9 +265,26 @@ pub fn main() {
         )
       }
 
+      // --- API Routes --- 
+      ["api", "config"] -> {
+        case req.method {
+          Get -> {
+            let config_json =
+              json.object([
+                #("supabaseUrl", json.string(supabase_url)),
+                #("supabaseAnonKey", json.string(supabase_anon_key)),
+              ])
+            let body = json.to_string(config_json)
+            response.new(200)
+            |> response.set_header("content-type", "application/json")
+            |> response.set_body(Bytes(bytes_tree.from_string(body)))
+          }
+          _ -> serve_404()
+        }
+      }
       ["api", "schedule-meeting"] -> {
         case req.method {
-          http.Post -> {
+          Post -> {
             case mist.read_body(req, 1024 * 1024) {
               Ok(req) -> {
                 let json = dynamic.from(req.body)
@@ -286,220 +348,218 @@ pub fn main() {
                 )
             }
           }
-          _ ->
-            response.new(405)
-            |> response.set_header("content-type", "application/json")
-            |> response.set_body(
-              Bytes(bytes_tree.from_string("{\"error\":\"Method not allowed\"}")),
-            )
+          _ -> serve_404()
+        }
+      }
+      ["api", "access-content", "create"] -> {
+        case req.method {
+          Post -> {
+            case mist.read_body(req, 1024 * 1024) {
+              Ok(req_with_body) -> {
+                // Now use req_with_body.body
+                io.println(
+                  "\nInstance Access Content creation request received",
+                )
+                io.println(
+                  "Request body: " <> string.inspect(req_with_body.body),
+                )
+
+                // Return success response
+                response.new(200)
+                |> response.set_header("content-type", "application/json")
+                |> response.set_body(
+                  Bytes(bytes_tree.from_string(
+                    "{\"status\":\"success\",\"message\":\"Content created successfully\"}",
+                  )),
+                )
+              }
+              Error(_) -> {
+                bad_request(
+                  "Invalid or missing request body for instance access content",
+                )
+              }
+            }
+          }
+          _ -> {
+            serve_404()
+          }
         }
       }
 
+      // Token/Upgrade API routes
+      ["api", "tokens"] -> {
+        case req.method {
+          Get ->
+            token_upgrade_api.handle_token_upgrade_request(
+              ["tokens"],
+              Get,
+              None,
+            )
+          _ -> serve_404()
+        }
+      }
+      ["api", "upgrades"] -> {
+        case req.method {
+          Get ->
+            token_upgrade_api.handle_token_upgrade_request(
+              ["upgrades"],
+              Get,
+              None,
+            )
+          _ -> serve_404()
+        }
+      }
+      ["api", "payment-options"] -> {
+        case req.method {
+          Get ->
+            token_upgrade_api.handle_token_upgrade_request(
+              ["payment-options"],
+              Get,
+              None,
+            )
+          _ -> serve_404()
+        }
+      }
+      ["api", "badges", user_id] -> {
+        case req.method {
+          Get ->
+            token_upgrade_api.handle_token_upgrade_request(
+              ["badges", user_id],
+              Get,
+              None,
+            )
+          _ -> serve_404()
+        }
+      }
+      ["api", "purchase", "token", user_id, token_id] -> {
+        case req.method {
+          Post -> {
+            case mist.read_body(req, 1024 * 1024) {
+              Ok(req_with_body) -> {
+                // Use dynamic.from
+                let dynamic_body = dynamic.from(req_with_body.body)
+                token_upgrade_api.handle_token_upgrade_request(
+                  ["purchase", "token", user_id, token_id],
+                  Post,
+                  Some(dynamic_body),
+                  // Pass dynamic body
+                )
+              }
+              Error(_) -> bad_request("Invalid or missing request body")
+            }
+          }
+          _ -> serve_404()
+        }
+      }
+      ["api", "purchase", "upgrade", user_id, upgrade_id] -> {
+        case req.method {
+          Post -> {
+            case mist.read_body(req, 1024 * 1024) {
+              Ok(req_with_body) -> {
+                // Use dynamic.from
+                let dynamic_body = dynamic.from(req_with_body.body)
+                token_upgrade_api.handle_token_upgrade_request(
+                  ["purchase", "upgrade", user_id, upgrade_id],
+                  Post,
+                  Some(dynamic_body),
+                  // Pass dynamic body
+                )
+              }
+              Error(_) -> bad_request("Invalid or missing request body")
+            }
+          }
+          _ -> serve_404()
+        }
+      }
+      // --- Handle Specific Page/Asset Routes (Assume GET) --- 
+      ["landing"] -> serve_html("landing.html")
+      ["pricing"] -> serve_html("pricing.html")
+      ["terms-and-conditions"] -> serve_html("terms-and-conditions.html")
+      ["poemsmith"] -> serve_html("landing.html")
+      ["veix"] -> serve_html("veix_about.html")
+      ["art-techniques"] -> serve_html("art_techniques.html")
+
+      [project_name, "interest"] -> handle_interest_form(project_name)
+      ["projects"] -> serve_html("projects.html")
+      ["sledge"] -> serve_html("sledge.html")
+
+      ["dd"] -> serve_html("dd.html")
+      ["shiny"] -> serve_html("shiny.html")
+      ["space-captains"] -> serve_html("space-captains.html")
+      ["hunter"] -> serve_html("hunter.html")
+      ["chartspace"] -> serve_html("chartspace.html")
+      ["compliance"] -> serve_html("compliance.html")
+      ["buzzpay"] -> serve_html("buzzpay.html")
+      ["styles.css"] -> serve_css("styles.css")
+      ["landing.css"] -> serve_css("landing.css")
+      ["chartspace.css"] -> serve_css("chartspace.css")
+      ["campaign-form.css"] -> serve_css("campaign-form.css")
+      ["projects.css"] -> serve_css("projects.css")
+      ["todos"] -> serve_html("todos.html")
+      ["banking"] -> serve_html("banking.html")
+      ["cards"] -> serve_html("cards.html")
+      ["currency"] -> serve_html("currency.html")
+      ["bills"] -> serve_html("bills.html")
+      ["payroll"] -> serve_html("payroll.html")
+      ["tax"] -> serve_html("tax.html")
+      ["ads"] -> serve_html("ads.html")
+      ["calendar"] -> serve_html("calendar.html")
+      ["calendar.css"] -> serve_css("calendar.css")
+      ["calendar.mjs"] -> serve_file("calendar.mjs", "text/javascript")
+      ["calendar_ffi.js"] -> serve_file("calendar_ffi.js", "text/javascript")
+      ["compliance"] -> serve_html("compliance.html")
+      ["compliance", "audit"] -> serve_html("compliance.html")
+      ["compliance", "reports"] -> serve_html("compliance.html")
+      ["compliance", "tax"] -> serve_html("compliance.html")
+      ["access-content"] -> serve_html("access_content.html")
+      ["access-content", post_slug] -> {
+        // Handle individual content item view by slug
+        // The actual logic is handled client-side, so just serve the main HTML
+        serve_html("access_content.html")
+        // Serve the container HTML
+      }
+      ["access-content", ..rest] -> {
+        case rest {
+          // Special asset routes
+          ["markdown_parser.js"] ->
+            serve_file("access_content/markdown_parser.js", "text/javascript")
+          ["access_content_renderer.js"] ->
+            serve_file(
+              "access_content/access_content_renderer.js",
+              "text/javascript",
+            )
+          ["index.json"] ->
+            serve_file("access_content/index.json", "application/json")
+          // Other asset fallbacks if necessary can go here
+          _ -> serve_404()
+          // Or serve the main html? Let's 404 for now.
+        }
+      }
+      ["access_content.css"] -> serve_css("access_content.css")
+
+      // Serve content images from assets directory
+      ["assets", "blog-images", ..rest] -> {
+        let file_path = string.join(rest, "/")
+        case try_serve_static_file("assets/blog-images/" <> file_path) {
+          Ok(response) -> response
+          Error(_) -> serve_404()
+        }
+      }
+
+      ["assets", ..rest] -> {
+        let file_path = string.join(rest, "/")
+        case try_serve_static_file("assets/" <> file_path) {
+          Ok(response) -> response
+          Error(_) -> serve_404()
+        }
+      }
+
+      // --- Fallback for General File Serving (Assume GET) --- 
       segments -> {
-        case segments {
-          ["landing"] -> serve_html("landing.html")
-
-          ["pricing"] -> serve_html("pricing.html")
-          ["terms-and-conditions"] -> serve_html("terms-and-conditions.html")
-          ["poemsmith"] -> serve_html("landing.html")
-          // Temporary redirect until PoemSmith is ready
-          ["bizpay", "api", "submit-interest"] -> {
-            case req.method {
-              http.Post -> {
-                case mist.read_body(req, 1024 * 1024) {
-                  Ok(req) -> {
-                    let json = dynamic.from(req.body)
-                    case decode_interest_submission(json) {
-                      Ok(submission) -> {
-                        // TODO: Store in database
-                        // For now, just log it
-                        io.println(
-                          string.concat([
-                            "\nNew interest submission:\n",
-                            "Project: ",
-                            submission.project,
-                            "\nName: ",
-                            submission.name,
-                            "\nEmail: ",
-                            submission.email,
-                            "\nCompany: ",
-                            submission.company,
-                            "\nMessage: ",
-                            submission.message,
-                          ]),
-                        )
-
-                        response.new(200)
-                        |> response.set_header(
-                          "content-type",
-                          "application/json",
-                        )
-                        |> response.set_body(
-                          Bytes(bytes_tree.from_string(
-                            "{\"status\":\"success\",\"message\":\"Thank you for your interest! We'll be in touch soon.\"}",
-                          )),
-                        )
-                      }
-                      Error(_) ->
-                        response.new(400)
-                        |> response.set_header(
-                          "content-type",
-                          "application/json",
-                        )
-                        |> response.set_body(
-                          Bytes(bytes_tree.from_string(
-                            "{\"error\":\"Invalid submission data\"}",
-                          )),
-                        )
-                    }
-                  }
-                  Error(_) ->
-                    response.new(400)
-                    |> response.set_header("content-type", "application/json")
-                    |> response.set_body(
-                      Bytes(bytes_tree.from_string(
-                        "{\"error\":\"Invalid request body\"}",
-                      )),
-                    )
-                }
-              }
-              _ ->
-                response.new(405)
-                |> response.set_header("content-type", "application/json")
-                |> response.set_body(
-                  Bytes(bytes_tree.from_string(
-                    "{\"error\":\"Method not allowed\"}",
-                  )),
-                )
-            }
-          }
-
-          [project_name, "interest"] -> handle_interest_form(project_name)
-          ["projects"] -> serve_html("projects.html")
-          ["sledge"] -> serve_html("sledge.html")
-          ["dd"] -> serve_html("dd.html")
-          ["shiny"] -> serve_html("shiny.html")
-          ["space-captains"] -> serve_html("space-captains.html")
-          ["hunter"] -> serve_html("hunter.html")
-          ["chartspace"] -> serve_html("chartspace.html")
-          ["compliance"] -> serve_html("compliance.html")
-          ["buzzpay"] -> serve_html("buzzpay.html")
-          ["styles.css"] -> serve_css("styles.css")
-          ["landing.css"] -> serve_css("landing.css")
-          ["chartspace.css"] -> serve_css("chartspace.css")
-          ["campaign-form.css"] -> serve_css("campaign-form.css")
-          ["projects.css"] -> serve_css("projects.css")
-          ["todos"] -> serve_html("todos.html")
-          ["banking"] -> serve_html("banking.html")
-          ["cards"] -> serve_html("cards.html")
-          ["currency"] -> serve_html("currency.html")
-          ["bills"] -> serve_html("bills.html")
-          ["payroll"] -> serve_html("payroll.html")
-          ["tax"] -> serve_html("tax.html")
-          ["ads"] -> serve_html("ads.html")
-          ["styles.css"] -> serve_css("styles.css")
-          ["chartspace"] -> serve_html("chartspace.html")
-          ["chartspace", "editor"] -> serve_html("chartspace.html")
-          ["chartspace", "viewer"] -> serve_html("chartspace.html")
-          ["settings"] -> serve_html("settings.html")
-          ["calendar"] -> serve_html("calendar.html")
-          ["calendar.css"] -> serve_css("calendar.css")
-          ["calendar.mjs"] -> serve_file("calendar.mjs", "text/javascript")
-          ["calendar_ffi.js"] ->
-            serve_file("calendar_ffi.js", "text/javascript")
-          ["compliance"] -> serve_html("compliance.html")
-          ["compliance", "audit"] -> serve_html("compliance.html")
-          ["compliance", "reports"] -> serve_html("compliance.html")
-          ["compliance", "tax"] -> serve_html("compliance.html")
-          ["blog"] -> serve_html("blog.html")
-          ["blog", ..rest] -> {
-            // Handle individual post view
-            case rest {
-              // Special asset routes
-              ["markdown_parser.js"] ->
-                serve_file("blog/markdown_parser.js", "text/javascript")
-              ["blog_renderer.js"] ->
-                serve_file("blog/blog_renderer.js", "text/javascript")
-              ["index.json"] ->
-                serve_file("blog/index.json", "application/json")
-
-              // Single post view URL - serve the blog.html to allow client-side routing
-              [_post_id] -> serve_html("blog.html")
-
-              // Fallback for other paths
-              _ -> serve_html("blog.html")
-            }
-          }
-          ["blog.css"] -> serve_css("blog.css")
-
-          // Serve blog images from assets directory
-          ["assets", "blog-images", ..rest] -> {
-            let file_path = string.join(rest, "/")
-            case try_serve_static_file("assets/blog-images/" <> file_path) {
-              Ok(response) -> response
-              Error(_) -> serve_404()
-            }
-          }
-
-          // Blog API endpoint for creating posts
-          ["api", "blog", "create"] -> {
-            case req.method {
-              http.Post -> {
-                case mist.read_body(req, 1024 * 1024) {
-                  Ok(req) -> {
-                    // Just log the post creation request for now
-                    io.println("\nBlog post creation request received")
-                    io.println("Request body: " <> string.inspect(req.body))
-
-                    // Return success response
-                    response.new(200)
-                    |> response.set_header("content-type", "application/json")
-                    |> response.set_body(
-                      Bytes(bytes_tree.from_string(
-                        "{\"status\":\"success\",\"message\":\"Post created successfully\"}",
-                      )),
-                    )
-                  }
-                  Error(_) ->
-                    response.new(400)
-                    |> response.set_header("content-type", "application/json")
-                    |> response.set_body(
-                      Bytes(bytes_tree.from_string(
-                        "{\"error\":\"Invalid request body\"}",
-                      )),
-                    )
-                }
-              }
-              _ ->
-                response.new(405)
-                |> response.set_header("content-type", "application/json")
-                |> response.set_body(
-                  Bytes(bytes_tree.from_string(
-                    "{\"error\":\"Method not allowed\"}",
-                  )),
-                )
-            }
-          }
-
-          ["debug", "files"] -> {
-            let assert Ok(files) = simplifile.read_directory("../client/build")
-            let content = string.join(files, "\n")
-            serve_content(content, "text/plain")
-          }
-          ["assets", ..rest] -> {
-            let file_path = string.join(rest, "/")
-            case try_serve_static_file("assets/" <> file_path) {
-              Ok(response) -> response
-              Error(_) -> serve_404()
-            }
-          }
-          path -> {
-            let file_path = string.join(path, "/")
-            case try_serve_static_file(file_path) {
-              Ok(response) -> response
-              Error(_) -> serve_404()
-            }
-          }
+        let file_path = string.join(segments, "/")
+        case try_serve_static_file(file_path) {
+          Ok(response) -> response
+          Error(_) -> serve_404()
         }
       }
     }
@@ -616,4 +676,13 @@ fn handle_message(msg: WebsocketMessage(String), state: CartActor) -> CartActor 
     }
     _ -> state
   }
+}
+
+// Helper function for bad request response (can be moved)
+fn bad_request(message: String) -> Response(ResponseData) {
+  let error_json = json.object([#("error", json.string(message))])
+  let body = json.to_string(error_json)
+  response.new(400)
+  |> response.set_header("content-type", "application/json")
+  |> response.set_body(Bytes(bytes_tree.from_string(body)))
 }

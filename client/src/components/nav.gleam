@@ -3,93 +3,71 @@ import lustre/element.{type Element}
 import lustre/element/html
 import lustre/event
 
+// No longer imports app
+import access_content.{
+  type FetchState, type SupabaseUser, Errored, Idle, Loaded, Loading,
+}
+import gleam/option.{type Option, None, Some}
+
+// Reintroduce nav.Msg
 pub type Msg {
-  ToggleNav
+  Navigated(String)
+  LoginAttempted
+  LogoutAttempted
 }
 
-pub fn view() -> Element(Msg) {
-  html.div([attribute.class("nav-container")], [
-    html.button([attribute.class("nav-toggle"), event.on_click(ToggleNav)], [
-      html.text("☰"),
-    ]),
-    html.nav([attribute.class("navbar")], [
-      html.div([attribute.class("nav-brand")], [
-        html.a([attribute.href("/")], [html.text("TandemX")]),
+// View function returns Element(nav.Msg)
+pub fn view(user_state: FetchState(Option(SupabaseUser))) -> Element(Msg) {
+  html.nav([attribute.class("navbar main-nav")], [
+    html.div([attribute.class("nav-content")], [
+      html.a([attribute.class("logo"), attribute.href("/")], [
+        html.text("TandemX"),
       ]),
       html.div([attribute.class("nav-links")], [
-        // Core
-        html.a([attribute.href("/")], [html.text("Home")]),
-        // Programming & Tools
-        html.a([attribute.href("/tools")], [
-          html.text("Dev Tools"),
-          html.div([attribute.class("nav-sub-links")], [
-            html.a([attribute.href("/tools/sledge")], [html.text("Sledge")]),
-            html.a([attribute.href("/tools/explorinator")], [
-              html.text("Explorinator"),
-            ]),
-            html.a([attribute.href("/tools/clipdirstructor")], [
-              html.text("Clipdirstructor"),
-            ]),
-            html.a([attribute.href("/tools/clipdirstructer")], [
-              html.text("Clipdirstructer"),
-            ]),
-            html.a([attribute.href("/tools/varchiver")], [
-              html.text("Varchiver"),
-            ]),
-          ]),
+        // Core links - dispatch Navigated
+        html.a([attribute.href("/"), event.on_click(Navigated("home"))], [
+          html.text("Home"),
         ]),
-        // Elixir Applications
-        html.a([attribute.href("/elixir-apps")], [
-          html.text("Elixir Apps"),
-          html.div([attribute.class("nav-sub-links")], [
-            html.a([attribute.href("/tools/deepscape")], [
-              html.text("Deepscape"),
-            ]),
-            html.a([attribute.href("/tools/pause-effect")], [
-              html.text("Pause || Effect"),
-            ]),
-            html.a([attribute.href("/tools/resolvinator")], [
-              html.text("Resolvinator"),
-            ]),
-            html.a([attribute.href("/tools/fonce")], [html.text("Fonce")]),
-            html.a([attribute.href("/tools/seek")], [html.text("Seek")]),
-            html.a([attribute.href("/tools/veix")], [html.text("Veix")]),
-          ]),
-        ]),
-        // Creative Tools
-        html.a([attribute.href("/creative")], [
-          html.text("Creative"),
-          html.div([attribute.class("nav-sub-links")], [
-            html.a([attribute.href("/tools/bonify")], [html.text("Bonify")]),
-            html.a([attribute.href("/tools/mediata")], [html.text("Mediata")]),
-            html.a([attribute.href("https://findry.lovable.app")], [
-              html.text("Findry"),
-            ]),
-          ]),
-        ]),
-        // Other Tools
-        html.a([attribute.href("/projects")], [
-          html.text("Other Tools"),
-          html.div([attribute.class("nav-sub-links")], [
-            html.a([attribute.href("/tools/combocounter")], [
-              html.text("Combocounter"),
-            ]),
-            html.a([attribute.href("/tools/cround")], [html.text("Cround")]),
-            html.a([attribute.href("https://divvyqueue.lovable.app")], [
-              html.text("DivvyQueue"),
-            ]),
-          ]),
-        ]),
-        // Calendar
-        html.a([attribute.href("/calendar")], [html.text("Calendar")]),
-        // Projects
-        html.a([attribute.href("/projects")], [html.text("Projects")]),
-        // Settings
-        html.a([attribute.href("/settings")], [html.text("Settings")]),
-        // About
-        html.a([attribute.href("/about"), attribute.class("nav-link")], [
-          html.text("About"),
-        ]),
+        html.a(
+          [attribute.href("/projects"), event.on_click(Navigated("projects"))],
+          [html.text("Projects")],
+        ),
+        html.a(
+          [
+            attribute.href("/access-content"),
+            event.on_click(Navigated("access-content")),
+          ],
+          [html.text("Content")],
+        ),
+        html.a(
+          [attribute.href("/calendar"), event.on_click(Navigated("calendar"))],
+          [html.text("Calendar")],
+        ),
+      ]),
+      // Auth actions - dispatch LoginAttempted/LogoutAttempted
+      html.div([attribute.class("nav-actions")], [
+        case user_state {
+          Loaded(Some(_user)) ->
+            html.button(
+              [
+                attribute.class("nav-btn logout"),
+                event.on_click(LogoutAttempted),
+                // Dispatch LogoutAttempted
+              ],
+              [html.text("Logout")],
+            )
+          Loaded(None) | Idle | Errored(_) ->
+            html.button(
+              [
+                attribute.class("nav-btn login"),
+                event.on_click(LoginAttempted),
+                // Dispatch LoginAttempted
+              ],
+              [html.text("Login with GitHub")],
+            )
+          Loading ->
+            html.span([attribute.class("nav-loading")], [html.text("...")])
+        },
       ]),
     ]),
   ])

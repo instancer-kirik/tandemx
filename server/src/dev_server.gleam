@@ -2,7 +2,7 @@ import argv
 import chartspace_server
 import gleam/bytes_tree
 import gleam/dynamic
-import gleam/erlang/os
+import gleam/dynamic/decode
 import gleam/erlang/process
 import gleam/http.{Get, Post}
 import gleam/http/request.{type Request}
@@ -11,16 +11,13 @@ import gleam/int
 import gleam/io
 import gleam/json
 import gleam/list
-import gleam/option.{type Option, None, Some}
+import gleam/option.{None, Some}
 import gleam/otp/actor
 import gleam/result
 import gleam/string
 import glenvy/dotenv
 import glenvy/env
-import mist.{
-  type Connection, type ResponseData, type WebsocketConnection,
-  type WebsocketMessage, Bytes, Text, websocket,
-}
+import mist.{type Connection, type ResponseData, Bytes, Text, websocket}
 import simplifile
 import token_upgrade_api
 
@@ -61,18 +58,25 @@ pub type InterestSubmission {
 }
 
 fn try_serve_static_file(path: String) -> Result(Response(ResponseData), Nil) {
-  let paths = [
-    string.concat(["../client/", path]),
-    string.concat(["../client/src/", path]),
-    string.concat(["../client/build/", path]),
-    string.concat(["../client/build/dev/", path]),
-    string.concat(["../client/build/dev/javascript/", path]),
-    string.concat(["../client/build/dev/javascript/tandemx_client/", path]),
-    string.concat(["../client/build/dev/javascript/gleam_stdlib/gleam/", path]),
-    string.concat(["../client/build/dev/javascript/lustre/", path]),
-    string.concat(["../client/build/dev/javascript/lustre/lustre/", path]),
-    string.concat(["../client/node_modules/", path]),
-  ]
+  // TEMPORARY DEBUG: Only check dist directory for JS files
+  let paths = case string.ends_with(path, ".js") {
+    True -> [string.concat(["../client/dist/", path])]
+    False -> [
+      // Keep original paths for non-JS files
+      string.concat(["../client/dist/", path]),
+      // Check dist first
+      string.concat(["../client/", path]),
+      string.concat(["../client/src/", path]),
+      string.concat(["../client/build/", path]),
+      string.concat(["../client/build/dev/", path]),
+      string.concat(["../client/build/dev/javascript/", path]),
+      string.concat(["../client/build/dev/javascript/tandemx_client/", path]),
+      string.concat(["../client/build/dev/javascript/gleam_stdlib/gleam/", path]),
+      string.concat(["../client/build/dev/javascript/lustre/", path]),
+      string.concat(["../client/build/dev/javascript/lustre/lustre/", path]),
+      string.concat(["../client/node_modules/", path]),
+    ]
+  }
 
   io.println("\nTrying to serve: " <> path)
   io.println("Checking paths:")
@@ -116,7 +120,7 @@ fn check_file_exists(filename: String) -> Bool {
 }
 
 // Check if we should ignore database errors
-fn should_ignore_db_errors(args: List(String)) -> Bool {
+fn should_ignore_db_errors(_args: List(String)) -> Bool {
   // Check for the flag file first (simple approach)
   check_file_exists(".disable_db")
 }
@@ -202,7 +206,7 @@ pub fn main() {
 
   // Initialize chartspace (with DB errors flag)
   let chartspace_state = chartspace_server.init()
-  let chartspace_actor = case chartspace_server.start() {
+  let _chartspace_actor = case chartspace_server.start() {
     Ok(actor) -> actor
     Error(error) -> {
       // Only abort if we're not ignoring DB errors
@@ -220,7 +224,7 @@ pub fn main() {
             "ERROR: Chartspace actor failed to start: " <> string.inspect(error),
           )
           // Still need to return a subject even if we'll exit shortly
-          let subject = process.new_subject()
+          let _subject = process.new_subject()
           process.sleep(100)
           // Give logger time to print
           panic as "Server cannot start without chartspace actor"
@@ -231,7 +235,7 @@ pub fn main() {
 
   let handler = fn(req: Request(Connection)) {
     case request.path_segments(req) {
-      [] -> serve_html("landing.html")
+      [] -> serve_html("index.html")
 
       ["ws", "cart"] -> {
         let selector = process.new_selector()
@@ -255,7 +259,7 @@ pub fn main() {
         let selector = process.new_selector()
         websocket(
           request: req,
-          on_init: fn(conn) { #(chartspace_state, Some(selector)) },
+          on_init: fn(_conn) { #(chartspace_state, Some(selector)) },
           on_close: fn(_state) { io.println("Chartspace WebSocket closed") },
           handler: fn(state, conn, msg) {
             let #(new_state, _) =
@@ -472,7 +476,7 @@ pub fn main() {
         }
       }
       // --- Handle Specific Page/Asset Routes (Assume GET) --- 
-      ["landing"] -> serve_html("landing.html")
+      ["landing"] -> serve_html("index.html")
       ["pricing"] -> serve_html("pricing.html")
       ["terms-and-conditions"] -> serve_html("terms-and-conditions.html")
       ["poemsmith"] -> serve_html("landing.html")
@@ -507,12 +511,12 @@ pub fn main() {
       ["calendar.css"] -> serve_css("calendar.css")
       ["calendar.mjs"] -> serve_file("calendar.mjs", "text/javascript")
       ["calendar_ffi.js"] -> serve_file("calendar_ffi.js", "text/javascript")
-      ["compliance"] -> serve_html("compliance.html")
+
       ["compliance", "audit"] -> serve_html("compliance.html")
       ["compliance", "reports"] -> serve_html("compliance.html")
       ["compliance", "tax"] -> serve_html("compliance.html")
       ["access-content"] -> serve_html("access_content.html")
-      ["access-content", post_slug] -> {
+      ["access-content", _post_slug] -> {
         // Handle individual content item view by slug
         // The actual logic is handled client-side, so just serve the main HTML
         serve_html("access_content.html")
@@ -595,29 +599,44 @@ fn serve_css(filename: String) -> Response(ResponseData) {
   }
 }
 
-fn serve_content(
-  content: String,
-  content_type: String,
-) -> Response(ResponseData) {
-  response.new(200)
-  |> response.set_header("content-type", content_type)
-  |> response.set_body(Bytes(bytes_tree.from_string(content)))
+fn serve_file(filename: String, content_type: String) -> Response(ResponseData) {
+  case try_serve_static_file(filename) {
+    Ok(response) -> {
+      // Apply the content type specified
+      response
+      |> response.set_header("content-type", content_type)
+    }
+    Error(_) -> serve_404()
+  }
+}
+
+fn decode_meeting_decoder() -> decode.Decoder(Meeting) {
+  {
+    use id <- decode.field("id", decode.string)
+    use title <- decode.field("title", decode.string)
+    use description <- decode.field("description", decode.string)
+    use date <- decode.field("date", decode.string)
+    use start_time <- decode.field("start_time", decode.string)
+    use duration_minutes <- decode.field("duration_minutes", decode.int)
+    use attendees <- decode.field("attendees", decode.list(decode.string))
+    use timezone <- decode.field("timezone", decode.string)
+    decode.success(Meeting(
+      id,
+      title,
+      description,
+      date,
+      start_time,
+      duration_minutes,
+      attendees,
+      timezone,
+    ))
+  }
 }
 
 fn decode_meeting(
-  json: dynamic.Dynamic,
-) -> Result(Meeting, List(dynamic.DecodeError)) {
-  dynamic.decode8(
-    Meeting,
-    dynamic.field("id", dynamic.string),
-    dynamic.field("title", dynamic.string),
-    dynamic.field("description", dynamic.string),
-    dynamic.field("date", dynamic.string),
-    dynamic.field("start_time", dynamic.string),
-    dynamic.field("duration_minutes", dynamic.int),
-    dynamic.field("attendees", dynamic.list(dynamic.string)),
-    dynamic.field("timezone", dynamic.string),
-  )(json)
+  data: dynamic.Dynamic,
+) -> Result(Meeting, List(decode.DecodeError)) {
+  decode.run(data, decode_meeting_decoder())
 }
 
 @external(erlang, "io", "format")
@@ -645,40 +664,24 @@ fn handle_interest_form(project_name: String) -> Response(ResponseData) {
   )
 }
 
+// Define the decoder logic for InterestSubmission
+fn interest_submission_decoder() -> decode.Decoder(InterestSubmission) {
+  {
+    use project <- decode.field("project", decode.string)
+    use email <- decode.field("email", decode.string)
+    use name <- decode.field("name", decode.string)
+    use company <- decode.field("company", decode.string)
+    use message <- decode.field("message", decode.string)
+    decode.success(InterestSubmission(project, email, name, company, message))
+  }
+}
+
 fn decode_interest_submission(
-  json: dynamic.Dynamic,
-) -> Result(InterestSubmission, List(dynamic.DecodeError)) {
-  dynamic.decode5(
-    InterestSubmission,
-    dynamic.field("project", dynamic.string),
-    dynamic.field("email", dynamic.string),
-    dynamic.field("name", dynamic.string),
-    dynamic.field("company", dynamic.string),
-    dynamic.field("message", dynamic.string),
-  )(json)
+  data: dynamic.Dynamic,
+) -> Result(InterestSubmission, List(decode.DecodeError)) {
+  decode.run(data, interest_submission_decoder())
 }
 
-fn serve_file(filename: String, content_type: String) -> Response(ResponseData) {
-  case try_serve_static_file(filename) {
-    Ok(response) -> {
-      // Apply the content type specified
-      response
-      |> response.set_header("content-type", content_type)
-    }
-    Error(_) -> serve_404()
-  }
-}
-
-fn handle_message(msg: WebsocketMessage(String), state: CartActor) -> CartActor {
-  case msg {
-    Text(data) -> {
-      CartActor(..state, connections: [data, ..state.connections])
-    }
-    _ -> state
-  }
-}
-
-// Helper function for bad request response (can be moved)
 fn bad_request(message: String) -> Response(ResponseData) {
   let error_json = json.object([#("error", json.string(message))])
   let body = json.to_string(error_json)

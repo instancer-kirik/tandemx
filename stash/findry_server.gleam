@@ -1,16 +1,18 @@
-import electric/db.{type Database, type DbError, type Subscription}
+import electric/db.{type Database}
+import electric/types.{type Collaborator, type Node, type NodeConnection, Node}
+import gleam/bool
+import gleam/dict
+import gleam/dynamic
 import gleam/erlang/process
 import gleam/float
 import gleam/int
-import gleam/io
+import gleam/json
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/otp/actor
+import gleam/result
 import gleam/string
-import mist.{
-  type Connection, type ResponseData, type WebsocketConnection,
-  type WebsocketMessage, Bytes, Text, websocket,
-}
+import mist.{type WebsocketConnection, type WebsocketMessage, Text}
 
 pub type SpaceType {
   Studio
@@ -285,23 +287,20 @@ pub fn handle_message(
         }
 
         SwipeRight(artist_id, space_id) -> {
-          // Create potential match if both parties have swiped right
-          let new_state = create_match_if_mutual(state, artist_id, space_id)
-          broadcast_to_others(
-            conn,
-            serialize_electric_message(message),
-            connections,
-          )
-          #(new_state, connections)
+          // Logic for swiping right (e.g., mark as interested, potentially match)
+          let match_found = check_for_match(artist_id, space_id)
+          case match_found {
+            True -> {
+              // Notify both parties of the match
+              notify_match(artist_id, space_id, connections)
+              #(state, connections)
+            }
+            False -> #(state, connections)
+          }
         }
 
-        SwipeLeft(artist_id, space_id) -> {
-          // Record rejection to avoid showing again
-          broadcast_to_others(
-            conn,
-            serialize_electric_message(message),
-            connections,
-          )
+        SwipeLeft(_artist_id, _space_id) -> {
+          // Logic for swiping left (e.g., mark as not interested)
           #(state, connections)
         }
 
@@ -614,16 +613,25 @@ pub fn init() -> FindryState {
   )
 }
 
-fn handle_db_error(error: DbError) {
-  let error_msg = case error {
-    db.ConnectionError(msg) -> "Database Connection Error: " <> msg
-    db.QueryError(msg) -> "Database Query Error: " <> msg
-    db.ValidationError(msg) -> "Database Validation Error: " <> msg
-    db.SubscriptionError(msg) -> "Database Subscription Error: " <> msg
-    db.ParseError(msg) -> "Database Parse Error: " <> msg
-    db.NetworkError(msg) -> "Database Network Error: " <> msg
-  }
-  io.println(error_msg)
+fn publish_availability_update(
+  _artist_id: String,
+  _space_id: String,
+  availability: List(TimeSlot),
+  connections: List(WebsocketConnection),
+) {
+  let message = AvailabilityUpdate(availability)
+  broadcast(serialize_message(message), connections)
+}
+
+fn send_booking_confirmation(
+  _artist_id: String,
+  _space_id: String,
+  _time_slot: TimeSlot,
+  connections: List(WebsocketConnection),
+) {
+  let message = BookingConfirmed
+  // Assuming BookingConfirmed is a simple variant
+  broadcast(serialize_message(message), connections)
 }
 
 pub fn start() -> Result(process.Subject(FindryActor), actor.StartError) {

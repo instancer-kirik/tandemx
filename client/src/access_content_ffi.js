@@ -1,7 +1,9 @@
 // FFI functions for access_content.gleam
+import { createClient } from '@supabase/supabase-js'; // Import createClient
 
 // Global Supabase client instance (initialized by init_supabase)
-let supabase = null;
+// This will now be the actual client instance, and we will export it.
+let supabaseClient = null;
 
 // Global Tiptap editor instance
 let tiptapEditor = null;
@@ -31,20 +33,26 @@ export async function fetch_config() {
 // Initializes the Supabase client library
 export function init_supabase(url, key) {
     try {
-        // Assumes Supabase JS v2 is available globally or imported
-        if (typeof supabase !== 'undefined' && supabase?.createClient) {
-           supabase = supabase.createClient(url, key);
-            console.log("Supabase client initialized.");
+        // Use the imported createClient
+        supabaseClient = createClient(url, key);
+        if (supabaseClient) {
+            console.log("Supabase client initialized and exported.");
             return { Ok: null };
         } else {
-            console.error('Supabase client library (supabase-js v2) not found.');
-            return { Error: "Supabase library not available." };
+            // This case should ideally not be hit if createClient succeeds
+            console.error('Failed to create Supabase client.');
+            return { Error: "Failed to create Supabase client." };
         }
     } catch (error) {
         console.error("Error initializing Supabase:", error);
         return { Error: error.message || "Failed to initialize Supabase" };
     }
 }
+
+// Export the initialized client for other modules to use.
+// Other FFI modules can import { supabase } from './access_content_ffi.js';
+// Note: I am exporting it as 'supabase' to match the import in projects_ffi.js
+export { supabaseClient as supabase };
 
 // Initializes the Tiptap editor
 export function init_tiptap(selector, initialContent) {
@@ -114,11 +122,11 @@ export function get_tiptap_html() {
 
 // Creates a new post in the Supabase 'posts' table
 export async function create_post(postData) {
-    if (!supabase) return { Error: "Supabase client not initialized" };
+    if (!supabaseClient) return { Error: "Supabase client not initialized" };
     try {
         // Map Gleam snake_case to Supabase column names if different
         // Assuming Supabase columns match PostDataForFFI fields directly
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from('posts')
             .insert([{
                 title: postData.title,
@@ -156,9 +164,9 @@ export async function create_post(postData) {
 
 // Fetches all posts from the Supabase 'posts' table
 export async function fetch_posts() {
-    if (!supabase) return { Error: "Supabase client not initialized" };
+    if (!supabaseClient) return { Error: "Supabase client not initialized" };
     try {
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from('posts')
             .select('id, slug, title, date, author, category') // Select specific fields needed for list view
             .order('date', { ascending: false }); // Example order
@@ -186,9 +194,9 @@ export async function fetch_posts() {
 
 // Fetches a single post by its slug from Supabase
 export async function fetch_post_by_slug(slug) {
-    if (!supabase) return { Error: "Supabase client not initialized" };
+    if (!supabaseClient) return { Error: "Supabase client not initialized" };
     try {
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from('posts')
             .select('*') // Select all columns for single view
             .eq('slug', slug)
@@ -252,79 +260,99 @@ export function show_toast(message, toast_type) {
 
 // --- Admin & Auth (Supabase) ---
 
+// Placeholder for admin check
+export function checkAdminAuth() {
+    // In a real scenario, this would check the user's roles/permissions
+    // For now, let's assume the user is not an admin for this specific context
+    // or integrate with the global admin check if appropriate.
+    console.warn("checkAdminAuth FFI called, returning false by default.");
+    return { Ok: false }; // Return Ok(False)
+}
+
+// Placeholder for setting admin auth
+export function setAdminAuth() {
+    // This function would typically be used after a successful admin login
+    // to set a flag or token.
+    console.warn("setAdminAuth FFI called, placeholder implementation.");
+    return { Ok: null }; // Return Ok(Nil)
+}
+
+// Placeholder for checking a password
+export function checkPasswordFFI(inputId) {
+    // This function would get a password from an input field (identified by inputId)
+    // and check it against a stored hash or via an API call.
+    console.warn(`checkPasswordFFI FFI called for input: ${inputId}, returning false by default.`);
+    const passwordElement = document.getElementById(inputId);
+    if (passwordElement && passwordElement.value) {
+        // Actual password check logic would go here
+        // For now, let's simulate a failed check
+        console.log("Password input found, but check is a placeholder.");
+    } else {
+        console.error(`Password input with ID '${inputId}' not found or empty.`);
+    }
+    return { Ok: false }; // Return Ok(False) for now
+}
+
 // Gets the current logged-in user session from Supabase
 export async function get_current_user() {
-    if (!supabase) return { Error: "Supabase client not initialized" };
+    // Ensure this function also uses the exported supabaseClient if it interacts with Supabase directly
+    // For example, if it were to call supabaseClient.auth.getUser()
+    if (!supabaseClient) {
+        console.error("FFI: Supabase client not initialized for get_current_user.");
+        return { type: "Error", 0: "Supabase client not initialized" };
+    }
     try {
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-        if (sessionError) throw sessionError;
-
-        if (!session) {
-            return { Ok: null }; // No active session, return Ok(None)
+        const { data: { user }, error } = await supabaseClient.auth.getUser();
+        if (error) {
+            // Log error but return Ok(None) as per typical Gleam FFI for optional results
+            console.warn("FFI getCurrentUser error, treating as no user:", error.message);
+            return { type: "Ok", 0: null }; 
         }
-
-        // Session exists, get user data
-        const { data: { user }, error: userError } = await supabase.auth.getUser();
-        if (userError) throw userError;
-
-        if (!user) {
-             console.warn("Session found but failed to get user data.");
-             return { Ok: null }; // Should ideally not happen if session exists
+        if (user) {
+            return { type: "Ok", 0: { id: user.id, email: user.email || null } }; // Map to SupabaseUser
+        } else {
+            return { type: "Ok", 0: null }; // No user found
         }
-
-        // Map to Gleam SupabaseUser type
-        const gleamUser = {
-            id: user.id,
-            email: user.email || null, // email might be null
-        };
-        return { Ok: gleamUser }; // Return Ok(Some(User))
-
-    } catch (error) {
-        console.error("Error getting current user:", error);
-        return { Error: error.message || "Failed to get current user session" };
+    } catch (e) {
+        console.error("FFI getCurrentUser exception:", e);
+        return { type: "Error", 0: e.message || "Exception in getCurrentUser" };
     }
 }
 
 // Initiates the Supabase sign-in flow with GitHub (or another provider)
 export async function sign_in_with_github() {
-    if (!supabase) return { Error: "Supabase client not initialized" };
+    if (!supabaseClient) return { Error: "Supabase client not initialized" };
     try {
-        // Redirects the user to the provider's login page
-        const { error } = await supabase.auth.signInWithOAuth({
+        const { error } = await supabaseClient.auth.signInWithOAuth({
             provider: 'github',
-            // Add options like redirectTo if needed:
             // options: {
-            //   redirectTo: window.location.origin + '/access-content' 
+            //   redirectTo: window.location.origin // Or a specific callback URL
             // }
         });
-        if (error) throw error;
-
-        // Important: This function likely won't "return" in the traditional sense
-        // because of the redirect. The user will come back to the page, and
-        // the CheckSession logic should run again to detect the new session.
-        return { Ok: null };
-
-    } catch (error) {
-        console.error("Error signing in with GitHub:", error);
-        return { Error: error.message || "Failed to initiate GitHub sign-in" };
+        if (error) {
+            console.error("FFI signInWithGitHub error:", error);
+            return { Error: error.message };
+        }
+        return { Ok: null }; // signInWithOAuth redirects, so Ok(null) is fine
+    } catch (e) {
+        console.error("FFI signInWithGitHub exception:", e);
+        return { Error: e.message || "Exception in signInWithGitHub" };
     }
 }
 
 // Signs the current user out of Supabase
 export async function sign_out_user() {
-    if (!supabase) return { Error: "Supabase client not initialized" };
+    if (!supabaseClient) return { Error: "Supabase client not initialized" };
     try {
-        const { error } = await supabase.auth.signOut();
-        if (error) throw error;
-
-        console.log("User signed out.");
-        // Clear any potentially related local/session storage if needed
-        // sessionStorage.removeItem('contentAdminAuthenticated'); // Removed old insecure flag
-        return { Ok: null }; // Return Ok(Nil)
-
-    } catch (error) {
-        console.error("Error signing out:", error);
-        return { Error: error.message || "Failed to sign out" };
+        const { error } = await supabaseClient.auth.signOut();
+        if (error) {
+            console.error("FFI signOutUser error:", error);
+            return { Error: error.message };
+        }
+        return { Ok: null };
+    } catch (e) {
+        console.error("FFI signOutUser exception:", e);
+        return { Error: e.message || "Exception in signOutUser" };
     }
 }
 

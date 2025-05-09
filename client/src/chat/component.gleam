@@ -5,7 +5,7 @@ import gleam/int
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/string
-import lustre
+
 import lustre/attribute
 import lustre/effect
 import lustre/element.{type Element}

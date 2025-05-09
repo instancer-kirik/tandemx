@@ -1,8 +1,3 @@
-import gleam/dynamic.{type Dynamic}
-import gleam/io
-import gleam/list
-import gleam/option.{type Option}
-import gleam/string
 import lustre/attribute
 import lustre/element.{type Element}
 import lustre/element/html

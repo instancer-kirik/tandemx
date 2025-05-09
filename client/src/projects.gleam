@@ -1,13 +1,8 @@
-import access_content.{type FetchState, type SupabaseUser}
-import components/nav
 import gleam/dynamic.{type Dynamic}
-import gleam/float
-import gleam/int
 import gleam/io
+import gleam/javascript/promise.{type Promise}
 import gleam/list
 import gleam/option.{type Option, None, Some}
-import gleam/result
-import gleam/string
 import lustre
 import lustre/attribute.{class}
 import lustre/effect.{type Effect}
@@ -73,7 +68,6 @@ pub type Priority {
 pub type Msg {
   NavigateTo(String)
   ExpressInterest(String)
-  NavMsg(nav.Msg)
   CreateProject(Project)
   UpdateProject(Project)
   DeleteProject(String)
@@ -83,6 +77,7 @@ pub type Msg {
 
 pub fn init(_: Nil) -> #(Model, Effect(Msg)) {
   #(Model(projects: []), fetch_projects_effect())
+  // #(Model(projects: []), effect.none()) // Return no initial effect
 }
 
 pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
@@ -95,11 +90,8 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
       let _ = set_window_location("/interest/" <> project_name)
       #(model, effect.none())
     }
-    NavMsg(nav_msg) -> {
-      #(model, effect.none())
-    }
     CreateProject(project) -> {
-      #(Model(..model, projects: [project, ..model.projects]), effect.none())
+      #(Model(projects: [project, ..model.projects]), effect.none())
     }
     UpdateProject(updated_project) -> {
       let updated_list =
@@ -109,18 +101,22 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
             False -> p
           }
         })
-      #(Model(..model, projects: updated_list), effect.none())
+      #(Model(projects: updated_list), effect.none())
     }
     DeleteProject(id) -> {
       let updated_list = list.filter(model.projects, fn(p) { p.id != id })
-      #(Model(..model, projects: updated_list), effect.none())
+      #(Model(projects: updated_list), effect.none())
     }
     FetchProjects -> {
       #(model, fetch_projects_effect())
     }
     ProjectsFetched(result) -> {
+      io.println(
+        "Received ProjectsFetched with result (update projects.gleam):",
+      )
+
       case result {
-        Ok(projects) -> #(Model(..model, projects: projects), effect.none())
+        Ok(projects) -> #(Model(projects: projects), effect.none())
         Error(err) -> {
           io.println("Error fetching projects: " <> err)
           #(model, effect.none())
@@ -133,23 +129,17 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
 @external(javascript, "./projects_ffi.js", "setWindowLocation")
 fn set_window_location(path: String) -> Nil
 
-@external(javascript, "./projects_ffi.js", "fetchProjects")
-fn fetch_projects_ffi() -> Result(List(Project), String)
+@external(javascript, "./projects_ffi.js", "supabaseFetchProjects")
+fn fetch_projects_from_supabase_ffi() -> Promise(Result(List(Project), String))
 
-pub fn view(
-  model: Model,
-  user_state: FetchState(Option(SupabaseUser)),
-) -> Element(Msg) {
-  html.div([class("app-container")], [
-    element.map(nav.view(user_state), NavMsg),
-    html.div([class("main-content")], [
-      view_header(),
-      html.div([class("projects-page")], [
-        html.div(
-          [class("projects-grid")],
-          list.map(model.projects, view_project_card),
-        ),
-      ]),
+pub fn view(model: Model) -> Element(Msg) {
+  html.div([class("main-content")], [
+    view_header(),
+    html.div([class("projects-page")], [
+      html.div(
+        [class("projects-grid")],
+        list.map(model.projects, view_project_card),
+      ),
     ]),
   ])
 }
@@ -247,6 +237,20 @@ fn category_to_string(category: ProjectCategory) -> String {
   }
 }
 
-fn fetch_projects_effect() -> Effect(Msg) {
-  effect.from(fn(dispatch) { dispatch(ProjectsFetched(fetch_projects_ffi())) })
+pub fn fetch_projects_effect() -> Effect(Msg) {
+  effect.from(fn(dispatch) {
+    fetch_projects_from_supabase_ffi()
+    |> promise.map(fn(res) { ProjectsFetched(res) })
+    |> promise.tap(fn(msg_to_dispatch) { dispatch(msg_to_dispatch) })
+
+    Nil
+  })
+}
+
+pub fn main() {
+  let app = lustre.application(init, update, view)
+  // Assuming projects page doesn't need flags, use Nil
+  // Mount to the standard #app div
+  let assert Ok(_) = lustre.start(app, "#app", Nil)
+  Nil
 }

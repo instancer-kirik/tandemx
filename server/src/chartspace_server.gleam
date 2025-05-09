@@ -1,13 +1,19 @@
 import electric/db.{type Database, type DbError, type Subscription}
 import electric/types.{type Collaborator, type Node, type NodeConnection, Node}
-import gleam/erlang/process
+import gleam/bool
+import gleam/dict
+import gleam/float
+import gleam/int
 import gleam/io
+import gleam/json
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/otp/actor
+import gleam/result
+import gleam/string
 import mist.{
   type Connection, type ResponseData, type WebsocketConnection,
-  type WebsocketMessage, Bytes, Text, websocket,
+  type WebsocketMessage, Text, websocket,
 }
 
 pub type Position {
@@ -359,4 +365,42 @@ pub fn start() -> Result(process.Subject(ChartspaceActor), actor.StartError) {
       loop: fn(_msg, state) { actor.continue(state) },
     ),
   )
+}
+
+fn handle_node_subscriptions(database: Database, conn: Connection) {
+  let selector = process.new_selector()
+  // Example of how you might fetch initial nodes, adjust as per your actual logic
+  // actor.call(database_actor_pid, fn(req) { GetNodes(req) }, 0)
+  // case process.select(selector, 0) {
+  //   process.Received(nodes_result) -> {
+  //     // Handle nodes_result
+  //     io.debug(nodes_result) // Placeholder
+  //   }
+  //   process.Aborted | process.Timeout -> Nil
+  // }
+
+  // Subscribe to node updates
+  let _node_subscription =
+    db.subscribe_nodes(database, fn(_nodes) {
+      // This callback will be invoked when nodes change
+      // Send updated nodes to the client via conn - ensure `conn` is usable here or passed correctly
+      // For now, returning Ok(Nil) to match expected Result type if db.subscribe_nodes expects it
+      case conn {
+        _ -> Ok(Nil)
+        // Placeholder for actual send logic
+      }
+    })
+
+  // Subscribe to connection updates
+  let _connection_subscription =
+    db.subscribe_connections(database, fn(_connections) {
+      // This callback will be invoked when connections change
+      // Send updated connections to the client via conn - ensure `conn` is usable here or passed correctly
+      case conn {
+        _ -> Ok(Nil)
+        // Placeholder for actual send logic
+      }
+    })
+  process.sleep_forever()
+  // Keep actor alive if this is its main loop
 }

@@ -7,10 +7,7 @@
 // 4. Run the server
 // -------------------------------------------------------------------
 
-import gleam/erlang/os
 import gleam/io
-import gleam/option.{type Option, None, Some}
-import gleam/string
 
 /// Email notification type
 /// Used to represent an email to be sent
@@ -20,7 +17,7 @@ pub type EmailNotification {
 
 /// Initialize the email service
 /// This is a mock implementation for the Erlang target
-pub fn init() {
+pub fn init() -> Nil {
   io.println("Initializing email service (Erlang implementation)")
   io.println(
     "Email service is running in mock mode (no actual emails will be sent)",
@@ -29,23 +26,8 @@ pub fn init() {
   Nil
 }
 
-/// Mask API key for logging (only show first few characters)
-fn mask_api_key(key: String) -> String {
-  // Only show the first 8 characters of the API key
-  case key {
-    "" -> "[empty]"
-    _ -> {
-      let visible_part = case string.length(key) > 8 {
-        True -> string.slice(key, 0, 8)
-        False -> key
-      }
-      visible_part <> "***********"
-    }
-  }
-}
-
 /// Send an email notification (mock implementation)
-pub fn send_email(notification: EmailNotification) {
+pub fn send_email(notification: EmailNotification) -> Nil {
   // Log the email
   io.println("\nSending email (MOCK - not actually sent):")
   io.println("From: " <> notification.from)
@@ -65,7 +47,7 @@ pub fn send_email(notification: EmailNotification) {
 }
 
 /// Send a meeting invitation email (mock implementation)
-pub fn send_meeting_invitation(notification: EmailNotification) {
+pub fn send_meeting_invitation(notification: EmailNotification) -> Nil {
   // Log the email
   io.println("\nSending meeting invitation (MOCK - not actually sent):")
   io.println("From: " <> notification.from)

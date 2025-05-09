@@ -1,16 +1,13 @@
-import access_content.{type FetchState, Errored, Idle, Loaded, Loading}
-import components/nav
 import gleam/bool
 import gleam/dict.{type Dict}
-import gleam/dynamic
+
 import gleam/dynamic/decode
 import gleam/option.{type Option, None, Some}
 
 import gleam/int
 import gleam/list
 import gleam/order
-import gleam/result
-import gleam/string
+
 import lustre
 import lustre/attribute.{type Attribute}
 import lustre/effect.{type Effect}
@@ -54,7 +51,7 @@ fn compare(a: Todo, b: Todo) -> order.Order {
   int.compare(a.id, b.id)
 }
 
-fn init(_) -> #(Model, Effect(msg)) {
+fn init(_) -> #(Model, Effect(Msg)) {
   #(
     Model(
       todos: dict.new(),
@@ -82,12 +79,18 @@ pub type Msg {
   UserEditedTodo(id: Int)
   UserUpdatedExistingInput(value: String)
   UserUpdatedNewInput(value: String)
-  NavMsg(nav.Msg)
+  ToggleTodoMvcNav
 }
 
 fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
-  let Model(todos, _, last_id, new_todo_input, existing_todo_input, _nav_open) =
-    model
+  let Model(
+    todos,
+    _,
+    last_id,
+    new_todo_input,
+    existing_todo_input,
+    nav_open_state,
+  ) = model
 
   case msg {
     UserAddedTodo -> {
@@ -174,18 +177,8 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
       #(Model(..model, new_todo_input:), effect.none())
     }
 
-    NavMsg(nav_msg) -> {
-      case nav_msg {
-        nav.Navigated(_) -> {
-          #(model, effect.none())
-        }
-        nav.LoginAttempted -> {
-          #(model, effect.none())
-        }
-        nav.LogoutAttempted -> {
-          #(model, effect.none())
-        }
-      }
+    ToggleTodoMvcNav -> {
+      #(Model(..model, nav_open: !nav_open_state), effect.none())
     }
   }
 }
@@ -201,7 +194,9 @@ fn view(model: Model) -> Element(Msg) {
       }),
     ],
     [
-      element.map(nav.view(Loaded(option.None)), NavMsg),
+      html.button([event.on_click(ToggleTodoMvcNav)], [
+        html.text("Toggle TodoMVC Nav"),
+      ]),
       html.div([attribute.class("todoapp")], [
         header(model),
         main_content(model),

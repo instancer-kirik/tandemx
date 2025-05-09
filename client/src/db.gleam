@@ -1,4 +1,5 @@
 import gleam/dynamic.{type Dynamic}
+import gleam/dynamic/decode
 import gleam/json
 import gleam/option.{type Option, None, Some}
 import gleam/result
@@ -80,9 +81,6 @@ pub type CalendarVariant {
   HebrewTraditional
 }
 
-pub type CalendarComponents =
-  Dynamic
-
 pub type PlanetModel {
   PlanetModel(
     id: String,
@@ -102,6 +100,44 @@ pub type InterestSubmission {
     name: String,
     company: Option(String),
     message: String,
+  )
+}
+
+pub type Campaign {
+  Campaign(
+    id: String,
+    title: String,
+    description: String,
+    start_timestamp: String,
+    end_timestamp: String,
+    calendar_system: String,
+    category: String,
+  )
+}
+
+pub type Post {
+  Post(
+    id: String,
+    title: String,
+    content: String,
+    excerpt: Option(String),
+    image: Option(String),
+    date: String,
+    author: String,
+    category: String,
+    published: Bool,
+  )
+}
+
+pub type Planet {
+  Planet(
+    id: String,
+    planet_name: String,
+    description: String,
+    scale_km: Float,
+    rotation_period_hours: Option(Float),
+    orbital_period_days: Option(Float),
+    axial_tilt_degrees: Option(Float),
   )
 }
 
@@ -189,21 +225,30 @@ pub fn meeting_to_json(meeting: Meeting) -> Dynamic {
   |> dynamic.from
 }
 
-pub fn json_to_meeting(data: Dynamic) -> Result(Meeting, String) {
-  let decoder =
-    dynamic.decode7(
-      Meeting,
-      dynamic.field("id", dynamic.string),
-      dynamic.field("title", dynamic.string),
-      dynamic.field("description", dynamic.string),
-      dynamic.field("date", dynamic.string),
-      dynamic.field("start_time", dynamic.string),
-      dynamic.field("duration_minutes", dynamic.int),
-      dynamic.field("timezone", dynamic.string),
-    )
+fn meeting_decoder() -> decode.Decoder(Meeting) {
+  {
+    use id <- decode.field("id", decode.string)
+    use title <- decode.field("title", decode.string)
+    use description <- decode.field("description", decode.string)
+    use date <- decode.field("date", decode.string)
+    use start_time <- decode.field("start_time", decode.string)
+    use duration_minutes <- decode.field("duration_minutes", decode.int)
+    use timezone <- decode.field("timezone", decode.string)
+    decode.success(Meeting(
+      id,
+      title,
+      description,
+      date,
+      start_time,
+      duration_minutes,
+      timezone,
+    ))
+  }
+}
 
-  decoder(data)
-  |> result.map_error(fn(_) { "Failed to decode meeting data" })
+pub fn json_to_meeting(data: Dynamic) -> Result(Meeting, String) {
+  decode.run(data, meeting_decoder())
+  |> result.map_error(fn(_errors) { "Failed to decode meeting data" })
 }
 
 pub fn contact_to_json(contact: Contact) -> Dynamic {
@@ -221,22 +266,32 @@ pub fn contact_to_json(contact: Contact) -> Dynamic {
   |> dynamic.from
 }
 
-pub fn json_to_contact(data: Dynamic) -> Result(Contact, String) {
-  let decoder =
-    dynamic.decode8(
-      Contact,
-      dynamic.field("id", dynamic.string),
-      dynamic.field("full_name", dynamic.string),
-      dynamic.field("email", dynamic.string),
-      dynamic.field("phone", dynamic.string),
-      dynamic.field("company", dynamic.string),
-      dynamic.field("job_title", dynamic.string),
-      dynamic.field("contact_type", dynamic.string),
-      dynamic.field("notes", dynamic.string),
-    )
+fn contact_decoder() -> decode.Decoder(Contact) {
+  {
+    use id <- decode.field("id", decode.string)
+    use full_name <- decode.field("full_name", decode.string)
+    use email <- decode.field("email", decode.string)
+    use phone <- decode.field("phone", decode.string)
+    use company <- decode.field("company", decode.string)
+    use job_title <- decode.field("job_title", decode.string)
+    use contact_type <- decode.field("contact_type", decode.string)
+    use notes <- decode.field("notes", decode.string)
+    decode.success(Contact(
+      id,
+      full_name,
+      email,
+      phone,
+      company,
+      job_title,
+      contact_type,
+      notes,
+    ))
+  }
+}
 
-  decoder(data)
-  |> result.map_error(fn(_) { "Failed to decode contact data" })
+pub fn json_to_contact(data: Dynamic) -> Result(Contact, String) {
+  decode.run(data, contact_decoder())
+  |> result.map_error(fn(_errors) { "Failed to decode contact data" })
 }
 
 pub fn calendar_event_to_json(event: CalendarEvent) -> Dynamic {
@@ -253,21 +308,30 @@ pub fn calendar_event_to_json(event: CalendarEvent) -> Dynamic {
   |> dynamic.from
 }
 
-pub fn json_to_calendar_event(data: Dynamic) -> Result(CalendarEvent, String) {
-  let decoder =
-    dynamic.decode7(
-      CalendarEvent,
-      dynamic.field("id", dynamic.string),
-      dynamic.field("title", dynamic.string),
-      dynamic.field("description", dynamic.string),
-      dynamic.field("start_timestamp", dynamic.string),
-      dynamic.field("end_timestamp", dynamic.string),
-      dynamic.field("calendar_system", dynamic.string),
-      dynamic.field("category", dynamic.string),
-    )
+fn calendar_event_field_decoder() -> decode.Decoder(CalendarEvent) {
+  {
+    use id <- decode.field("id", decode.string)
+    use title <- decode.field("title", decode.string)
+    use description <- decode.field("description", decode.string)
+    use start_timestamp <- decode.field("start_timestamp", decode.string)
+    use end_timestamp <- decode.field("end_timestamp", decode.string)
+    use calendar_system <- decode.field("calendar_system", decode.string)
+    use category <- decode.field("category", decode.string)
+    decode.success(CalendarEvent(
+      id,
+      title,
+      description,
+      start_timestamp,
+      end_timestamp,
+      calendar_system,
+      category,
+    ))
+  }
+}
 
-  decoder(data)
-  |> result.map_error(fn(_) { "Failed to decode calendar event data" })
+pub fn json_to_calendar_event(data: Dynamic) -> Result(CalendarEvent, String) {
+  decode.run(data, calendar_event_field_decoder())
+  |> result.map_error(fn(_errors) { "Failed to decode calendar event data" })
 }
 
 pub fn blog_post_to_json(post: BlogPost) -> Dynamic {
@@ -276,14 +340,14 @@ pub fn blog_post_to_json(post: BlogPost) -> Dynamic {
     #("title", json.string(post.title)),
     #("content", json.string(post.content)),
     #("excerpt", case post.excerpt {
-      Some(excerpt) -> json.string(excerpt)
+      Some(e) -> json.string(e)
       None -> json.null()
     }),
     #("date", json.string(post.date)),
     #("author", json.string(post.author)),
     #("category", json.string(post.category)),
     #("image", case post.image {
-      Some(image) -> json.string(image)
+      Some(i) -> json.string(i)
       None -> json.null()
     }),
     #("published", json.bool(post.published)),
@@ -292,27 +356,34 @@ pub fn blog_post_to_json(post: BlogPost) -> Dynamic {
   |> dynamic.from
 }
 
+fn blog_post_decoder() -> decode.Decoder(BlogPost) {
+  {
+    use id <- decode.field("id", decode.string)
+    use title <- decode.field("title", decode.string)
+    use content <- decode.field("content", decode.string)
+    use excerpt <- decode.field("excerpt", decode.optional(decode.string))
+    use image <- decode.field("image", decode.optional(decode.string))
+    use date <- decode.field("date", decode.string)
+    use author <- decode.field("author", decode.string)
+    use category <- decode.field("category", decode.string)
+    use published <- decode.field("published", decode.bool)
+    decode.success(BlogPost(
+      id,
+      title,
+      content,
+      excerpt,
+      date,
+      author,
+      category,
+      image,
+      published,
+    ))
+  }
+}
+
 pub fn json_to_blog_post(data: Dynamic) -> Result(BlogPost, String) {
-  let excerpt_decoder =
-    dynamic.field("excerpt", dynamic.optional(dynamic.string))
-  let image_decoder = dynamic.field("image", dynamic.optional(dynamic.string))
-
-  let decoder =
-    dynamic.decode9(
-      BlogPost,
-      dynamic.field("id", dynamic.string),
-      dynamic.field("title", dynamic.string),
-      dynamic.field("content", dynamic.string),
-      excerpt_decoder,
-      dynamic.field("date", dynamic.string),
-      dynamic.field("author", dynamic.string),
-      dynamic.field("category", dynamic.string),
-      image_decoder,
-      dynamic.field("published", dynamic.bool),
-    )
-
-  decoder(data)
-  |> result.map_error(fn(_) { "Failed to decode blog post data" })
+  decode.run(data, blog_post_decoder())
+  |> result.map_error(fn(_errors) { "Failed to decode blog post data" })
 }
 
 pub fn interest_submission_to_json(submission: InterestSubmission) -> Dynamic {
@@ -321,7 +392,7 @@ pub fn interest_submission_to_json(submission: InterestSubmission) -> Dynamic {
     #("email", json.string(submission.email)),
     #("name", json.string(submission.name)),
     #("company", case submission.company {
-      Some(company) -> json.string(company)
+      Some(c) -> json.string(c)
       None -> json.null()
     }),
     #("message", json.string(submission.message)),
@@ -330,28 +401,39 @@ pub fn interest_submission_to_json(submission: InterestSubmission) -> Dynamic {
   |> dynamic.from
 }
 
-pub fn json_to_planet_model(data: Dynamic) -> Result(PlanetModel, String) {
-  let rotation_decoder =
-    dynamic.field("rotation_period_hours", dynamic.optional(dynamic.float))
-  let orbital_decoder =
-    dynamic.field("orbital_period_days", dynamic.optional(dynamic.float))
-  let tilt_decoder =
-    dynamic.field("axial_tilt_degrees", dynamic.optional(dynamic.float))
-
-  let decoder =
-    dynamic.decode7(
-      PlanetModel,
-      dynamic.field("id", dynamic.string),
-      dynamic.field("planet_name", dynamic.string),
-      dynamic.field("description", dynamic.string),
-      dynamic.field("scale_km", dynamic.float),
-      rotation_decoder,
-      orbital_decoder,
-      tilt_decoder,
+fn planet_model_decoder() -> decode.Decoder(PlanetModel) {
+  {
+    use id <- decode.field("id", decode.string)
+    use planet_name <- decode.field("planet_name", decode.string)
+    use description <- decode.field("description", decode.string)
+    use scale_km <- decode.field("scale_km", decode.float)
+    use rotation_period_hours <- decode.field(
+      "rotation_period_hours",
+      decode.optional(decode.float),
     )
+    use orbital_period_days <- decode.field(
+      "orbital_period_days",
+      decode.optional(decode.float),
+    )
+    use axial_tilt_degrees <- decode.field(
+      "axial_tilt_degrees",
+      decode.optional(decode.float),
+    )
+    decode.success(PlanetModel(
+      id,
+      planet_name,
+      description,
+      scale_km,
+      rotation_period_hours,
+      orbital_period_days,
+      axial_tilt_degrees,
+    ))
+  }
+}
 
-  decoder(data)
-  |> result.map_error(fn(_) { "Failed to decode planet model data" })
+pub fn json_to_planet_model(data: Dynamic) -> Result(PlanetModel, String) {
+  decode.run(data, planet_model_decoder())
+  |> result.map_error(fn(_errors) { "Failed to decode planet model data" })
 }
 
 // Helper functions for calendar conversion
@@ -416,4 +498,103 @@ pub fn calendar_conversion_params(
   <> target_variant
   <> "\"\n"
   <> "}"
+}
+
+// Campaign Decoder
+fn campaign_decoder() -> decode.Decoder(Campaign) {
+  {
+    use id <- decode.field("id", decode.string)
+    use title <- decode.field("title", decode.string)
+    use description <- decode.field("description", decode.string)
+    use start_timestamp <- decode.field("start_timestamp", decode.string)
+    use end_timestamp <- decode.field("end_timestamp", decode.string)
+    use calendar_system <- decode.field("calendar_system", decode.string)
+    use category <- decode.field("category", decode.string)
+    decode.success(Campaign(
+      id,
+      title,
+      description,
+      start_timestamp,
+      end_timestamp,
+      calendar_system,
+      category,
+    ))
+  }
+}
+
+pub fn decode_campaign(
+  data: dynamic.Dynamic,
+) -> Result(Campaign, List(decode.DecodeError)) {
+  decode.run(data, campaign_decoder())
+}
+
+// Post Decoder
+fn post_decoder() -> decode.Decoder(Post) {
+  {
+    use id <- decode.field("id", decode.string)
+    use title <- decode.field("title", decode.string)
+    use content <- decode.field("content", decode.string)
+    use excerpt <- decode.field("excerpt", decode.optional(decode.string))
+    // Optional field
+    use image <- decode.field("image", decode.optional(decode.string))
+    // Optional field
+    use date <- decode.field("date", decode.string)
+    use author <- decode.field("author", decode.string)
+    use category <- decode.field("category", decode.string)
+    use published <- decode.field("published", decode.bool)
+    decode.success(Post(
+      id,
+      title,
+      content,
+      excerpt,
+      image,
+      date,
+      author,
+      category,
+      published,
+    ))
+  }
+}
+
+pub fn decode_post(
+  data: dynamic.Dynamic,
+) -> Result(Post, List(decode.DecodeError)) {
+  decode.run(data, post_decoder())
+}
+
+// Planet Decoder
+fn planet_decoder() -> decode.Decoder(Planet) {
+  {
+    use id <- decode.field("id", decode.string)
+    use planet_name <- decode.field("planet_name", decode.string)
+    use description <- decode.field("description", decode.string)
+    use scale_km <- decode.field("scale_km", decode.float)
+    use rotation_period_hours <- decode.field(
+      "rotation_period_hours",
+      decode.optional(decode.float),
+    )
+    use orbital_period_days <- decode.field(
+      "orbital_period_days",
+      decode.optional(decode.float),
+    )
+    use axial_tilt_degrees <- decode.field(
+      "axial_tilt_degrees",
+      decode.optional(decode.float),
+    )
+    decode.success(Planet(
+      id,
+      planet_name,
+      description,
+      scale_km,
+      rotation_period_hours,
+      orbital_period_days,
+      axial_tilt_degrees,
+    ))
+  }
+}
+
+pub fn decode_planet(
+  data: dynamic.Dynamic,
+) -> Result(Planet, List(decode.DecodeError)) {
+  decode.run(data, planet_decoder())
 }

@@ -1,10 +1,9 @@
-import access_content.{type FetchState, type SupabaseUser}
-import components/nav
+// Removed FetchState, SupabaseUser, Idle
 import gleam/dict.{type Dict}
 import gleam/dynamic/decode
+
 import gleam/list
-import gleam/option.{type Option, None, Some}
-import lustre
+import gleam/option
 import lustre/attribute
 import lustre/effect.{type Effect}
 import lustre/element.{type Element}
@@ -33,6 +32,7 @@ pub type Model {
     ad_platforms: Dict(String, Bool),
     tax_settings: Dict(String, String),
     payroll_settings: Dict(String, String),
+    // nav_model: nav.Model, // Removed
   )
 }
 
@@ -43,10 +43,11 @@ pub type Msg {
   ToggleAdPlatform(String, Bool)
   UpdateTaxSettings(String, String)
   UpdatePayrollSettings(String, String)
-  NavMsg(nav.Msg)
+  // NavMsg(nav.Msg) // Removed
 }
 
 pub fn init(_: Nil) -> #(Model, Effect(Msg)) {
+  // let initial_nav_model = nav.init(Idle) // Removed
   #(
     Model(
       theme: System,
@@ -75,6 +76,7 @@ pub fn init(_: Nil) -> #(Model, Effect(Msg)) {
         #("tax_withholding", "automatic"),
         #("payment_method", "bank_transfer"),
       ]),
+      // nav_model: initial_nav_model, // Removed
     ),
     effect.none(),
   )
@@ -85,74 +87,26 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
     SetTheme(theme) -> {
       #(Model(..model, theme: theme), effect.none())
     }
-
     SetCustomColors(colors) -> {
       #(Model(..model, custom_colors: colors), effect.none())
     }
-
     SavePreference(key, value) -> {
       let preferences = dict.insert(model.preferences, key, value)
       #(Model(..model, preferences: preferences), effect.none())
     }
-
     ToggleAdPlatform(platform, enabled) -> {
       let ad_platforms = dict.insert(model.ad_platforms, platform, enabled)
       #(Model(..model, ad_platforms: ad_platforms), effect.none())
     }
-
     UpdateTaxSettings(key, value) -> {
       let tax_settings = dict.insert(model.tax_settings, key, value)
       #(Model(..model, tax_settings: tax_settings), effect.none())
     }
-
     UpdatePayrollSettings(key, value) -> {
       let payroll_settings = dict.insert(model.payroll_settings, key, value)
       #(Model(..model, payroll_settings: payroll_settings), effect.none())
     }
-
-    NavMsg(nav_msg) -> {
-      #(model, effect.none())
-    }
-  }
-}
-
-fn get_theme_colors(theme: ColorTheme) -> Dict(String, String) {
-  case theme {
-    Default ->
-      dict.from_list([
-        #("primary", "#2563eb"),
-        #("success", "#16a34a"),
-        #("warning", "#ca8a04"),
-        #("danger", "#dc2626"),
-      ])
-    Ocean ->
-      dict.from_list([
-        #("primary", "#0ea5e9"),
-        #("success", "#0d9488"),
-        #("warning", "#0369a1"),
-        #("danger", "#0c4a6e"),
-      ])
-    Forest ->
-      dict.from_list([
-        #("primary", "#059669"),
-        #("success", "#16a34a"),
-        #("warning", "#65a30d"),
-        #("danger", "#b91c1c"),
-      ])
-    Sunset ->
-      dict.from_list([
-        #("primary", "#f59e0b"),
-        #("success", "#d97706"),
-        #("warning", "#dc2626"),
-        #("danger", "#7c2d12"),
-      ])
-    Custom(color) ->
-      dict.from_list([
-        #("primary", color),
-        #("success", "#16a34a"),
-        #("warning", "#ca8a04"),
-        #("danger", "#dc2626"),
-      ])
+    // NavMsg case removed
   }
 }
 
@@ -171,9 +125,11 @@ fn view_theme_button(model: Model, theme: Theme, label: String) -> Element(Msg) 
 
 pub fn view(
   model: Model,
-  user_state: FetchState(Option(SupabaseUser)),
+  // user_state: FetchState(Option(SupabaseUser)), // Removed if only for nav
 ) -> Element(Msg) {
-  let nav_element = element.map(nav.view(user_state), NavMsg)
+  // let current_nav_model_for_view = nav.Model(..model.nav_model, user_state: user_state) // Removed
+  // let nav_element = element.map(nav.view(current_nav_model_for_view), NavMsg) // Removed
+
   let main_content =
     html.main([attribute.class("settings-app")], [
       html.header([attribute.class("app-header")], [
@@ -183,7 +139,6 @@ pub fn view(
         ]),
       ]),
       html.div([attribute.class("settings-grid")], [
-        // Theme settings
         html.section([attribute.class("settings-section")], [
           html.h2([], [html.text("Theme Mode")]),
           html.div([attribute.class("theme-options")], [
@@ -192,7 +147,6 @@ pub fn view(
             view_theme_button(model, System, "System"),
           ]),
         ]),
-        // Color Theme settings
         html.section([attribute.class("settings-section")], [
           html.h2([], [html.text("Color Theme")]),
           html.div([attribute.class("theme-options")], [
@@ -267,308 +221,132 @@ pub fn view(
             ]),
           ]),
         ]),
-        // Ad Platform Integration settings
         html.section([attribute.class("settings-section")], [
-          html.h2([], [html.text("Ad Platform Integration")]),
-          html.p([attribute.class("section-description")], [
-            html.text("Connect your virtual cards to advertising platforms"),
-          ]),
-          html.div([attribute.class("ad-platforms-grid")], [
-            view_ad_platform_toggle("facebook", "Facebook Ads", model),
-            view_ad_platform_toggle("instagram", "Instagram Ads", model),
-            view_ad_platform_toggle("tiktok", "TikTok Ads", model),
-            view_ad_platform_toggle("google", "Google Ads", model),
-            view_ad_platform_toggle("linkedin", "LinkedIn Ads", model),
-            view_ad_platform_toggle("x", "X Ads", model),
+          html.h2([], [html.text("Ad Platforms")]),
+          html.div(
+            [attribute.class("ad-platform-options")],
+            list.map(dict.to_list(model.ad_platforms), fn(item) {
+              let #(platform, enabled) = item
+              html.div([attribute.class("ad-platform-toggle")], [
+                html.label([], [html.text(platform)]),
+                html.input([
+                  attribute.type_("checkbox"),
+                  attribute.checked(enabled),
+                  event.on(
+                    "change",
+                    decode.success(ToggleAdPlatform(platform, !enabled)),
+                  ),
+                ]),
+              ])
+            }),
+          ),
+        ]),
+        html.section([attribute.class("settings-section")], [
+          html.h2([], [html.text("Tax Settings")]),
+          html.form([attribute.class("settings-form")], [
+            html.div([attribute.class("form-group")], [
+              html.label([], [html.text("VAT Number")]),
+              html.input([
+                attribute.type_("text"),
+                attribute.value(option.unwrap(
+                  option.from_result(dict.get(model.tax_settings, "vat_number")),
+                  "",
+                )),
+                event.on(
+                  "input",
+                  decode.map(decode.string, fn(val) {
+                    UpdateTaxSettings("vat_number", val)
+                  }),
+                ),
+              ]),
+            ]),
+            html.div([attribute.class("form-group")], [
+              html.label([], [html.text("Tax Region")]),
+              html.input([
+                attribute.type_("text"),
+                attribute.value(option.unwrap(
+                  option.from_result(dict.get(model.tax_settings, "tax_region")),
+                  "",
+                )),
+                event.on(
+                  "input",
+                  decode.map(decode.string, fn(val) {
+                    UpdateTaxSettings("tax_region", val)
+                  }),
+                ),
+              ]),
+            ]),
           ]),
         ]),
-        // Tax Management settings
-        html.section([attribute.class("settings-section")], [
-          html.h2([], [html.text("Tax Management")]),
-          html.div([attribute.class("tax-settings")], [
-            view_tax_input(
-              "vat_number",
-              "VAT Number",
-              "Enter your VAT registration number",
-              model,
-            ),
-            view_tax_select(
-              "tax_region",
-              "Tax Region",
-              [
-                #("ng", "Nigeria"),
-                #("ke", "Kenya"),
-                #("za", "South Africa"),
-                #("other", "Other"),
-              ],
-              model,
-            ),
-            view_tax_select(
-              "filing_frequency",
-              "Filing Frequency",
-              [
-                #("monthly", "Monthly"),
-                #("quarterly", "Quarterly"),
-                #("annually", "Annually"),
-              ],
-              model,
-            ),
-          ]),
-        ]),
-        // Payroll settings
         html.section([attribute.class("settings-section")], [
           html.h2([], [html.text("Payroll Settings")]),
-          html.div([attribute.class("payroll-settings")], [
-            view_payroll_select(
-              "pay_cycle",
-              "Pay Cycle",
-              [
-                #("weekly", "Weekly"),
-                #("biweekly", "Bi-weekly"),
-                #("monthly", "Monthly"),
-              ],
-              model,
-            ),
-            view_payroll_select(
-              "tax_withholding",
-              "Tax Withholding",
-              [
-                #("automatic", "Automatic"),
-                #("manual", "Manual"),
-                #("none", "None"),
-              ],
-              model,
-            ),
-            view_payroll_select(
-              "payment_method",
-              "Payment Method",
-              [
-                #("bank_transfer", "Bank Transfer"),
-                #("mobile_money", "Mobile Money"),
-                #("cash", "Cash"),
-              ],
-              model,
-            ),
-          ]),
-        ]),
-        // Notification settings
-        html.section([attribute.class("settings-section")], [
-          html.h2([], [html.text("Notifications")]),
-          html.div([attribute.class("notification-options")], [
-            view_notification_toggle(
-              "email_notifications",
-              "Email Notifications",
-              "Receive updates and alerts via email",
-              option.unwrap(
-                option.from_result(dict.get(
-                  model.preferences,
-                  "email_notifications",
-                )),
-                "false",
+          html.form([attribute.class("settings-form")], [
+            html.div([attribute.class("form-group")], [
+              html.label([], [html.text("Pay Cycle")]),
+              html.select(
+                [
+                  event.on(
+                    "change",
+                    decode.map(decode.string, fn(val) {
+                      UpdatePayrollSettings("pay_cycle", val)
+                    }),
+                  ),
+                ],
+                [
+                  html.option([attribute.value("monthly")], "Monthly"),
+                  html.option([attribute.value("bi-weekly")], "Bi-Weekly"),
+                ],
               ),
-            ),
-            view_notification_toggle(
-              "push_notifications",
-              "Push Notifications",
-              "Get instant updates in your browser",
-              option.unwrap(
-                option.from_result(dict.get(
-                  model.preferences,
-                  "push_notifications",
-                )),
-                "false",
+            ]),
+            html.div([attribute.class("form-group")], [
+              html.label([], [html.text("Tax Withholding")]),
+              html.select(
+                [
+                  event.on(
+                    "change",
+                    decode.map(decode.string, fn(val) {
+                      UpdatePayrollSettings("tax_withholding", val)
+                    }),
+                  ),
+                ],
+                [
+                  html.option([attribute.value("automatic")], "Automatic"),
+                  html.option([attribute.value("manual")], "Manual"),
+                ],
               ),
-            ),
-          ]),
-        ]),
-        // Display settings
-        html.section([attribute.class("settings-section")], [
-          html.h2([], [html.text("Display")]),
-          html.div([attribute.class("display-options")], [
-            view_display_option(
-              "compact_view",
-              "Compact View",
-              "Show more content with less spacing",
-              option.unwrap(
-                option.from_result(dict.get(model.preferences, "compact_view")),
-                "false",
+            ]),
+            html.div([attribute.class("form-group")], [
+              html.label([], [html.text("Payment Method")]),
+              html.select(
+                [
+                  event.on(
+                    "change",
+                    decode.map(decode.string, fn(val) {
+                      UpdatePayrollSettings("payment_method", val)
+                    }),
+                  ),
+                ],
+                [
+                  html.option(
+                    [attribute.value("bank_transfer")],
+                    "Bank Transfer",
+                  ),
+                  html.option([attribute.value("cash")], "Cash"),
+                  html.option([attribute.value("check")], "Check"),
+                  html.option([attribute.value("paypal")], "PayPal"),
+                  html.option([attribute.value("stripe")], "Stripe"),
+                  html.option([attribute.value("venmo")], "Venmo"),
+                ],
               ),
-            ),
-            view_display_option(
-              "show_metrics",
-              "Show Metrics",
-              "Display performance metrics and statistics",
-              option.unwrap(
-                option.from_result(dict.get(model.preferences, "show_metrics")),
-                "true",
-              ),
-            ),
+            ]),
           ]),
         ]),
       ]),
     ])
 
-  html.div(
-    [
-      attribute.class("app-container-settings-only"),
-      attribute.data("theme", case model.theme {
-        Light(_) -> "light"
-        Dark(_) -> "dark"
-        System -> "system"
-      }),
-      attribute.data("color-theme", case model.theme {
-        Light(color_theme) | Dark(color_theme) ->
-          case color_theme {
-            Default -> "default"
-            Ocean -> "ocean"
-            Forest -> "forest"
-            Sunset -> "sunset"
-            Custom(_) -> "custom"
-          }
-        System -> "default"
-      }),
-    ],
-    [nav_element, main_content],
-  )
-}
-
-fn view_notification_toggle(
-  key: String,
-  title: String,
-  description: String,
-  value: String,
-) -> Element(Msg) {
-  html.div([attribute.class("notification-toggle")], [
-    html.div([attribute.class("toggle-info")], [
-      html.h3([], [html.text(title)]),
-      html.p([], [html.text(description)]),
-    ]),
-    html.input([
-      attribute.type_("checkbox"),
-      attribute.checked(value == "true"),
-      event.on_check(fn(checked) {
-        SavePreference(key, case checked {
-          True -> "true"
-          False -> "false"
-        })
-      }),
-    ]),
-  ])
-}
-
-fn view_display_option(
-  key: String,
-  title: String,
-  description: String,
-  value: String,
-) -> Element(Msg) {
-  html.div([attribute.class("display-option")], [
-    html.div([attribute.class("option-info")], [
-      html.h3([], [html.text(title)]),
-      html.p([], [html.text(description)]),
-    ]),
-    html.input([
-      attribute.type_("checkbox"),
-      attribute.checked(value == "true"),
-      event.on_check(fn(checked) {
-        SavePreference(key, case checked {
-          True -> "true"
-          False -> "false"
-        })
-      }),
-    ]),
-  ])
-}
-
-fn view_ad_platform_toggle(
-  platform: String,
-  label: String,
-  model: Model,
-) -> Element(Msg) {
-  let enabled =
-    option.unwrap(
-      option.from_result(dict.get(model.ad_platforms, platform)),
-      False,
-    )
-  html.div([attribute.class("ad-platform-toggle")], [
-    html.div([attribute.class("platform-info")], [
-      html.h3([], [html.text(label)]),
-      html.p([], [
-        html.text(case enabled {
-          True -> "Connected"
-          False -> "Not connected"
-        }),
-      ]),
-    ]),
-    html.input([
-      attribute.type_("checkbox"),
-      attribute.checked(enabled),
-      event.on_check(fn(checked) { ToggleAdPlatform(platform, checked) }),
-    ]),
-  ])
-}
-
-fn view_tax_input(
-  key: String,
-  label: String,
-  placeholder: String,
-  model: Model,
-) -> Element(Msg) {
-  let value =
-    option.unwrap(option.from_result(dict.get(model.tax_settings, key)), "")
-  html.div([attribute.class("tax-input")], [
-    html.label([], [html.text(label)]),
-    html.input([
-      attribute.type_("text"),
-      attribute.value(value),
-      attribute.placeholder(placeholder),
-      event.on_input(fn(new_value) { UpdateTaxSettings(key, new_value) }),
-    ]),
-  ])
-}
-
-fn view_tax_select(
-  key: String,
-  label: String,
-  options: List(#(String, String)),
-  model: Model,
-) -> Element(Msg) {
-  let value =
-    option.unwrap(option.from_result(dict.get(model.tax_settings, key)), "")
-  html.div([attribute.class("tax-select")], [
-    html.label([], [html.text(label)]),
-    html.select(
-      [event.on_input(fn(new_value) { UpdateTaxSettings(key, new_value) })],
-      list.map(options, fn(opt: #(String, String)) {
-        let #(value, label) = opt
-        html.option(
-          [attribute.value(value), attribute.selected(value == value)],
-          label,
-        )
-      }),
-    ),
-  ])
-}
-
-fn view_payroll_select(
-  key: String,
-  label: String,
-  options: List(#(String, String)),
-  model: Model,
-) -> Element(Msg) {
-  let value =
-    option.unwrap(option.from_result(dict.get(model.payroll_settings, key)), "")
-  html.div([attribute.class("payroll-select")], [
-    html.label([], [html.text(label)]),
-    html.select(
-      [event.on_input(fn(new_value) { UpdatePayrollSettings(key, new_value) })],
-      list.map(options, fn(opt: #(String, String)) {
-        let #(value, label) = opt
-        html.option(
-          [attribute.value(value), attribute.selected(value == value)],
-          label,
-        )
-      }),
-    ),
-  ])
+  // The main_content is now the root element returned by this view.
+  // The app-container div with theme data attributes is handled by app.gleam if needed,
+  // or could be added around main_content if settings page needs its own theme container.
+  // For now, returning main_content directly, assuming app.gleam wraps pages.
+  main_content
 }

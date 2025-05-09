@@ -12,7 +12,8 @@
     "three": "^0.162.0"
   },
   "devDependencies": {
-    "dotenv": "^16.3.1"
+    "dotenv": "^16.3.1",
+    "esbuild": "^0.20.0"
   },
   "scripts": {
     "start": "./run.sh --skip-db",

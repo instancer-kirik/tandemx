@@ -1,15 +1,14 @@
-import gleam/dynamic
-import gleam/float
 import gleam/list
-import gleam/result
+
 import gleam/string
-import lustre
-import lustre/attribute.{type Attribute, class}
+
+import lustre/attribute.{class}
 import lustre/effect.{type Effect}
 import lustre/element.{type Element}
 import lustre/element/html
 import lustre/event
-import project_catalog.{type ProjectInfo}
+
+import project_catalog
 
 // Helper function for joining a list of strings with a separator
 fn join_strings(strings: List(String), separator: String) -> String {
@@ -21,7 +20,7 @@ fn join_strings(strings: List(String), separator: String) -> String {
 }
 
 pub type Msg {
-  NavigateTo(String)
+  RequestNavigation(String)
   ToggleCategory(String)
 }
 
@@ -35,8 +34,7 @@ pub fn init(_) -> #(Model, Effect(Msg)) {
 
 pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
   case msg {
-    NavigateTo(path) -> {
-      let _ = navigate(path)
+    RequestNavigation(_path) -> {
       #(model, effect.none())
     }
     ToggleCategory(category) -> {
@@ -57,9 +55,6 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
     }
   }
 }
-
-@external(javascript, "./landing_ffi.js", "navigate")
-fn navigate(path: String) -> Nil
 
 fn view_hero() -> Element(Msg) {
   html.div([class("hero-section")], [
@@ -83,6 +78,7 @@ fn view_featured_articles() -> Element(Msg) {
         [
           class("article-card card-item"),
           attribute.href("/access-content/spaceport-launch"),
+          event.on_click(RequestNavigation("/access-content/spaceport-launch")),
         ],
         [
           html.div([class("article-header")], [
@@ -109,6 +105,9 @@ fn view_featured_articles() -> Element(Msg) {
         [
           class("article-card card-item"),
           attribute.href("/access-content/chart-space-navigation"),
+          event.on_click(RequestNavigation(
+            "/access-content/chart-space-navigation",
+          )),
         ],
         [
           html.div([class("article-header")], [
@@ -135,6 +134,9 @@ fn view_featured_articles() -> Element(Msg) {
         [
           class("article-card card-item"),
           attribute.href("/access-content/multiverse-development"),
+          event.on_click(RequestNavigation(
+            "/access-content/multiverse-development",
+          )),
         ],
         [
           html.div([class("article-header")], [
@@ -195,6 +197,7 @@ fn view_featured_tools() -> Element(Msg) {
         [
           class("tool-card featured deepscape"),
           attribute.href("/tools/deepscape"),
+          event.on_click(RequestNavigation("/tools/deepscape")),
         ],
         [
           html.div([class("featured-header")], [
@@ -244,7 +247,11 @@ fn view_featured_tools() -> Element(Msg) {
       ),
       // Sledge
       html.a(
-        [class("tool-card featured sledge"), attribute.href("/tools/sledge")],
+        [
+          class("tool-card featured sledge"),
+          attribute.href("/tools/sledge"),
+          event.on_click(RequestNavigation("/tools/sledge")),
+        ],
         [
           html.div([class("featured-header")], [
             html.h3([class("featured-title")], [html.text("Sledge")]),
@@ -267,7 +274,11 @@ fn view_featured_tools() -> Element(Msg) {
       ),
       // Mediata
       html.a(
-        [class("tool-card featured mediata"), attribute.href("/tools/mediata")],
+        [
+          class("tool-card featured mediata"),
+          attribute.href("/tools/mediata"),
+          event.on_click(RequestNavigation("/tools/mediata")),
+        ],
         [
           html.div([class("featured-header")], [
             html.h3([class("featured-title")], [html.text("Mediata")]),
@@ -393,7 +404,14 @@ fn create_table_row(
 
   html.tr([], [
     html.td([], [
-      html.a([class("tool-link"), attribute.href(link)], [html.text(name)]),
+      html.a(
+        [
+          class("tool-link"),
+          attribute.href(link),
+          event.on_click(RequestNavigation(link)),
+        ],
+        [html.text(name)],
+      ),
     ]),
     html.td([], [html.text(description)]),
     html.td([], [html.text(category)]),
@@ -555,240 +573,14 @@ fn view_about_section() -> Element(Msg) {
   ])
 }
 
-// Create a navigation component for the landing page
-fn view_navigation() -> Element(Msg) {
-  html.nav([class("main-nav")], [
-    html.div([class("nav-content")], [
-      // Logo/Brand
-      html.a([class("logo"), attribute.href("/")], [html.text("TandemX")]),
-      // Navigation Links
-      html.div([class("nav-links")], [
-        html.a(
-          [
-            class("nav-link"),
-            attribute.href("/"),
-            event.on_click(NavigateTo("/")),
-          ],
-          [html.text("Home")],
-        ),
-        html.a(
-          [
-            class("nav-link"),
-            attribute.href("/projects"),
-            event.on_click(NavigateTo("/projects")),
-          ],
-          [html.text("Projects")],
-        ),
-        html.a(
-          [
-            class("nav-link"),
-            attribute.href("/access-content"),
-            event.on_click(NavigateTo("/access-content")),
-          ],
-          [html.text("Content")],
-        ),
-        html.a(
-          [
-            class("nav-link"),
-            attribute.href("/calendar"),
-            event.on_click(NavigateTo("/calendar")),
-          ],
-          [html.text("Calendar")],
-        ),
-        html.a(
-          [
-            class("nav-link"),
-            attribute.href("/pricing"),
-            event.on_click(NavigateTo("/pricing")),
-          ],
-          [html.text("Pricing")],
-        ),
-        html.a(
-          [
-            class("nav-link"),
-            attribute.href("/terms"),
-            event.on_click(NavigateTo("/terms")),
-          ],
-          [html.text("Terms")],
-        ),
-      ]),
-      // Action Buttons
-      html.div([class("nav-actions")], [
-        html.a(
-          [
-            class("nav-btn login"),
-            attribute.href("/login"),
-            event.on_click(NavigateTo("/login")),
-          ],
-          [html.text("Log in")],
-        ),
-        html.a(
-          [
-            class("nav-btn signup"),
-            attribute.href("/signup"),
-            event.on_click(NavigateTo("/signup")),
-          ],
-          [html.text("Sign up")],
-        ),
-      ]),
-    ]),
-  ])
-}
-
-// Create a footer component with the same links
-fn view_footer() -> Element(Msg) {
-  html.footer([class("main-footer")], [
-    html.div([class("footer-content")], [
-      // Brand Section
-      html.div([class("footer-brand")], [
-        html.a([class("footer-logo"), attribute.href("/")], [
-          html.text("TandemX"),
-        ]),
-        html.p([class("footer-tagline")], [
-          html.text("Tools for creative business"),
-        ]),
-      ]),
-      // Footer Links Columns
-      html.div([class("footer-links")], [
-        // Column 1: Products
-        html.div([class("footer-column")], [
-          html.h4([class("footer-column-title")], [html.text("Products")]),
-          html.ul([class("footer-column-links")], [
-            html.li([], [
-              html.a(
-                [
-                  class("footer-link"),
-                  attribute.href("/findry"),
-                  event.on_click(NavigateTo("/findry")),
-                ],
-                [html.text("Findry")],
-              ),
-            ]),
-            html.li([], [
-              html.a(
-                [
-                  class("footer-link"),
-                  attribute.href("/sledge"),
-                  event.on_click(NavigateTo("/sledge")),
-                ],
-                [html.text("Sledge")],
-              ),
-            ]),
-            html.li([], [
-              html.a(
-                [
-                  class("footer-link"),
-                  attribute.href("/divvyqueue"),
-                  event.on_click(NavigateTo("/divvyqueue")),
-                ],
-                [html.text("DivvyQueue")],
-              ),
-            ]),
-          ]),
-        ]),
-        // Column 2: Resources
-        html.div([class("footer-column")], [
-          html.h4([class("footer-column-title")], [html.text("Resources")]),
-          html.ul([class("footer-column-links")], [
-            html.li([], [
-              html.a(
-                [
-                  class("footer-link"),
-                  attribute.href("/calendar"),
-                  event.on_click(NavigateTo("/calendar")),
-                ],
-                [html.text("Calendar")],
-              ),
-            ]),
-            html.li([], [
-              html.a(
-                [
-                  class("footer-link"),
-                  attribute.href("/projects"),
-                  event.on_click(NavigateTo("/projects")),
-                ],
-                [html.text("All Projects")],
-              ),
-            ]),
-            html.li([], [
-              html.a(
-                [
-                  class("footer-link"),
-                  attribute.href("/docs"),
-                  event.on_click(NavigateTo("/docs")),
-                ],
-                [html.text("Documentation")],
-              ),
-            ]),
-          ]),
-        ]),
-        // Column 3: Company
-        html.div([class("footer-column")], [
-          html.h4([class("footer-column-title")], [html.text("Company")]),
-          html.ul([class("footer-column-links")], [
-            html.li([], [
-              html.a(
-                [
-                  class("footer-link"),
-                  attribute.href("/about"),
-                  event.on_click(NavigateTo("/about")),
-                ],
-                [html.text("About")],
-              ),
-            ]),
-            html.li([], [
-              html.a(
-                [
-                  class("footer-link"),
-                  attribute.href("/pricing"),
-                  event.on_click(NavigateTo("/pricing")),
-                ],
-                [html.text("Pricing")],
-              ),
-            ]),
-            html.li([], [
-              html.a(
-                [
-                  class("footer-link"),
-                  attribute.href("/terms"),
-                  event.on_click(NavigateTo("/terms")),
-                ],
-                [html.text("Terms & Conditions")],
-              ),
-            ]),
-          ]),
-        ]),
-      ]),
-    ]),
-    // Footer Bottom with Copyright
-    html.div([class("footer-bottom")], [
-      html.p([], [html.text("© 2024 TandemX. All rights reserved.")]),
-    ]),
-  ])
-}
-
 // Update the main view function to include the navigation and footer
-pub fn view(model: Model) -> Element(Msg) {
-  html.div([class("landing-page")], [
-    view_navigation(),
-    html.div([class("nav-spacer")], []),
-    // Add spacing to prevent content from hiding under fixed nav
+pub fn view(_model: Model) -> Element(Msg) {
+  html.div([class("landing-page-content")], [
     view_hero(),
     view_featured_articles(),
     view_featured_tools(),
     view_tools_table(),
     view_category_lists(),
     view_about_section(),
-    view_footer(),
   ])
-}
-
-pub fn main() {
-  let app = lustre.application(init, update, view)
-
-  // Start the application and mount it to the document
-  case lustre.start(app, "#app", Nil) {
-    Ok(_) -> Nil
-    Error(_) -> Nil
-  }
 }

@@ -1,7 +1,5 @@
 import gleam/list
 import gleam/option.{type Option, None, Some}
-import gleam/result
-import gleam/string
 
 // Added for int/float conversion
 import gleam/int

@@ -6,12 +6,10 @@ import gleam/option.{type Option, None, Some}
 import gleam/result
 import gleam/string
 import lustre
-import lustre/attribute.{class, href, id, rel, type_}
+import lustre/attribute.{class, id}
 import lustre/effect
 import lustre/element.{type Element}
-import lustre/element/html.{
-  a, button, div, form, h1, h2, input, label, li, nav, p, span, text, ul,
-}
+import lustre/element/html.{button, div, h1, h2, p, span, text}
 import lustre/event
 
 pub type Model {
@@ -567,7 +565,7 @@ fn get_short_day_name(day: Int) -> String {
 }
 
 // Generate the days for a month
-fn generate_month_days(year: Int, month: Int, today: String) -> List(DayData) {
+fn generate_month_days(year: Int, month: Int, _today: String) -> List(DayData) {
   // Get the first day of the month
   let first_day = get_first_day_of_month(year, month)
   // Get the number of days in the month
@@ -706,7 +704,7 @@ fn add_meetings_to_days(
 }
 
 // Calculate end time based on start time and duration
-fn calculate_end_time(start_time: String, duration_minutes: Int) -> String {
+fn calculate_end_time(start_time: String, _duration_minutes: Int) -> String {
   // Simple placeholder - in a real app would use date arithmetic
   start_time
 }
@@ -759,20 +757,23 @@ fn get_day_of_week(date: String) -> Int {
   }
 }
 
-// Helper function to handle form submission
-fn handle_submit(form: FormData) -> Msg {
-  SetMeetingDetails(Meeting(
-    id: None,
-    title: form.title,
-    description: form.description,
-    date: "",
-    start_time: "",
-    duration_minutes: 30,
-    attendees: form.attendees,
-    location_type: Virtual,
-    location: "",
-  ))
-}
+// // Helper function to handle form submission
+// fn handle_submit(form: FormData) -> Msg {
+//   SetMeetingDetails(Meeting(
+//     id: None,
+//     title: form.title,
+//     description: form.description,
+//     date: "",
+//     // These will be set by the scheduler FFI ideally
+//     start_time: "",
+//     // These will be set by the scheduler FFI ideally
+//     duration_minutes: 30,
+//     attendees: form.attendees,
+//     location_type: Virtual,
+//     location: "",
+//     // This might be set by FFI or logic
+//   ))
+// }
 
 // Helper to convert month number to name
 fn month_name(month: Int) -> String {
@@ -793,54 +794,16 @@ fn month_name(month: Int) -> String {
   }
 }
 
-// External function imports
-@external(javascript, "./calendar_ffi.js", "scheduleMeeting")
-fn schedule_meeting_ffi(meeting: Meeting) -> effect.Effect(Msg)
-
-@external(javascript, "./calendar_ffi.js", "getTodayDate")
-fn get_today_date() -> String
-
-@external(javascript, "./calendar_ffi.js", "getTimezone")
-fn get_timezone() -> String
-
-@external(javascript, "./calendar_ffi.js", "generateId")
-fn generate_id() -> String
-
-@external(javascript, "./calendar_ffi.js", "generateMeetingLink")
-fn auto_generate_meeting_link() -> String
-
-@external(javascript, "./calendar_ffi.js", "getWeekday")
-fn get_weekday(date: String) -> Int
-
 /// Call the calendar FFI to setup the UI
-fn call_calendar_ffi(model: Model) -> effect.Effect(Msg) {
-  effect.from(fn(dispatch) {
-    let _ = do_setup_calendar_ffi()
-    dispatch(SetupComplete)
-  })
-}
+// fn call_calendar_ffi(_model: Model) -> effect.Effect(Msg) {
+//   effect.from(fn(dispatch) { dispatch(SetupComplete) })
+// }
 
 /// Load meetings for the calendar
 fn load_meetings_ffi(user_id: String) -> effect.Effect(Msg) {
   effect.from(fn(dispatch) {
     let meetings = do_load_meetings_ffi(user_id)
     dispatch(MeetingsLoaded(meetings))
-  })
-}
-
-/// Change the month in the calendar
-fn change_month_ffi(year: Int, month: Int) -> effect.Effect(Msg) {
-  effect.from(fn(dispatch) {
-    let _ = do_change_month_ffi(year, month)
-    dispatch(Initialized)
-  })
-}
-
-/// Select a date in the calendar
-fn select_date_ffi(date: String) -> effect.Effect(Msg) {
-  effect.from(fn(dispatch) {
-    let _ = do_select_date_ffi(date)
-    dispatch(Initialized)
   })
 }
 
@@ -852,47 +815,30 @@ fn open_scheduler_ffi(date: String) -> effect.Effect(Msg) {
   })
 }
 
-/// Close the scheduler
-fn close_scheduler_ffi() -> effect.Effect(Msg) {
-  effect.from(fn(dispatch) {
-    let _ = do_close_scheduler_ffi()
-    dispatch(Initialized)
-  })
-}
-
-/// Load the calendar FFI setup
-fn load_calendar_ffi() -> effect.Effect(Msg) {
-  effect.from(fn(dispatch) {
-    let _ = do_load_calendar_ffi()
-    dispatch(Initialized)
-  })
-}
-
 // External FFI functions
-@external(javascript, "./calendar_ffi.js", "setupCalendar")
-fn do_setup_calendar_ffi() -> Dynamic
+@external(javascript, "./calendar_ffi.js", "scheduleMeeting")
+fn schedule_meeting_ffi(meeting: Meeting) -> effect.Effect(Msg)
+
+@external(javascript, "./calendar_ffi.js", "getTodayDate")
+fn get_today_date() -> String
+
+// @external(javascript, "./calendar_ffi.js", "getTimezone")
+// fn get_timezone() -> String
+
+@external(javascript, "./calendar_ffi.js", "generateId")
+fn generate_id() -> String
+
+// @external(javascript, "./calendar_ffi.js", "generateMeetingLink")
+// fn auto_generate_meeting_link() -> String
+
+@external(javascript, "./calendar_ffi.js", "getWeekday")
+fn get_weekday(date: String) -> Int
 
 @external(javascript, "./calendar_ffi.js", "loadMeetings")
 fn do_load_meetings_ffi(user_id: String) -> List(Meeting)
 
-@external(javascript, "./calendar_ffi.js", "changeMonth")
-fn do_change_month_ffi(year: Int, month: Int) -> Dynamic
-
-@external(javascript, "./calendar_ffi.js", "selectDate")
-fn do_select_date_ffi(date: String) -> Dynamic
-
 @external(javascript, "./calendar_ffi.js", "openScheduler")
 fn do_open_scheduler_ffi(date: String) -> Dynamic
-
-@external(javascript, "./calendar_ffi.js", "closeScheduler")
-fn do_close_scheduler_ffi() -> Dynamic
-
-@external(javascript, "./calendar_ffi.js", "loadCalendar")
-fn do_load_calendar_ffi() -> Dynamic
-
-// External function that clears any existing calendar elements and re-initializes calendar
-@external(javascript, "./calendar_ffi.js", "initCalendarWithAppEntrypoint")
-fn do_initialize_calendar_app() -> Dynamic
 
 // Add a function to handle calendar system change
 fn change_calendar_system_ffi(
@@ -932,22 +878,6 @@ pub fn main() {
   io.println("Calendar application started")
   Nil
 }
-
-// External function to check if direct calendar root element exists
-@external(javascript, "./calendar_ffi.js", "getDirectCalendarRoot")
-fn get_direct_calendar_root() -> Bool
-
-// External function to check if DOM is ready and run initialization function
-@external(javascript, "./calendar_ffi.js", "checkReady")
-fn do_check_ready_ffi(callback: fn() -> Nil) -> Dynamic
-
-// External function to check if calendar root element exists
-@external(javascript, "./calendar_ffi.js", "getCalendarRoot")
-fn do_get_calendar_root_ffi() -> Bool
-
-// External function to create a calendar root element if needed
-@external(javascript, "./calendar_ffi.js", "createCalendarRoot")
-fn do_create_calendar_root_ffi() -> Dynamic
 
 // Type definition for FFI interop
 pub type Dynamic

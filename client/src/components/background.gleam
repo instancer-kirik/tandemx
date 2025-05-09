@@ -1,4 +1,3 @@
-import lustre
 import lustre/element.{type Element}
 
 @external(javascript, "/src/divvyqueue2_background.js", "initBackground")

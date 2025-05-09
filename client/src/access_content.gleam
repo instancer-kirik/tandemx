@@ -2,7 +2,7 @@
 import gleam/io
 import gleam/option.{type Option, None, Some}
 import gleam/result
-import lustre
+
 import lustre/attribute
 
 // Removed unused: attribute, class, disabled, for, href, id, placeholder, property, required,
@@ -70,7 +70,6 @@ pub type Model {
     supabase_config: FetchState(SupabaseConfig),
     posts: FetchState(List(Post)),
     current_post: FetchState(Option(Post)),
-    supabase_user: FetchState(Option(SupabaseUser)),
     // Editor state
     editor_title: String,
     editor_category: String,
@@ -101,51 +100,42 @@ pub type PostDataForFFI {
   )
 }
 
-@external(javascript, "./access_content_ffi.js", "fetchConfig")
-fn fetch_config() -> Result(SupabaseConfig, String)
+// @external(javascript, "./access_content_ffi.js", "fetch_config")
+// fn fetch_config() -> Result(SupabaseConfig, String)
 
-@external(javascript, "./access_content_ffi.js", "initSupabase")
+@external(javascript, "./access_content_ffi.js", "init_supabase")
 fn init_supabase(url: String, key: String) -> Result(Nil, String)
 
-@external(javascript, "./access_content_ffi.js", "initTiptap")
+@external(javascript, "./access_content_ffi.js", "init_tiptap")
 fn init_tiptap(selector: String, initial_content: String) -> Result(Nil, String)
 
-@external(javascript, "./access_content_ffi.js", "destroyTiptap")
+@external(javascript, "./access_content_ffi.js", "destroy_tiptap")
 fn destroy_tiptap() -> Nil
 
-@external(javascript, "./access_content_ffi.js", "getTiptapHTML")
+@external(javascript, "./access_content_ffi.js", "get_tiptap_html")
 fn get_tiptap_html() -> Result(String, String)
 
 // FFI for createPost, now using the specific PostDataForFFI type
-@external(javascript, "./access_content_ffi.js", "createPost")
+@external(javascript, "./access_content_ffi.js", "create_post")
 fn create_post(post_data: PostDataForFFI) -> Result(Post, String)
 
-@external(javascript, "./access_content_ffi.js", "fetchPosts")
+@external(javascript, "./access_content_ffi.js", "fetch_posts")
 fn fetch_posts() -> Result(List(Post), String)
 
-@external(javascript, "./access_content_ffi.js", "fetchPostBySlug")
+@external(javascript, "./access_content_ffi.js", "fetch_post_by_slug")
 fn fetch_post_by_slug(slug: String) -> Result(Option(Post), String)
 
-@external(javascript, "./access_content_ffi.js", "getSlugFromUrl")
-fn get_slug_from_url() -> Result(Option(String), String)
+// @external(javascript, "./access_content_ffi.js", "get_slug_from_url")
+// fn get_slug_from_url() -> Result(Option(String), String)
 
-@external(javascript, "./access_content_ffi.js", "showToast")
+@external(javascript, "./access_content_ffi.js", "show_toast")
 fn show_toast(message: String, toast_type: String) -> Result(Nil, String)
 
-@external(javascript, "./access_content_ffi.js", "checkAdminAuth")
-fn check_admin_auth() -> Result(Bool, String)
-
-@external(javascript, "./access_content_ffi.js", "setAdminAuth")
-fn set_admin_auth() -> Result(Nil, String)
-
-@external(javascript, "./access_content_ffi.js", "checkPasswordFFI")
-fn check_password_ffi(input_id: String) -> Result(Bool, String)
-
-@external(javascript, "./access_content_ffi.js", "generateSlugFFI")
+@external(javascript, "./access_content_ffi.js", "generate_slug_ffi")
 fn generate_slug_ffi(title: String) -> Result(String, String)
 
 // FFI for getting current date - Placeholder, needs JS FFI implementation
-@external(javascript, "./access_content_ffi.js", "getCurrentIsoDate")
+@external(javascript, "./access_content_ffi.js", "get_current_iso_date")
 fn get_current_iso_date_ffi() -> Result(String, String)
 
 fn current_iso_date() -> String {
@@ -246,7 +236,6 @@ pub fn init(_flags) -> #(Model, Effect(Msg)) {
       supabase_config: Loading,
       posts: Idle,
       current_post: Idle,
-      supabase_user: Idle,
       editor_title: "",
       editor_category: "other",
       editor_excerpt: "",
@@ -256,17 +245,17 @@ pub fn init(_flags) -> #(Model, Effect(Msg)) {
     )
 
   let initial_effects = [
-    effect.from(fn(dispatch) {
-      let result = fetch_config()
-      dispatch(ReceiveConfig(result))
-    }),
-    effect.from(fn(dispatch) {
-      case get_slug_from_url() {
-        Ok(maybe_slug) -> dispatch(ReceiveUrlSlug(maybe_slug))
-        Error(_) -> dispatch(ReceiveUrlSlug(None))
-      }
-    }),
-    // REMOVED: Initial auth checks
+    // effect.from(fn(dispatch) {
+  //   let result = fetch_config()
+  //   dispatch(ReceiveConfig(result))
+  // }),
+  // effect.from(fn(dispatch) {
+  //   case get_slug_from_url() {
+  //     Ok(maybe_slug) -> dispatch(ReceiveUrlSlug(maybe_slug))
+  //     Error(_) -> dispatch(ReceiveUrlSlug(None))
+  //   }
+  // }),
+  // REMOVED: Initial auth checks
   ]
 
   #(initial_model, effect.batch(initial_effects))
@@ -564,15 +553,6 @@ fn show_toast_effect(message: String, toast_type: String) -> Effect(Msg) {
   })
 }
 
-fn set_admin_auth_effect() -> Effect(Msg) {
-  effect.from(fn(dispatch) {
-    case set_admin_auth() {
-      Ok(_) -> dispatch(NoOp)
-      Error(err) -> dispatch(FetchError("setAdminAuth Failed: " <> err))
-    }
-  })
-}
-
 fn destroy_tiptap_effect() -> Effect(Msg) {
   effect.from(fn(dispatch) {
     destroy_tiptap()
@@ -591,19 +571,19 @@ fn init_tiptap_effect(selector: String, initial_content: String) -> Effect(Msg) 
 // --- Views ---
 
 // Placeholder for the list view
-fn view_list(model: Model) -> Element(Msg) {
-  html.div([], [html.h1([], [html.text("List View")])])
+fn view_list(_model: Model) -> Element(Msg) {
+  html.div([], [html.h1([], [html.text("List View Placeholder")])])
   // Simple placeholder
 }
 
 // Placeholder for the single post view
-fn view_single(model: Model, slug: String) -> Element(Msg) {
-  html.div([], [html.h1([], [html.text("Single Post View")])])
+fn view_single(_model: Model, _slug: String) -> Element(Msg) {
+  html.div([], [html.h1([], [html.text("Single Post View Placeholder")])])
   // Simple placeholder
 }
 
 pub fn view(model: Model, is_admin: Bool) -> Element(Msg) {
-  html.main([], [
+  html.main([attribute.class("access-content-page")], [
     // Conditionally render 'Create New Post' button
     case is_admin {
       True ->

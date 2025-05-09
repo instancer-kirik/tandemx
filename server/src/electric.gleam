@@ -1,27 +1,26 @@
+import gleam/result
+import gleam/string
+
 pub type Client
 
 pub type Subscription
 
-pub fn connect(url: String) -> Result(Client, String) {
+pub fn connect(_url: String) -> Result(Client, String) {
   // TODO: Implement Electric SQL client connection
+  Error("Not implemented")
+}
+
+pub fn subscribe(_client: Client, _topic: String) -> Subscription {
+  // TODO: Implement subscription logic
   panic as "Not implemented"
 }
 
-pub fn subscribe(client: Client, topic: String) -> Subscription {
-  // TODO: Implement Electric SQL subscription
-  panic as "Not implemented"
+pub fn unsubscribe(_subscription: Subscription) -> Nil {
+  // TODO: Implement unsubscription logic
+  Nil
 }
 
-pub fn unsubscribe(subscription: Subscription) -> Nil {
-  // TODO: Implement Electric SQL unsubscribe
-  panic as "Not implemented"
-}
-
-pub fn broadcast(
-  client: Client,
-  topic: String,
-  message: String,
-) -> Result(Nil, String) {
-  // TODO: Implement Electric SQL broadcast
-  panic as "Not implemented"
+pub fn publish(_client: Client, _topic: String, _message: String) -> Nil {
+  // TODO: Implement publish logic
+  Nil
 }

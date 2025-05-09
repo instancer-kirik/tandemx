@@ -1,0 +1,62 @@
+/* Megamenu Styles */
+.nav-item.has-megamenu {
+  position: relative; /* For positioning the megamenu panel */
+}
+
+.megamenu-panel {
+  display: none; /* Hidden by default */
+  position: absolute;
+  left: 0;
+  top: 100%; /* Position below the nav item */
+  background-color: #fff;
+  border: 1px solid #ddd;
+  border-top: none;
+  padding: 15px;
+  min-width: 400px; /* Adjust as needed */
+  z-index: 1000;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  flex-direction: row; /* Align columns horizontally */
+  gap: 20px;
+}
+
+.megamenu-panel.open {
+  display: flex; /* Show when open */
+}
+
+.megamenu-column {
+  flex: 1; /* Distribute space among columns */
+  min-width: 150px; /* Minimum width for a column */
+}
+
+.megamenu-column h4 {
+  margin-top: 0;
+  margin-bottom: 10px;
+  font-size: 1rem;
+  color: #333;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 5px;
+}
+
+.megamenu-column ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.megamenu-column ul li a {
+  display: block;
+  padding: 5px 0;
+  color: #007bff;
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+
+.megamenu-column ul li a:hover {
+  text-decoration: underline;
+  color: #0056b3;
+}
+
+/* Ensure nav-links can contain the absolutely positioned panels if needed */
+.nav-links {
+  position: relative; /* Or ensure parent .nav-content handles overflow if panels are wider */
+} 

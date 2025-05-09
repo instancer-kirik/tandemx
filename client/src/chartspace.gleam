@@ -1,11 +1,10 @@
-import gleam/dynamic
 import gleam/dynamic/decode
 import gleam/float
 import gleam/int
-import gleam/io
+
 import gleam/list
 import gleam/option.{type Option, None, Some}
-import gleam/result
+
 import gleam/string
 import lustre
 import lustre/attribute.{class, style}
@@ -411,29 +410,27 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
       effect.none(),
     )
     WebSocketError(_) -> #(model, effect.none())
-
-    _ -> #(model, effect.none())
   }
 }
 
-fn handle_node_click(
-  node: Node,
-) -> fn(dynamic.Dynamic) -> Result(Msg, List(dynamic.DecodeError)) {
-  fn(_) { Ok(SelectNodeMsg(node)) }
-}
+// fn handle_node_click(
+//   node: Node,
+// ) -> fn(dynamic.Dynamic) -> Result(Msg, List(dynamic.DecodeError)) {
+//   fn(_) { Ok(SelectNodeMsg(node)) }
+// }
 
-fn handle_button_click(
-  msg: Msg,
-) -> fn(dynamic.Dynamic) -> Result(Msg, List(dynamic.DecodeError)) {
-  fn(_) { Ok(msg) }
-}
+// fn handle_button_click(
+//   msg: Msg,
+// ) -> fn(dynamic.Dynamic) -> Result(Msg, List(dynamic.DecodeError)) {
+//   fn(_) { Ok(msg) }
+// }
 
 fn render_node(
   node: Node,
   selected: Bool,
   connecting: Option(String),
 ) -> Element(Msg) {
-  let pos_style = [
+  let _pos_style = [
     #(
       "transform",
       "translate("
@@ -522,7 +519,7 @@ fn render_node(
   )
 }
 
-fn render_connection(conn: NodeConnection, scale: Float) -> Element(Msg) {
+fn render_connection(_conn: NodeConnection, _scale: Float) -> Element(Msg) {
   // Simple line for now
   html.div([], [])
 }
@@ -558,106 +555,106 @@ pub fn render(model: Model) -> Element(Msg) {
   html.div([class("chartspace-container")], [canvas])
 }
 
-fn render_palette_item(
-  type_: String,
-  label: String,
-  model: Model,
-) -> Element(Msg) {
-  html.div(
-    [
-      class("palette-item palette-" <> type_),
-      event.on_click(
-        AddNode(case type_ {
-          "goal" -> Goal
-          "task" -> Task
-          "resource" -> Resource
-          "outcome" -> Outcome
-          "milestone" -> Milestone
-          _ -> Task
-        }),
-      ),
-    ],
-    [
-      html.div([class("palette-item-icon")], []),
-      html.div([class("palette-item-label")], [html.text(label)]),
-    ],
-  )
-}
+// fn render_palette_item(
+//   type_: String,
+//   label: String,
+//   model: Model,
+// ) -> Element(Msg) {
+//   html.div(
+//     [
+//       class("palette-item palette-" <> type_),
+//       event.on_click(
+//         AddNode(case type_ {
+//           "goal" -> Goal
+//           "task" -> Task
+//           "resource" -> Resource
+//           "outcome" -> Outcome
+//           "milestone" -> Milestone
+//           _ -> Task
+//         }),
+//       ),
+//     ],
+//     [
+//       html.div([class("palette-item-icon")], []),
+//       html.div([class("palette-item-label")], [html.text(label)]),
+//     ],
+//   )
+// }
 
-fn render_node_details(node: Node) -> Element(Msg) {
-  let status_options = [
-    #("not-started", "Not Started"),
-    #("in-progress", "In Progress"),
-    #("completed", "Completed"),
-    #("blocked", "Blocked"),
-  ]
+// fn render_node_details(node: Node) -> Element(Msg) {
+//   let status_options = [
+//     #("not-started", "Not Started"),
+//     #("in-progress", "In Progress"),
+//     #("completed", "Completed"),
+//     #("blocked", "Blocked"),
+//   ]
 
-  html.div([class("node-details")], [
-    html.h2([], [html.text("Node Details")]),
-    html.div([class("details-form")], [
-      html.div([class("form-group")], [
-        html.label([], [html.text("Label")]),
-        html.input([
-          attribute.type_("text"),
-          attribute.value(node.label),
-          event.on_input(fn(value) { UpdateNodeLabel(node.id, value) }),
-        ]),
-      ]),
-      html.div([class("form-group")], [
-        html.label([], [html.text("Description")]),
-        html.input([
-          attribute.type_("text"),
-          attribute.value(node.description),
-          event.on_input(fn(value) { UpdateNodeDescription(node.id, value) }),
-        ]),
-      ]),
-      html.div([class("form-group")], [
-        html.label([], [html.text("Status")]),
-        html.div(
-          [],
-          list.map(status_options, fn(opt) {
-            let #(value, label) = opt
-            html.div([], [
-              html.input([
-                attribute.type_("radio"),
-                attribute.name("status"),
-                attribute.value(value),
-                attribute.checked(case node.status {
-                  NotStarted if value == "not-started" -> True
-                  InProgress if value == "in-progress" -> True
-                  Completed if value == "completed" -> True
-                  Blocked if value == "blocked" -> True
-                  _ -> False
-                }),
-                event.on_change(fn(_) {
-                  UpdateNodeStatus(node.id, case value {
-                    "not-started" -> NotStarted
-                    "in-progress" -> InProgress
-                    "completed" -> Completed
-                    "blocked" -> Blocked
-                    _ -> NotStarted
-                  })
-                }),
-              ]),
-              html.label([], [html.text(label)]),
-            ])
-          }),
-        ),
-      ]),
-      html.div([class("form-group")], [
-        html.label([], [html.text("Deadline")]),
-        html.input([
-          attribute.type_("date"),
-          case node.deadline {
-            Some(date) -> attribute.value(date)
-            None -> attribute.value("")
-          },
-          event.on_input(fn(value) { UpdateNodeDeadline(node.id, value) }),
-        ]),
-      ]),
-    ]),
-  ])
-}
+//   html.div([class("node-details")], [
+//     html.h2([], [html.text("Node Details")]),
+//     html.div([class("details-form")], [
+//       html.div([class("form-group")], [
+//         html.label([], [html.text("Label")]),
+//         html.input([
+//           attribute.type_("text"),
+//           attribute.value(node.label),
+//           event.on_input(fn(value) { UpdateNodeLabel(node.id, value) }),
+//         ]),
+//       ]),
+//       html.div([class("form-group")], [
+//         html.label([], [html.text("Description")]),
+//         html.input([
+//           attribute.type_("text"),
+//           attribute.value(node.description),
+//           event.on_input(fn(value) { UpdateNodeDescription(node.id, value) }),
+//         ]),
+//       ]),
+//       html.div([class("form-group")], [
+//         html.label([], [html.text("Status")]),
+//         html.div(
+//           [],
+//           list.map(status_options, fn(opt) {
+//             let #(value, label) = opt
+//             html.div([], [
+//               html.input([
+//                 attribute.type_("radio"),
+//                 attribute.name("status"),
+//                 attribute.value(value),
+//                 attribute.checked(case node.status {
+//                   NotStarted if value == "not-started" -> True
+//                   InProgress if value == "in-progress" -> True
+//                   Completed if value == "completed" -> True
+//                   Blocked if value == "blocked" -> True
+//                   _ -> False
+//                 }),
+//                 event.on_change(fn(_) {
+//                   UpdateNodeStatus(node.id, case value {
+//                     "not-started" -> NotStarted
+//                     "in-progress" -> InProgress
+//                     "completed" -> Completed
+//                     "blocked" -> Blocked
+//                     _ -> NotStarted
+//                   })
+//                 }),
+//               ]),
+//               html.label([], [html.text(label)]),
+//             ])
+//           }),
+//         ),
+//       ]),
+//       html.div([class("form-group")], [
+//         html.label([], [html.text("Deadline")]),
+//         html.input([
+//           attribute.type_("date"),
+//           case node.deadline {
+//             Some(date) -> attribute.value(date)
+//             None -> attribute.value("")
+//           },
+//           event.on_input(fn(value) { UpdateNodeDeadline(node.id, value) }),
+//         ]),
+//       ]),
+//     ]),
+//   ])
+// }
 
 fn handle_websocket_message(model: Model, msg: WebSocketMsg) -> Model {
   case msg {
@@ -771,7 +768,7 @@ fn broadcast_change(model: Model, change: Change) -> Nil {
   }
 }
 
-fn send_ws_message(ws: WebSocket, msg: WebSocketMsg) -> Nil {
+fn send_ws_message(_ws: WebSocket, _msg: WebSocketMsg) -> Nil {
   // Implementation to serialize and send WebSocket message
   Nil
 }
@@ -781,7 +778,7 @@ pub fn main() {
     lustre.application(fn(_) { #(init(), effect.none()) }, update, render)
 
   // Connect to WebSocket
-  let ws_url = "ws://" <> "localhost:8000" <> "/ws/chartspace"
+  let _ws_url = "ws://" <> "localhost:8000" <> "/ws/chartspace"
   let assert Ok(_) = lustre.start(app, "#chartspace-container", Nil)
   Nil
 }
@@ -792,7 +789,7 @@ fn generate_uuid() -> String {
   "id-" <> int.to_string(random_int(0, 99_999))
 }
 
-fn random_int(min: Int, max: Int) -> Int {
+fn random_int(min: Int, _max: Int) -> Int {
   // Simple implementation for now
   min
 }

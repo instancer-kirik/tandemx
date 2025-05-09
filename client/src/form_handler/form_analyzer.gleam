@@ -1,9 +1,7 @@
 import gleam/dict.{type Dict}
-import gleam/dynamic
 import gleam/json
 import gleam/list
 import gleam/option.{type Option, None, Some}
-import lustre
 import lustre/attribute.{class}
 import lustre/effect.{type Effect}
 import lustre/element.{type Element}
@@ -200,21 +198,21 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
       effect.none(),
     )
 
-    ExtensionMsg(FieldUpdated(selector, value)) -> {
+    ExtensionMsg(FieldUpdated(_selector, _value)) -> {
       #(model, effect.none())
     }
 
-    ExtensionMsg(FormSubmitted(selector)) -> {
+    ExtensionMsg(FormSubmitted(_selector)) -> {
       #(model, effect.none())
     }
 
-    ExtensionMsg(Error(message)) -> {
+    ExtensionMsg(Error(_message)) -> {
       #(model, effect.none())
     }
 
-    FormElementFound(element) -> #(model, effect.none())
+    FormElementFound(_element) -> #(model, effect.none())
 
-    FormInteractionOccurred(interaction) -> #(model, effect.none())
+    FormInteractionOccurred(_interaction) -> #(model, effect.none())
   }
 }
 

@@ -83,6 +83,38 @@ cd ..
 echo -e "${GREEN}Building client application...${NC}"
 cd client && gleam build
 
+# Bundle the client JavaScript using esbuild
+echo -e "${GREEN}Bundling client JavaScript with esbuild...${NC}"
+# Adjust entry point and outfile as necessary.
+# Entry point is relative to the 'client' directory after 'gleam build'.
+# Output file is also relative to the 'client' directory.
+
+# Ensure output directory exists
+mkdir -p ./dist/js
+
+echo -e "${YELLOW}Current directory before esbuild: $(pwd)${NC}"
+
+# Use bunx to execute esbuild
+bunx esbuild ./build/dev/javascript/tandemx_client/app.mjs --bundle --outfile=./dist/js/bundle.js --format=esm --platform=browser
+ESBUILD_EXIT_CODE=$?
+
+# Check if esbuild command was successful
+if [ $ESBUILD_EXIT_CODE -ne 0 ]; then
+  echo -e "${RED}esbuild failed with exit code $ESBUILD_EXIT_CODE. Aborting.${NC}"
+  exit $ESBUILD_EXIT_CODE
+fi
+
+echo -e "${YELLOW}Checking if bundle exists...${NC}"
+ls -l ./dist/js/bundle.js
+if [ $? -ne 0 ]; then
+  echo -e "${RED}Bundle file ./dist/js/bundle.js NOT found after esbuild step!${NC}"
+  # Optionally list the contents of dist/js to see what *is* there
+  ls -l ./dist/js
+  exit 1
+else
+   echo -e "${GREEN}Bundle file found.${NC}"
+fi
+
 # Build the server application
 echo -e "${GREEN}Building server application...${NC}"
 cd ../server && gleam build

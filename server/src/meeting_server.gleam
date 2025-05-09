@@ -1,9 +1,14 @@
 import email_service.{type EmailNotification}
+import gleam/bool
 import gleam/bytes_tree
 import gleam/dynamic
+import gleam/dynamic/decode
 import gleam/http/response.{type Response}
+import gleam/int
 import gleam/io
+import gleam/json
 import gleam/list
+import gleam/option.{type Option, None, Some}
 import gleam/result
 import gleam/string
 import mist.{type ResponseData, Bytes}
@@ -19,15 +24,15 @@ pub type Meeting {
     duration_minutes: Int,
     attendees: List(String),
     timezone: String,
-    location_type: LocationType,
-    location: String,
+    location_type: Option(MeetingLocationType),
+    virtual_meeting_link: Option(String),
   )
 }
 
-/// Location type for meetings
-pub type LocationType {
-  Virtual
+/// Type for meeting location: Physical or Virtual
+pub type MeetingLocationType {
   Physical
+  Virtual
 }
 
 /// Handle a meeting scheduling request
@@ -36,82 +41,75 @@ pub type LocationType {
 /// 2. Extracts meeting details
 /// 3. Sends emails to attendees
 /// 4. Returns a response to the client
-pub fn handle_meeting_request(body: String) -> Response(ResponseData) {
-  // Parse the meeting JSON
-  let json = dynamic.from(body)
-
-  // Extract basic meeting fields first
-  let basic_result = decode_basic_meeting(json)
-
-  case basic_result {
-    Ok(basic_meeting) -> {
-      // Determine location type (default to Virtual)
-      let location_type = case get_location_type(json) {
-        Ok(location_type) -> location_type
-        Error(_) -> Virtual
-      }
-
-      // Get location
-      let location = case dynamic.field("location", dynamic.string)(json) {
-        Ok(loc) -> loc
-        Error(_) -> ""
-      }
-
-      // Create full meeting
-      let meeting =
-        Meeting(
-          ..basic_meeting,
-          location_type: location_type,
-          location: location,
-        )
-
-      // Log the meeting data we received
-      io.println("\nMeeting scheduling request received")
-      io.println("Meeting title: " <> meeting.title)
-      io.println(
-        "Meeting date: " <> meeting.date <> " at " <> meeting.start_time,
-      )
-      io.println(
-        "Duration: " <> string.inspect(meeting.duration_minutes) <> " minutes",
-      )
-      io.println("Attendees: " <> string.join(meeting.attendees, ", "))
-
-      // Generate meeting link if it's virtual and no link was provided
-      let final_location = case meeting.location_type, meeting.location {
-        Virtual, "" -> generate_meeting_link("google")
-        _, loc -> loc
-      }
-
-      // Create a meeting with the possibly updated location
-      let final_meeting = Meeting(..meeting, location: final_location)
-
-      // Send emails to all attendees
+pub fn handle_meeting_request(
+  json_body: dynamic.Dynamic,
+) -> Response(ResponseData) {
+  case decode_meeting(json_body) {
+    Ok(meeting) -> {
       let notifications =
         list.map(meeting.attendees, fn(attendee) {
-          create_meeting_notification(final_meeting, attendee)
+          email_service.EmailNotification(
+            to: attendee,
+            from: "instance.select@example.com",
+            subject: "New Meeting: " <> meeting.title,
+            body: string.concat([
+              "You have been invited to a meeting:\n\n",
+              "Title: ",
+              meeting.title,
+              "\n",
+              "Description: ",
+              meeting.description,
+              "\n",
+              "Date: ",
+              meeting.date,
+              "\n",
+              "Time: ",
+              meeting.start_time,
+              " (",
+              meeting.timezone,
+              ")\n",
+              "Duration: ",
+              int.to_string(meeting.duration_minutes),
+              " minutes\n",
+              case meeting.location_type {
+                Some(Virtual) ->
+                  "Location: Virtual Meeting\nLink: "
+                  <> option.unwrap(
+                    meeting.virtual_meeting_link,
+                    "No link provided",
+                  )
+                  <> "\n"
+                Some(Physical) ->
+                  "Location: Physical Meeting (Details to be confirmed)\n"
+                None -> "Location: To be determined\n"
+              },
+            ]),
+          )
         })
 
-      // Send the emails using our new email service
-      list.each(notifications, email_service.send_meeting_invitation)
+      list.each(notifications, fn(n: EmailNotification) {
+        send_email_ffi_placeholder(n.to, n.subject, n.body)
+      })
 
-      // Return a success response
       response.new(200)
       |> response.set_header("content-type", "application/json")
-      |> response.set_body(
-        Bytes(bytes_tree.from_string(
-          "{\"status\":\"success\",\"message\":\"Meeting scheduled and emails sent\",\"meeting_link\":\""
-          <> final_location
-          <> "\"}",
-        )),
-      )
+      |> response.set_body(Bytes(
+        json.object([#("status", json.string("success"))])
+        |> json.to_string
+        |> bytes_tree.from_string,
+      ))
     }
     Error(errors) -> {
-      // Log the error
-      io.println("\nError decoding meeting data: " <> string.inspect(errors))
-      io.println("Raw body: " <> body)
-
-      // Return an error response
-      create_error_response(400, "Invalid meeting data format")
+      let error_string = format_decode_errors(errors)
+      response.new(400)
+      |> response.set_header("content-type", "application/json")
+      |> response.set_body(Bytes(
+        json.object([
+          #("error", json.string("Invalid request data: " <> error_string)),
+        ])
+        |> json.to_string
+        |> bytes_tree.from_string,
+      ))
     }
   }
 }
@@ -133,13 +131,14 @@ fn create_meeting_notification(
   meeting: Meeting,
   recipient: String,
 ) -> EmailNotification {
-  // Create meeting details text
   let location_info = case meeting.location_type {
-    Virtual -> "Virtual meeting link: " <> meeting.location
-    Physical -> "Location: " <> meeting.location
+    Some(Virtual) ->
+      "Virtual meeting link: "
+      <> option.unwrap(meeting.virtual_meeting_link, "Not specified")
+    Some(Physical) -> "Location: Physical (Address to be confirmed)"
+    None -> "Location: To be determined"
   }
 
-  // Format the email body
   let body =
     string.concat([
       "You have been invited to a meeting:\n\n",
@@ -158,27 +157,23 @@ fn create_meeting_notification(
       meeting.timezone,
       ")\n",
       "Duration: ",
-      string.inspect(meeting.duration_minutes),
+      int.to_string(meeting.duration_minutes),
       " minutes\n\n",
       location_info,
       "\n\n",
       "This meeting was scheduled using TandemX Calendar.",
     ])
 
-  // Create the notification object using the imported constructor
   email_service.EmailNotification(
     to: recipient,
     subject: "Meeting Invitation: " <> meeting.title,
     body: body,
     from: "instance.select@gmail.com",
-    // As requested, use this as sender
   )
 }
 
 /// Send an email notification
 fn send_email(notification: EmailNotification) -> Nil {
-  // In a real implementation, this would connect to an email service
-  // For now, we just log the email details
   io.println("\nSending email notification:")
   io.println("From: " <> notification.from)
   io.println("To: " <> notification.to)
@@ -191,8 +186,6 @@ fn send_email(notification: EmailNotification) -> Nil {
 fn generate_meeting_link(service: String) -> String {
   case service {
     "google" -> {
-      // In a real implementation, this would use the Google Calendar API
-      // For now, we generate a mock link
       let random_suffix = generate_random_string(10)
       "https://meet.google.com/" <> random_suffix
     }
@@ -202,53 +195,88 @@ fn generate_meeting_link(service: String) -> String {
 
 /// Generate a random string for meeting IDs
 fn generate_random_string(length: Int) -> String {
-  // Simple implementation for demo purposes
-  // In a real application, use a proper random generator
-  "abc" <> string.inspect(length) <> "xyz123"
+  "abc" <> int.to_string(length) <> "xyz123"
 }
 
-// Create a partial meeting record without location information
-fn decode_basic_meeting(
-  json: dynamic.Dynamic,
-) -> Result(Meeting, List(dynamic.DecodeError)) {
-  dynamic.decode8(
-    fn(id, title, description, date, start_time, duration, attendees, timezone) {
-      Meeting(
-        id: id,
-        title: title,
-        description: description,
-        date: date,
-        start_time: start_time,
-        duration_minutes: duration,
-        attendees: attendees,
-        timezone: timezone,
-        location_type: Virtual,
-        // Default
-        location: "",
-        // Default
-      )
-    },
-    dynamic.field("id", dynamic.string),
-    dynamic.field("title", dynamic.string),
-    dynamic.field("description", dynamic.string),
-    dynamic.field("date", dynamic.string),
-    dynamic.field("start_time", dynamic.string),
-    dynamic.field("duration_minutes", dynamic.int),
-    dynamic.field("attendees", dynamic.list(dynamic.string)),
-    dynamic.field("timezone", dynamic.string),
-  )(json)
+// Helper function to format decode errors
+fn format_decode_errors(errors: List(decode.DecodeError)) -> String {
+  errors
+  |> list.map(fn(error) {
+    let path = string.join(error.path, ".")
+    // Accessing DecodeError fields directly
+    "Path: '"
+    <> path
+    <> "', Expected: '"
+    <> error.expected
+    <> "', Found: '"
+    <> error.found
+    <> "'"
+  })
+  |> string.join("; ")
 }
 
-// Extract the location type from the JSON data
-fn get_location_type(
-  json: dynamic.Dynamic,
-) -> Result(LocationType, List(dynamic.DecodeError)) {
-  dynamic.field("location_type", dynamic.string)(json)
-  |> result.map(fn(location_type) {
-    case location_type {
-      "virtual" | "Virtual" -> Virtual
-      "physical" | "Physical" -> Physical
-      _ -> Virtual
+// Decoder for MeetingLocationType enum
+fn meeting_location_type_decoder() -> decode.Decoder(MeetingLocationType) {
+  decode.string
+  |> decode.then(fn(s) {
+    case string.lowercase(s) {
+      "physical" -> decode.success(Physical)
+      "virtual" -> decode.success(Virtual)
+      _ -> decode.failure(Physical, "Invalid MeetingLocationType string: " <> s)
     }
   })
+}
+
+// Decoder for the Meeting struct
+fn meeting_field_decoder() -> decode.Decoder(Meeting) {
+  {
+    use id <- decode.field("id", decode.string)
+    use title <- decode.field("title", decode.string)
+    use description <- decode.field("description", decode.string)
+    use date <- decode.field("date", decode.string)
+    use start_time <- decode.field("start_time", decode.string)
+    use duration_minutes <- decode.field("duration_minutes", decode.int)
+    use attendees <- decode.field("attendees", decode.list(decode.string))
+    use timezone <- decode.field("timezone", decode.string)
+    use location_type <- decode.field(
+      "location_type",
+      decode.optional(meeting_location_type_decoder()),
+    )
+    use virtual_meeting_link <- decode.field(
+      "virtual_meeting_link",
+      decode.optional(decode.string),
+    )
+    decode.success(Meeting(
+      id,
+      title,
+      description,
+      date,
+      start_time,
+      duration_minutes,
+      attendees,
+      timezone,
+      location_type,
+      virtual_meeting_link,
+    ))
+  }
+}
+
+// Public function to decode a Meeting from dynamic data
+pub fn decode_meeting(
+  data: dynamic.Dynamic,
+) -> Result(Meeting, List(decode.DecodeError)) {
+  decode.run(data, meeting_field_decoder())
+}
+
+// FFI for sending email (placeholder)
+@external(erlang, "io", "format")
+fn io_format(format: String, args: List(String)) -> Nil
+
+// Placeholder function for sending an email
+fn send_email_ffi_placeholder(
+  _to: String,
+  _subject: String,
+  _body: String,
+) -> Nil {
+  Nil
 }

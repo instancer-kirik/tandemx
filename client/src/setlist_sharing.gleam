@@ -12,17 +12,13 @@
 // License: MIT
 // Version: 1.0.0
 
-import gleam/dynamic
 import gleam/dynamic/decode
-import gleam/int
-import gleam/io
+
 import gleam/list
 import gleam/option.{type Option, None, Some}
-import gleam/result
-import gleam/string
-import lustre
-import lustre/attribute.{class, style}
-import lustre/effect.{type Effect}
+
+import lustre/attribute.{class}
+import lustre/effect
 import lustre/element.{type Element}
 import lustre/element/html
 import lustre/event

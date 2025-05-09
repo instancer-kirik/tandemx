@@ -23,7 +23,7 @@ pub fn main() {
       make_app_global(dynamic.from(instance))
       dynamic.from(#(instance, cleanup_app))
     }
-    Error(error) -> {
+    Error(_error) -> {
       // Return a tuple with null values to match expected type
       dynamic.from(#(Nil, fn() { Nil }))
     }

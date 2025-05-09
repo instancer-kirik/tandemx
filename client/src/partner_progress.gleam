@@ -1,18 +1,20 @@
-import access_content.{type FetchState, type SupabaseUser}
+import access_content.{type FetchState, type SupabaseUser, Idle}
 import components/nav
 import gleam/dict.{type Dict}
 import gleam/float
 import gleam/int
+
 import gleam/list
-import gleam/option.{type Option, None, Some}
+import gleam/option.{type Option}
 import gleam/result
 import gleam/string
-import lustre
+
 import lustre/attribute
 import lustre/effect.{type Effect}
 import lustre/element.{type Element}
 import lustre/element/html
-import lustre/event
+
+// For debug prints
 
 pub type Model {
   Model(
@@ -21,6 +23,8 @@ pub type Model {
     interactions: Dict(Int, Interaction),
     reports: Dict(Int, Report),
     last_id: Int,
+    nav_model: nav.Model,
+    // Added nav_model
   )
 }
 
@@ -159,6 +163,7 @@ pub type Msg {
   UpdateInteraction(Int, Interaction)
   GenerateReport(Int)
   NavMsg(nav.Msg)
+  // Added NavMsg
 }
 
 pub fn init(_flags: Nil) -> #(Model, Effect(Msg)) {
@@ -205,6 +210,9 @@ pub fn init(_flags: Nil) -> #(Model, Effect(Msg)) {
     ]
     |> dict.from_list()
 
+  let initial_nav_model = nav.init(Idle)
+  // Initialize nav model with default user_state
+
   #(
     Model(
       partners: sample_partners,
@@ -212,6 +220,8 @@ pub fn init(_flags: Nil) -> #(Model, Effect(Msg)) {
       interactions: dict.new(),
       reports: dict.new(),
       last_id: 1,
+      nav_model: initial_nav_model,
+      // Store initial nav_model
     ),
     effect.none(),
   )
@@ -344,8 +354,28 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
       #(Model(..model, reports: reports, last_id: last_id), effect.none())
     }
 
-    NavMsg(nav_msg) -> {
-      #(model, effect.none())
+    NavMsg(nav_sub_msg) -> {
+      let #(updated_nav_model, nav_effect) =
+        nav.update(model.nav_model, nav_sub_msg)
+      let new_model = Model(..model, nav_model: updated_nav_model)
+
+      case nav_sub_msg {
+        nav.ParentShouldNavigate(path) -> {
+          echo { "PartnerProgress: Navigating to " <> path }
+          #(new_model, effect.none())
+        }
+        nav.ParentShouldLogin -> {
+          echo { "PartnerProgress: Triggering login" }
+          #(new_model, effect.none())
+        }
+        nav.ParentShouldLogout -> {
+          echo { "PartnerProgress: Triggering logout" }
+          #(new_model, effect.none())
+        }
+        nav.ToggleMegamenu(_) | nav.CloseAllMegamenus -> {
+          #(new_model, effect.map(nav_effect, NavMsg))
+        }
+      }
     }
   }
 }
@@ -354,8 +384,13 @@ pub fn view(
   model: Model,
   user_state: FetchState(Option(SupabaseUser)),
 ) -> Element(Msg) {
+  // Ensure the nav_model has the current user_state for rendering
+  let current_nav_model_for_view =
+    nav.Model(..model.nav_model, user_state: user_state)
+
   html.div([attribute.class("app-container")], [
-    element.map(nav.view(user_state), NavMsg),
+    // Pass the updated nav_model to nav.view
+    element.map(nav.view(current_nav_model_for_view), NavMsg),
     html.main([attribute.class("partner-progress-app")], [
       view_header(),
       html.div([attribute.class("dashboard-grid")], [
@@ -842,16 +877,16 @@ fn view_report_card(model: Model, report: Report) -> Element(Msg) {
   ])
 }
 
-fn category_to_string(category: PartnerCategory) -> String {
-  case category {
-    Vendor -> "Vendor"
-    Supplier -> "Supplier"
-    Distributor -> "Distributor"
-    ServiceProvider -> "Service Provider"
-    Investor -> "Investor"
-    Strategic -> "Strategic Partner"
-  }
-}
+// fn category_to_string(category: PartnerCategory) -> String {
+//   case category {
+//     Vendor -> "Vendor"
+//     Supplier -> "Supplier"
+//     Distributor -> "Distributor"
+//     ServiceProvider -> "Service Provider"
+//     Investor -> "Investor"
+//     Strategic -> "Strategic Partner"
+//   }
+// }
 
 fn generate_recommendations(
   goals: GoalsSummary,

@@ -1,16 +1,13 @@
-import access_content.{
-  type FetchState, type SupabaseUser, Errored, Idle, Loaded, Loading,
-}
-import components/nav
+import access_content.{type FetchState, Errored, Idle, Loaded, Loading}
+
+// import components/nav // No longer directly used by project_detail for rendering or msg handling
 import gleam/dynamic.{type Dynamic}
-import gleam/float
-import gleam/int
-import gleam/io
+
 import gleam/list
 import gleam/option.{type Option, None, Some}
-import gleam/result
+
 import gleam/string
-import lustre
+
 import lustre/attribute.{class, href, target}
 import lustre/effect.{type Effect}
 import lustre/element.{type Element}
@@ -188,28 +185,20 @@ pub type Model {
   Model(
     project_id: String,
     project_data: FetchState(Project),
-    // TODO: Add UI state for forms, modals etc. e.g.,
-    // show_create_task_modal: Bool,
-    // new_task_title: String,
+    // nav_model: nav.Model, // Removed
   )
 }
 
 // --- Messages ---
 pub type Msg {
-  NavMsg(nav.Msg)
+  // NavMsg(nav.Msg) // Removed
   FetchProject
-  // Trigger fetching the main project data
   ProjectFetched(Result(Project, String))
-  // Example CRUD messages (can be expanded)
   CreateComponentFormSubmitted
-  // User submitted form to create a component
   NewComponentNameChanged(String)
   NewComponentCategoryChanged(ComponentCategory)
   SaveNewComponent
-  // Triggers actual save attempt
   ComponentCreated(Result(ProjectComponent, String))
-  // From backend after creation
-  // Similar messages for Tasks, and for Update/Delete operations
 }
 
 // --- Init ---
@@ -218,12 +207,12 @@ pub type Flags {
 }
 
 pub fn init(flags: Flags) -> #(Model, Effect(Msg)) {
+  // let initial_nav_model = nav.init(Idle) // Removed
   let model =
     Model(
       project_id: flags.project_id,
       project_data: Loading,
-      // new_task_title: "", // example UI state init
-    // show_create_task_modal: False,
+      // nav_model: initial_nav_model, // Removed
     )
   #(model, fetch_project_effect(flags.project_id))
 }
@@ -231,18 +220,13 @@ pub fn init(flags: Flags) -> #(Model, Effect(Msg)) {
 // --- Update ---
 pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
   case msg {
-    NavMsg(_nav_msg) -> {
-      // Handle potential navigation side-effects if any, e.g. saving unsaved changes
-      #(model, effect.none())
-    }
-
+    // NavMsg case removed
     FetchProject -> {
       #(
         Model(..model, project_data: Loading),
         fetch_project_effect(model.project_id),
       )
     }
-
     ProjectFetched(result) -> {
       case result {
         Ok(project) if project.id == model.project_id -> #(
@@ -250,54 +234,39 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
           effect.none(),
         )
         Ok(wrong_project) -> {
-          io.debug(
+          echo {
             "Fetched project ID "
             <> wrong_project.id
             <> " mismatches current ID "
-            <> model.project_id,
-          )
-          // Potentially dispatch an error message or reset
+            <> model.project_id
+          }
           #(
             Model(..model, project_data: Errored("Fetched wrong project data")),
             effect.none(),
           )
         }
         Error(err) -> {
-          io.debug("Error fetching project details: " <> err)
+          echo { "Error fetching project details: " <> err }
           #(Model(..model, project_data: Errored(err)), effect.none())
         }
       }
     }
-
-    // Example CRUD flow (very simplified - needs FFI for saving to backend)
     NewComponentNameChanged(name) -> {
-      // In a real app, you'd store this in the model if you have a form field
-      // Model(..model, new_component_name_buffer: name)
-      io.debug("New component name changed: " <> name)
-      // Placeholder
+      echo { "New component name changed: " <> name }
       #(model, effect.none())
     }
     NewComponentCategoryChanged(category) -> {
-      // Model(..model, new_component_category_buffer: category)
       let _ = category
-      // Suppress unused variable warning for placeholder
-      io.debug("New component category changed")
-      // Placeholder
+      echo { "New component category changed" }
       #(model, effect.none())
     }
     SaveNewComponent -> {
-      // 1. Get data from model (e.g., model.new_component_name_buffer)
-      // 2. Validate data
-      // 3. Call an FFI function to save to backend, which dispatches ComponentCreated
-      //    effect.from(fn(dispatch) { dispatch(ComponentCreated(save_component_ffi(data))) })
-      io.debug("Attempting to save new component...")
-      // Placeholder
+      echo { "Attempting to save new component..." }
       #(model, effect.none())
     }
     ComponentCreated(result) -> {
       case result {
         Ok(new_component) -> {
-          // Add to the list of components in the currently loaded project
           case model.project_data {
             Loaded(p) -> {
               let updated_project =
@@ -311,32 +280,26 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
               )
             }
             _ -> {
-              io.debug("ComponentCreated received but no project loaded.")
+              echo { "ComponentCreated received but no project loaded." }
               #(model, effect.none())
-              // Or handle error
             }
           }
         }
         Error(err) -> {
-          io.debug("Failed to create component: " <> err)
-          // Update model to show error to user, e.g., model.form_error = Some(err)
+          echo { "Failed to create component: " <> err }
           #(model, effect.none())
         }
       }
     }
-    // TODO: Implement handlers for other CRUD messages (Tasks, Updates, Deletes)
-    _ -> #(model, effect.none())
-    // Default for unhandled messages for now
+    CreateComponentFormSubmitted -> {
+      echo { "Create component form submitted" }
+      #(model, effect.none())
+    }
   }
 }
 
-// --- FFI & Effects ---
 @external(javascript, "./project_detail_ffi.js", "fetchProjectById")
 fn fetch_project_by_id_ffi(id: String) -> Result(Project, String)
-
-// TODO: Add FFI functions for create, update, delete operations
-// e.g. @external(javascript, "./project_detail_ffi.js", "saveNewComponentOnServer")
-//      fn save_new_component_on_server_ffi(data_for_ffi) -> Result(ProjectComponent, String)
 
 fn fetch_project_effect(id: String) -> Effect(Msg) {
   effect.from(fn(dispatch) {
@@ -347,20 +310,17 @@ fn fetch_project_effect(id: String) -> Effect(Msg) {
 // --- View ---
 pub fn view(
   model: Model,
-  user_state: FetchState(Option(SupabaseUser)),
+  // user_state: FetchState(Option(SupabaseUser)), // No longer needed if only for nav
 ) -> Element(Msg) {
-  html.div([class("app-container")], [
-    element.map(nav.view(user_state), NavMsg),
-    html.div([class("main-content project-detail-page")], [
-      case model.project_data {
-        Idle -> html.text("Initializing project details...")
-        Loading ->
-          html.div([class("loading-spinner")], [html.text("Loading...")])
-        // Simple loading text
-        Errored(err) -> view_error_state(err)
-        Loaded(project) -> view_project_loaded_state(project)
-      },
-    ]),
+  // Nav rendering removed, handled by app.gleam
+  html.div([class("main-content project-detail-page")], [
+    // Changed outer div to reflect it's now just the page content
+    case model.project_data {
+      Idle -> html.text("Initializing project details...")
+      Loading -> html.div([class("loading-spinner")], [html.text("Loading...")])
+      Errored(err) -> view_error_state(err)
+      Loaded(project) -> view_project_loaded_state(project)
+    },
   ])
 }
 
@@ -374,7 +334,6 @@ fn view_error_state(error_message: String) -> Element(Msg) {
 
 fn view_project_loaded_state(project: Project) -> Element(Msg) {
   html.div([class("project-content")], [
-    // Project Header
     html.header([class("project-detail-header")], [
       html.h1([], [html.text(project.name)]),
       project.description
@@ -417,12 +376,9 @@ fn view_project_loaded_state(project: Project) -> Element(Msg) {
         project.documentation_references,
       ),
     ]),
-    // Components Section
     html.section([class("project-components-section card-section")], [
       html.div([class("section-header")], [
         html.h2([], [html.text("Components")]),
-        // TODO: Add button/form to trigger CreateComponent messages
-      // html.button([event.on_click(OpenCreateComponentModal)], [html.text("Add Component")])
       ]),
       case project.components {
         [] -> html.p([], [html.text("No components defined for this project.")])
@@ -433,13 +389,8 @@ fn view_project_loaded_state(project: Project) -> Element(Msg) {
           )
       },
     ]),
-    // Tasks Section
     html.section([class("project-tasks-section card-section")], [
-      html.div([class("section-header")], [
-        html.h2([], [html.text("Tasks")]),
-        // TODO: Add button/form to trigger CreateTask messages
-      // html.button([event.on_click(OpenCreateTaskModal)], [html.text("Add Task")])
-      ]),
+      html.div([class("section-header")], [html.h2([], [html.text("Tasks")])]),
       case project.tasks {
         [] -> html.p([], [html.text("No tasks assigned to this project.")])
         tasks ->
@@ -449,7 +400,6 @@ fn view_project_loaded_state(project: Project) -> Element(Msg) {
           )
       },
     ]),
-    // TODO: Modals for creating/editing components and tasks
   ])
 }
 
@@ -484,7 +434,6 @@ fn view_component_item(component: ProjectComponent) -> Element(Msg) {
         [html.text(component_status_to_string(component.status))],
       ),
     ]),
-    // TODO: Display component.attributes (decode if needed)
     case component.attributes {
       Some(attrs) ->
         html.div([class("attributes-preview")], [
@@ -492,7 +441,6 @@ fn view_component_item(component: ProjectComponent) -> Element(Msg) {
         ])
       None -> element.none()
     },
-    // TODO: Display dependencies as links or just text
     case component.dependencies {
       [] -> element.none()
       deps ->
@@ -504,7 +452,6 @@ fn view_component_item(component: ProjectComponent) -> Element(Msg) {
           ),
         ])
     },
-    // TODO: Add edit/delete buttons for component
   ])
 }
 
@@ -531,8 +478,6 @@ fn view_task_item(task: Task) -> Element(Msg) {
         })
         |> option.unwrap(element.none()),
     ]),
-    // TODO: Display assignees, target_date, progress_percent, tags, dependencies
-  // TODO: Add edit/delete buttons for task
   ])
 }
 

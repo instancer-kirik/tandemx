@@ -1,10 +1,9 @@
-import gleam/option.{type Option, None, Some}
-import lustre
-import lustre/attribute.{class, id}
+import gleam/option.{type Option}
+
+import lustre/attribute.{id}
 import lustre/effect.{type Effect}
 import lustre/element.{type Element}
 import lustre/element/html
-import lustre/event
 
 // --- Types ---
 

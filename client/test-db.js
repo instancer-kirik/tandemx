@@ -1,27 +1,30 @@
 // Simple test to verify Supabase connection
-import { initDb } from './src/db_ffi.js';
+import {
+  create_client,
+  query_table,
+  select_all,
+  run_query
+} from './supabase/build/dev/javascript/supabase/supabase_ffi.mjs'
 
-async function testConnection() {
-  console.log('🔍 Testing Supabase connection...');
-  const supabase = initDb();
-  
+// Initialize the client
+const url = 'https://xlmibzeenudmkqgiyaif.supabase.co'
+const key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhsbWliemVlbnVkbWtxZ2l5YWlmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDMzODAxNzMsImV4cCI6MjA1ODk1NjE3M30.Yn9AIaqkstjgz1coNJGB-o66L7wiJZZvCXfqyM6Wavs'
+const client = create_client(url, key)
+
+async function testDb() {
   try {
-    // Try a simple query to verify connection
-    const { data, error } = await supabase.from('planet_models').select('*').limit(1);
+    const query = select_all(query_table(client, 'planet_models'))
+    const result = await run_query(query)
     
-    if (error) {
-      console.error('❌ Connection error:', error.message);
-      process.exit(1);
+    if (result instanceof Error) {
+      console.error('Error:', result)
+      return
     }
     
-    console.log('✅ Connection successful!');
-    console.log('📊 Sample data:', data);
-    
-    process.exit(0);
-  } catch (err) {
-    console.error('❌ Unexpected error:', err.message);
-    process.exit(1);
+    console.log('Success! Data:', result)
+  } catch (error) {
+    console.error('Error:', error)
   }
 }
 
-testConnection(); 
+testDb() 

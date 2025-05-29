@@ -1,14 +1,18 @@
 import gleam/bytes_tree
-import gleam/dynamic
-import gleam/dynamic/decode
+
 import gleam/http.{Delete, Get, Post}
 import gleam/http/request.{type Request}
 import gleam/http/response.{type Response}
 import gleam/json
 import gleam/list
-import gleam/option.{type Option, None, Some}
+import gleam/option.{type Option}
+
 import gleam/string
 import mist
+
+// TODO: Implement wishlist module
+// import tandemx_server/wishlist.{type Product, type WishlistItem}
+// import tandemx_server/wishlist_supabase
 
 // Conceptual Supabase client import - you will need to implement or find this library
 // import supabase
@@ -138,7 +142,7 @@ fn get_all_products(
 }
 
 fn get_product(
-  product_id: String,
+  _product_id: String,
   // supabase_client: supabase.Client
 ) -> Response(mist.ResponseData) {
   // TODO: Implement Supabase call to fetch a single product by ID
@@ -182,7 +186,7 @@ fn get_product(
 }
 
 fn get_user_wishlist(
-  user_id: String,
+  _user_id: String,
   // supabase_client: supabase.Client
 ) -> Response(mist.ResponseData) {
   // TODO: Implement Supabase call to fetch wishlist items for a user_id
@@ -215,8 +219,8 @@ fn get_user_wishlist(
 }
 
 fn add_to_wishlist(
-  user_id: String,
-  product_id: String,
+  _user_id: String,
+  _product_id: String,
   // supabase_client: supabase.Client
 ) -> Response(mist.ResponseData) {
   // TODO: Implement Supabase call to insert into 'user_wishlist_items' table
@@ -242,8 +246,8 @@ fn add_to_wishlist(
 }
 
 fn remove_from_wishlist(
-  user_id: String,
-  product_id: String,
+  _user_id: String,
+  _product_id: String,
   // supabase_client: supabase.Client
 ) -> Response(mist.ResponseData) {
   // TODO: Implement Supabase call to delete from 'user_wishlist_items' table
@@ -264,7 +268,7 @@ fn remove_from_wishlist(
 }
 
 fn get_user_cart(
-  user_id: String,
+  _user_id: String,
   // supabase_client: supabase.Client
 ) -> Response(mist.ResponseData) {
   // TODO: Implement Supabase call similar to get_user_wishlist but for 'user_cart_items'
@@ -276,8 +280,8 @@ fn get_user_cart(
 }
 
 fn add_to_cart(
-  user_id: String,
-  product_id: String,
+  _user_id: String,
+  _product_id: String,
   // supabase_client: supabase.Client
 ) -> Response(mist.ResponseData) {
   // TODO: Implement Supabase call to insert into 'user_cart_items' table.
@@ -303,8 +307,8 @@ fn add_to_cart(
 }
 
 fn remove_from_cart(
-  user_id: String,
-  product_id: String,
+  _user_id: String,
+  _product_id: String,
   // supabase_client: supabase.Client
 ) -> Response(mist.ResponseData) {
   // TODO: Implement Supabase call to delete from 'user_cart_items' table.
@@ -330,14 +334,6 @@ fn not_found() -> Response(mist.ResponseData) {
   response_builder(404, json.object([#("error", json.string("Not found"))]))
 }
 
-fn bad_request(message: String) -> Response(mist.ResponseData) {
-  response_builder(400, json.object([#("error", json.string(message))]))
-}
-
-fn internal_server_error(message: String) -> Response(mist.ResponseData) {
-  response_builder(500, json.object([#("error", json.string(message))]))
-}
-
 fn success_response(message: String) -> Response(mist.ResponseData) {
   response_builder(
     200,
@@ -357,7 +353,6 @@ fn response_builder(
   |> response.set_header("content-type", "application/json")
   |> response.set_body(mist.Bytes(bytes_tree.from_string(body)))
 }
-
 // --- Decoders and Encoders --- 
 
 // TODO: Implement a decoder for the Product type using gleam/dynamic/decode
@@ -396,34 +391,35 @@ fn response_builder(
 // }
 
 // TODO: Implement a function to convert Product to json.Json for responses
-fn product_to_json(product: Product) -> json.Json {
-  json.object([
-    #("id", json.string(product.id)),
-    #("name", json.string(product.name)),
-    #("description", json.string(product.description)),
-    #("category", json.string(product.category)),
-    #("price", json.float(product.price)),
-    #("salePrice", case product.sale_price {
-      Some(price) -> json.float(price)
-      None -> json.null()
-    }),
-    #("image", json.string(product.image_url)),
-    #("badge", case product.badge {
-      Some(badge) -> json.string(badge)
-      None -> json.null()
-    }),
-    #(
-      "specs",
-      json.object(
-        list.map(product.specs, fn(spec) {
-          let #(key, value) = spec
-          #(key, json.string(value))
-        }),
-      ),
-    ),
-    // Assumes specs is List(#(String,String))
-  ])
-}
+// fn product_to_json(product: Product) -> json.Json {
+//   json.object([
+//     #("id", json.string(product.id)),
+//     #("name", json.string(product.name)),
+//     #("description", json.string(product.description)),
+//     #("category", json.string(product.category)),
+//     #("price", json.float(product.price)),
+//     #("salePrice", case product.sale_price {
+//       Some(price) -> json.float(price)
+//       None -> json.null()
+//     }),
+//     #("image", json.string(product.image_url)),
+//     #("badge", case product.badge {
+//       Some(badge) -> json.string(badge)
+//       None -> json.null()
+//     }),
+//     #(
+//       "specs",
+//       json.object(
+//         list.map(product.specs, fn(spec) {
+//           let #(key, value) = spec
+//           #(key, json.string(value))
+//         }),
+//       ),
+//     ),
+//     // Assumes specs is List(#(String,String))
+//   ])
+// }
+
 // TODO: Implement decoders for WishlistItem and CartItem if needed for processing DB results
 // directly into these types for internal logic, though often you might just use product details.
 

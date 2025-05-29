@@ -74,71 +74,47 @@ docker-compose up -d
 echo -e "${YELLOW}Waiting for ElectricSQL to start...${NC}"
 sleep 5
 
-# Initialize the database
-echo -e "${GREEN}Initializing database...${NC}"
-cd server && gleam build && gleam run -m db_init
-cd ..
+# Build the Gleam application
+echo -e "${GREEN}Building TandemX application...${NC}"
+gleam build
 
-# Build the client application
-echo -e "${GREEN}Building client application...${NC}"
-cd client && gleam build
+# Change to the server directory and build the server
+echo -e "${GREEN}Building server...${NC}"
+cd ../server
+gleam build
 
-# Bundle the client JavaScript using esbuild
-echo -e "${GREEN}Bundling client JavaScript with esbuild...${NC}"
-# Adjust entry point and outfile as necessary.
-# Entry point is relative to the 'client' directory after 'gleam build'.
-# Output file is also relative to the 'client' directory.
-
-# Ensure output directory exists
-mkdir -p ./dist/js
-
-echo -e "${YELLOW}Current directory before esbuild: $(pwd)${NC}"
-
-# Use bunx to execute esbuild
-bunx esbuild ./build/dev/javascript/tandemx_client/app.mjs --bundle --outfile=./dist/js/bundle.js --format=esm --platform=browser
-ESBUILD_EXIT_CODE=$?
-
-# Check if esbuild command was successful
-if [ $ESBUILD_EXIT_CODE -ne 0 ]; then
-  echo -e "${RED}esbuild failed with exit code $ESBUILD_EXIT_CODE. Aborting.${NC}"
-  exit $ESBUILD_EXIT_CODE
-fi
-
-echo -e "${YELLOW}Checking if bundle exists...${NC}"
-ls -l ./dist/js/bundle.js
-if [ $? -ne 0 ]; then
-  echo -e "${RED}Bundle file ./dist/js/bundle.js NOT found after esbuild step!${NC}"
-  # Optionally list the contents of dist/js to see what *is* there
-  ls -l ./dist/js
-  exit 1
+# Create a simple file to disable database features
+if [ "$SKIP_DB" = true ]; then
+  echo -e "${YELLOW}Creating file to disable database features...${NC}"
+  echo "Database features disabled by run.sh script" > .disable_db
 else
-   echo -e "${GREEN}Bundle file found.${NC}"
+  # Remove the flag file if it exists
+  if [ -f ".disable_db" ]; then
+    rm .disable_db
+  fi
 fi
 
-# Build the server application
-echo -e "${GREEN}Building server application...${NC}"
-cd ../server && gleam build
+# Check if db_init module exists, and run it if database is enabled
+if [ "$SKIP_DB" = false ] && grep -q "db_init" src/*.gleam 2>/dev/null; then
+  echo -e "${YELLOW}Initializing database...${NC}"
+  gleam run -m db_init || echo -e "${YELLOW}Database initialization skipped or failed. Continuing...${NC}"
+fi
 
-# Start the server
-echo -e "${GREEN}Starting the server...${NC}"
-cd server && gleam run &
+# Start the server with appropriate port
+echo -e "${YELLOW}Starting server on port ${SERVER_PORT}...${NC}"
+gleam run -m dev_server -- --port $SERVER_PORT &
+
+# Store the PID of the server process
 SERVER_PID=$!
 
-# Function to handle script termination
-function cleanup {
-  echo -e "${YELLOW}Shutting down services...${NC}"
-  kill $SERVER_PID
-  docker-compose down
-  echo -e "${GREEN}All services stopped.${NC}"
-}
+# Wait a moment to check if the server started successfully
+sleep 2
+if ! kill -0 $SERVER_PID 2>/dev/null; then
+  echo -e "${RED}Server failed to start. Check for errors above.${NC}"
+  exit 1
+fi
 
-# Register the cleanup function for script termination
-trap cleanup EXIT
+echo -e "${GREEN}Server started successfully on port ${SERVER_PORT}${NC}"
 
-# Keep the script running and display information
-echo -e "${GREEN}TandemX is running!${NC}"
-echo -e "Server: http://localhost:8000"
-echo -e "${YELLOW}Press Ctrl+C to stop all services${NC}"
-
-# Wait for user to press Ctrl+C
-wait 
+# Keep the script running until the server is stopped
+wait $SERVER_PID 

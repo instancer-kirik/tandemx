@@ -9,6 +9,195 @@
     <link rel="stylesheet" href="/landing.css">
     <!-- HTMX -->
     <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <!-- Preorder functionality -->
+    <script type="module">
+        import { addPreorderStyles, formatReleaseDate } from '/preorder.js';
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            // Handle hamburger menu toggle
+            document.getElementById('hamburger-button').addEventListener('click', function() {
+                document.body.classList.toggle('hamburger-open');
+            });
+            
+            // Initialize preorder functionality
+            addPreorderStyles();
+            
+            // Get product information from URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const productId = urlParams.get('product') || 'default';
+            const isPreorder = urlParams.get('preorder') === 'true';
+            const releaseDate = urlParams.get('release_date');
+            
+            // Product database (simplified)
+            const products = {
+                'sledge': {
+                    name: 'Sledge Browser',
+                    description: 'A web browser made by developers, for developers, with advanced privacy features and developer tools.',
+                    basePrice: 29.99,
+                    image: '/images/projects/sledge.jpg',
+                    storeId: 'tandemx',
+                    productId: 'prod_01234',
+                    isPreorder: false
+                },
+                'findry': {
+                    name: 'Findry Platform',
+                    description: 'Art and resource discovery platform connecting creative spaces with artists.',
+                    basePrice: 39.99,
+                    image: '/images/projects/findry.jpg',
+                    storeId: 'tandemx',
+                    productId: 'prod_56789',
+                    isPreorder: true,
+                    releaseDate: '2024-06-01'
+                },
+                'clipboard-executive-pro': {
+                    name: 'Executive Pro Clipboard',
+                    description: 'Premium aluminum clipboard with leather finish.',
+                    basePrice: 49.99,
+                    image: '/images/clipboards/executive-pro.jpg',
+                    storeId: 'tandemx',
+                    productId: 'prod_abcde'
+                },
+                'default': {
+                    name: 'TandemX Pro License',
+                    description: 'Complete creative collaboration platform suite.',
+                    basePrice: 99.99,
+                    image: '/images/projects/tandemx.jpg',
+                    storeId: 'tandemx',
+                    productId: 'prod_12345'
+                }
+            };
+            
+            const product = products[productId] || products['sledge'];
+            
+            // Set initial product details
+            document.getElementById('product-name').textContent = product.name;
+            document.getElementById('product-description').textContent = product.description;
+            document.getElementById('product-image').src = product.image;
+            document.getElementById('product-image').onerror = function() {
+                this.src = '/images/clipboards/placeholder.jpg';
+                this.onerror = null;
+            };
+            
+            // License options
+            const licenseOptions = document.querySelectorAll('.license-option');
+            let selectedLicense = document.querySelector('.license-option.selected');
+            let isAnnual = false;
+            
+            // Toggle between monthly and annual billing
+            const billingToggle = document.getElementById('billing-toggle');
+            const monthlyLabel = document.getElementById('monthly-label');
+            const annualLabel = document.getElementById('annual-label');
+            
+            // Update pricing function
+            function updatePricing() {
+                // Get selected plan
+                const plan = selectedLicense.getAttribute('data-plan');
+                let price = parseFloat(selectedLicense.getAttribute(isAnnual ? 'data-annual' : 'data-monthly'));
+                
+                // Update license price display
+                licenseOptions.forEach(option => {
+                    const optionPrice = parseFloat(option.getAttribute(isAnnual ? 'data-annual' : 'data-monthly'));
+                    const monthlyPrice = parseFloat(option.getAttribute('data-monthly'));
+                    
+                    // Update price display
+                    const priceEl = option.querySelector('.license-price');
+                    if (isAnnual) {
+                        priceEl.textContent = `$${optionPrice.toFixed(2)}/year`;
+                    } else {
+                        priceEl.textContent = `$${monthlyPrice.toFixed(2)}/month`;
+                    }
+                });
+                
+                // Update summary
+                document.getElementById('base-price').textContent = `$${price.toFixed(2)}`;
+                
+                // Calculate discount if any
+                let discount = 0;
+                let discountRow = document.getElementById('discount-row');
+                
+                if (isAnnual) {
+                    // 20% off for annual billing
+                    discount = price * 0.2;
+                    discountRow.style.display = 'flex';
+                    document.getElementById('discount-amount').textContent = `-$${discount.toFixed(2)}`;
+                    price = price - discount;
+                } else {
+                    discountRow.style.display = 'none';
+                }
+                
+                // Update total price
+                document.getElementById('product-price').textContent = `$${price.toFixed(2)}`;
+                document.getElementById('total-price').textContent = `$${price.toFixed(2)}`;
+            }
+            
+            // Handle billing toggle
+            billingToggle.addEventListener('change', function() {
+                isAnnual = this.checked;
+                
+                // Update toggle labels
+                if (isAnnual) {
+                    monthlyLabel.classList.remove('active');
+                    annualLabel.classList.add('active');
+                } else {
+                    monthlyLabel.classList.add('active');
+                    annualLabel.classList.remove('active');
+                }
+                
+                updatePricing();
+            });
+            
+            // Handle license option selection
+            licenseOptions.forEach(option => {
+                option.addEventListener('click', function() {
+                    // Remove selected class from all options
+                    licenseOptions.forEach(opt => opt.classList.remove('selected'));
+                    
+                    // Add selected class to clicked option
+                    this.classList.add('selected');
+                    selectedLicense = this;
+                    
+                    updatePricing();
+                });
+            });
+            
+            // Initial price update
+            updatePricing();
+            
+            // Update product display for preorders
+            if (isPreorder && releaseDate) {
+                const productDetails = document.querySelector('.product-details');
+                if (productDetails) {
+                    const preorderNotice = document.createElement('div');
+                    preorderNotice.className = 'preorder-notice';
+                    preorderNotice.innerHTML = `
+                        <h3>Preorder Item</h3>
+                        <p>This item will be available on <span class="release-date">${formatReleaseDate(releaseDate)}</span></p>
+                        <p>Your payment will be processed now, and you'll receive the item when it's released.</p>
+                    `;
+                    productDetails.insertBefore(preorderNotice, productDetails.firstChild);
+                }
+            }
+            
+            // Initialize Lemon Squeezy checkout with preorder support
+            function initLemonSqueezyCheckout() {
+                const selectedVariantId = selectedLicense.getAttribute('data-variant-id');
+                const storeId = product.storeId || 'tandemx';
+                const productId = product.productId;
+                
+                let checkoutUrl = `https://${storeId}.lemonsqueezy.com/checkout/buy/${productId}?variant=${selectedVariantId}`;
+                
+                // Add preorder parameters if applicable
+                if (isPreorder && releaseDate) {
+                    checkoutUrl += `&preorder=true&release_date=${encodeURIComponent(releaseDate)}`;
+                }
+                
+                window.location.href = checkoutUrl;
+            }
+            
+            // Initialize Lemon Squeezy checkout
+            initLemonSqueezyCheckout();
+        });
+    </script>
     <style>
         /* App container structure */
         .app-container {
@@ -359,6 +548,30 @@
         input:checked + .toggle-slider:before {
             transform: translateX(26px);
         }
+        
+        /* Preorder specific styles */
+        .preorder-notice {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+        
+        .preorder-notice h3 {
+            color: #1b1eb4;
+            margin-bottom: 0.5rem;
+        }
+        
+        .preorder-notice p {
+            color: #666;
+            margin: 0;
+        }
+        
+        .release-date {
+            font-weight: bold;
+            color: #1b1eb4;
+        }
     </style>
 </head>
 <body>
@@ -522,179 +735,5 @@
             </div>
         </div>
     </div>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            // Handle hamburger menu toggle
-            document.getElementById('hamburger-button').addEventListener('click', function() {
-                document.body.classList.toggle('hamburger-open');
-            });
-            
-            // Get product information from URL
-            const urlParams = new URLSearchParams(window.location.search);
-            const productId = urlParams.get('product') || 'default';
-            
-            // Product database (simplified)
-            const products = {
-                'sledge': {
-                    name: 'Sledge Browser',
-                    description: 'A web browser made by developers, for developers, with advanced privacy features and developer tools.',
-                    basePrice: 29.99,
-                    image: '/images/projects/sledge.jpg',
-                    storeId: 'tandemx',  // Your Lemon Squeezy store ID
-                    productId: 'prod_01234' // Replace with actual Lemon Squeezy product ID
-                },
-                'findry': {
-                    name: 'Findry Platform',
-                    description: 'Art and resource discovery platform connecting creative spaces with artists.',
-                    basePrice: 39.99,
-                    image: '/images/projects/findry.jpg',
-                    storeId: 'tandemx',
-                    productId: 'prod_56789'
-                },
-                'clipboard-executive-pro': {
-                    name: 'Executive Pro Clipboard',
-                    description: 'Premium aluminum clipboard with leather finish.',
-                    basePrice: 49.99,
-                    image: '/images/clipboards/executive-pro.jpg',
-                    storeId: 'tandemx',
-                    productId: 'prod_abcde'
-                },
-                'default': {
-                    name: 'TandemX Pro License',
-                    description: 'Complete creative collaboration platform suite.',
-                    basePrice: 99.99,
-                    image: '/images/projects/tandemx.jpg',
-                    storeId: 'tandemx',
-                    productId: 'prod_12345'
-                }
-            };
-            
-            // Get the product
-            const product = products[productId] || products.default;
-            
-            // Set initial product details
-            document.getElementById('product-name').textContent = product.name;
-            document.getElementById('product-description').textContent = product.description;
-            document.getElementById('product-image').src = product.image;
-            document.getElementById('product-image').onerror = function() {
-                this.src = '/images/clipboards/placeholder.jpg';
-                this.onerror = null;
-            };
-            
-            // License options
-            const licenseOptions = document.querySelectorAll('.license-option');
-            let selectedLicense = document.querySelector('.license-option.selected');
-            let isAnnual = false;
-            
-            // Toggle between monthly and annual billing
-            const billingToggle = document.getElementById('billing-toggle');
-            const monthlyLabel = document.getElementById('monthly-label');
-            const annualLabel = document.getElementById('annual-label');
-            
-            // Update pricing function
-            function updatePricing() {
-                // Get selected plan
-                const plan = selectedLicense.getAttribute('data-plan');
-                let price = parseFloat(selectedLicense.getAttribute(isAnnual ? 'data-annual' : 'data-monthly'));
-                
-                // Update license price display
-                licenseOptions.forEach(option => {
-                    const optionPrice = parseFloat(option.getAttribute(isAnnual ? 'data-annual' : 'data-monthly'));
-                    const monthlyPrice = parseFloat(option.getAttribute('data-monthly'));
-                    
-                    // Update price display
-                    const priceEl = option.querySelector('.license-price');
-                    if (isAnnual) {
-                        priceEl.textContent = `$${optionPrice.toFixed(2)}/year`;
-                    } else {
-                        priceEl.textContent = `$${monthlyPrice.toFixed(2)}/month`;
-                    }
-                });
-                
-                // Update summary
-                document.getElementById('base-price').textContent = `$${price.toFixed(2)}`;
-                
-                // Calculate discount if any
-                let discount = 0;
-                let discountRow = document.getElementById('discount-row');
-                
-                if (isAnnual) {
-                    // 20% off for annual billing
-                    discount = price * 0.2;
-                    discountRow.style.display = 'flex';
-                    document.getElementById('discount-amount').textContent = `-$${discount.toFixed(2)}`;
-                    price = price - discount;
-                } else {
-                    discountRow.style.display = 'none';
-                }
-                
-                // Update total price
-                document.getElementById('product-price').textContent = `$${price.toFixed(2)}`;
-                document.getElementById('total-price').textContent = `$${price.toFixed(2)}`;
-            }
-            
-            // Initialize Lemon Squeezy checkout 
-            function initLemonSqueezyCheckout() {
-                // Get the variant ID based on license plan and billing period
-                const selectedVariantId = selectedLicense.getAttribute('data-variant-id');
-                
-                // REPLACE WITH YOUR ACTUAL LEMON SQUEEZY STORE AND PRODUCT INFO
-                const storeId = product.storeId || 'tandemx'; // Your Lemon Squeezy store ID
-                const productId = product.productId; // The Lemon Squeezy product ID
-                
-                // Get cart from localStorage
-                const cart = JSON.parse(localStorage.getItem('cart') || '[]');
-                
-                // Open Lemon Squeezy checkout when the button is clicked
-                document.getElementById('checkout-btn').addEventListener('click', function() {
-                    // Construct the checkout URL
-                    const checkoutUrl = `https://${storeId}.lemonsqueezy.com/checkout/buy/${productId}?variant=${selectedVariantId}`;
-                    
-                    // Optional: Clear the cart after redirecting to checkout
-                    // localStorage.setItem('cart', '[]');
-                    
-                    // Redirect to the Lemon Squeezy checkout
-                    window.location.href = checkoutUrl;
-                });
-            }
-            
-            // Handle billing toggle
-            billingToggle.addEventListener('change', function() {
-                isAnnual = this.checked;
-                
-                // Update toggle labels
-                if (isAnnual) {
-                    monthlyLabel.classList.remove('active');
-                    annualLabel.classList.add('active');
-                } else {
-                    monthlyLabel.classList.add('active');
-                    annualLabel.classList.remove('active');
-                }
-                
-                updatePricing();
-            });
-            
-            // Handle license option selection
-            licenseOptions.forEach(option => {
-                option.addEventListener('click', function() {
-                    // Remove selected class from all options
-                    licenseOptions.forEach(opt => opt.classList.remove('selected'));
-                    
-                    // Add selected class to clicked option
-                    this.classList.add('selected');
-                    selectedLicense = this;
-                    
-                    updatePricing();
-                });
-            });
-            
-            // Initial price update
-            updatePricing();
-            
-            // Initialize Lemon Squeezy checkout
-            initLemonSqueezyCheckout();
-        });
-    </script>
 </body>
 </html> 

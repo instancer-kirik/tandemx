@@ -1,4 +1,14 @@
-import { createClient } from '@supabase/supabase-js'
+import {
+  create_client,
+  query_table,
+  select_all,
+  select_columns,
+  insert_row,
+  update_row,
+  delete_row,
+  filter_eq,
+  run_query
+} from '../../supabase/build/dev/javascript/supabase/supabase_ffi.mjs'
 
 // Simplified environment variable detection
 function getSupabaseConfig() {
@@ -25,309 +35,273 @@ function getSupabaseConfig() {
 
 // Initialize the client
 const { url, key } = getSupabaseConfig();
-const supabase = createClient(url, key);
+const client = create_client(url, key);
 console.log('🔌 Supabase client initialized with URL:', url.substring(0, 25) + '...');
 
 export function initDb() {
-  return supabase
+  return client
 }
 
 export function createMeeting(meeting) {
-  return supabase
-    .from('meetings')
-    .insert([meeting])
-    .select()
-    .then(({ data, error }) => {
-      if (error) throw error
-      return data[0]
+  const query = select_all(insert_row(query_table(client, 'meetings'), meeting))
+  
+  return run_query(query)
+    .then(result => {
+      if (result instanceof Error) throw result
+      return result[0]
     })
 }
 
 export function getMeeting(id) {
-  return supabase
-    .from('meetings')
-    .select('*')
-    .eq('id', id)
-    .single()
-    .then(({ data, error }) => {
-      if (error) throw error
-      return data
+  const query = filter_eq(select_all(query_table(client, 'meetings')), 'id', id)
+  
+  return run_query(query)
+    .then(result => {
+      if (result instanceof Error) throw result
+      return result[0]
     })
 }
 
 export function listMeetings() {
-  return supabase
-    .from('meetings')
-    .select('*')
-    .order('date', { ascending: true })
-    .then(({ data, error }) => {
-      if (error) throw error
-      return data
+  const query = select_all(query_table(client, 'meetings'))
+  
+  return run_query(query)
+    .then(result => {
+      if (result instanceof Error) throw result
+      return result
     })
 }
 
 export function updateMeeting(id, updates) {
-  return supabase
-    .from('meetings')
-    .update(updates)
-    .eq('id', id)
-    .select()
-    .then(({ data, error }) => {
-      if (error) throw error
-      return data[0]
+  const query = select_all(filter_eq(update_row(query_table(client, 'meetings'), updates), 'id', id))
+  
+  return run_query(query)
+    .then(result => {
+      if (result instanceof Error) throw result
+      return result[0]
     })
 }
 
 export function deleteMeeting(id) {
-  return supabase
-    .from('meetings')
-    .delete()
-    .eq('id', id)
-    .then(({ error }) => {
-      if (error) throw error
+  const query = filter_eq(delete_row(query_table(client, 'meetings')), 'id', id)
+  
+  return run_query(query)
+    .then(result => {
+      if (result instanceof Error) throw result
       return true
     })
 }
 
 // Contact management
 export function createContact(contact) {
-  return supabase
-    .from('contacts')
-    .insert([contact])
-    .select()
-    .then(({ data, error }) => {
-      if (error) throw error
-      return data[0]
+  const query = select_all(insert_row(query_table(client, 'contacts'), contact))
+  
+  return run_query(query)
+    .then(result => {
+      if (result instanceof Error) throw result
+      return result[0]
     })
 }
 
 export function getContact(id) {
-  return supabase
-    .from('contacts')
-    .select('*')
-    .eq('id', id)
-    .single()
-    .then(({ data, error }) => {
-      if (error) throw error
-      return data
+  const query = filter_eq(select_all(query_table(client, 'contacts')), 'id', id)
+  
+  return run_query(query)
+    .then(result => {
+      if (result instanceof Error) throw result
+      return result[0]
     })
 }
 
 export function listContacts() {
-  return supabase
-    .from('contacts')
-    .select('*')
-    .order('full_name', { ascending: true })
-    .then(({ data, error }) => {
-      if (error) throw error
-      return data
+  const query = select_all(query_table(client, 'contacts'))
+  
+  return run_query(query)
+    .then(result => {
+      if (result instanceof Error) throw result
+      return result
     })
 }
 
 // Calendar operations
 export function createCalendarEvent(event) {
-  return supabase
-    .from('calendar_events')
-    .insert([event])
-    .select()
-    .then(({ data, error }) => {
-      if (error) throw error
-      return data[0]
+  const query = select_all(insert_row(query_table(client, 'calendar_events'), event))
+  
+  return run_query(query)
+    .then(result => {
+      if (result instanceof Error) throw result
+      return result[0]
     })
 }
 
 export function getCalendarEvent(id) {
-  return supabase
-    .from('calendar_events')
-    .select('*')
-    .eq('id', id)
-    .single()
-    .then(({ data, error }) => {
-      if (error) throw error
-      return data
+  const query = filter_eq(select_all(query_table(client, 'calendar_events')), 'id', id)
+  
+  return run_query(query)
+    .then(result => {
+      if (result instanceof Error) throw result
+      return result[0]
     })
 }
 
 export function listCalendarEvents(startDate, endDate) {
-  let query = supabase
-    .from('calendar_events')
-    .select('*')
+  let query = select_all(query_table(client, 'calendar_events'))
     
   if (startDate) {
-    query = query.gte('start_timestamp', startDate)
+    query = filter_eq(query, 'start_timestamp', startDate)
   }
   if (endDate) {
-    query = query.lte('end_timestamp', endDate)
+    query = filter_eq(query, 'end_timestamp', endDate)
   }
   
-  return query
-    .order('start_timestamp', { ascending: true })
-    .then(({ data, error }) => {
-      if (error) throw error
-      return data
+  return run_query(query)
+    .then(result => {
+      if (result instanceof Error) throw result
+      return result
     })
 }
 
 // Blog post operations
 export function createBlogPost(post) {
-  return supabase
-    .from('posts')
-    .insert([post])
-    .select()
-    .then(({ data, error }) => {
-      if (error) throw error
-      return data[0]
+  const query = select_all(insert_row(query_table(client, 'posts'), post))
+  
+  return run_query(query)
+    .then(result => {
+      if (result instanceof Error) throw result
+      return result[0]
     })
 }
 
 export function getBlogPost(id) {
-  return supabase
-    .from('posts')
-    .select('*')
-    .eq('id', id)
-    .single()
-    .then(({ data, error }) => {
-      if (error) throw error
-      return data
+  const query = filter_eq(select_all(query_table(client, 'posts')), 'id', id)
+  
+  return run_query(query)
+    .then(result => {
+      if (result instanceof Error) throw result
+      return result[0]
     })
 }
 
 export function listBlogPosts(options = {}) {
-  let query = supabase
-    .from('posts')
-    .select('*')
+  let query = select_all(query_table(client, 'posts'))
   
   // Filter by published status if specified
   if (options.published !== undefined) {
-    query = query.eq('published', options.published)
+    query = filter_eq(query, 'published', options.published.toString())
   }
   
-  // Filter by category if specified
-  if (options.category) {
-    query = query.eq('category', options.category)
-  }
-  
-  // Apply limit if specified
-  if (options.limit) {
-    query = query.limit(options.limit)
-  }
-  
-  return query
-    .order('date', { ascending: false })
-    .then(({ data, error }) => {
-      if (error) throw error
-      return data
+  return run_query(query)
+    .then(result => {
+      if (result instanceof Error) throw result
+      return result
     })
 }
 
 export function updateBlogPost(id, updates) {
-  return supabase
-    .from('posts')
-    .update(updates)
-    .eq('id', id)
-    .select()
-    .then(({ data, error }) => {
-      if (error) throw error
-      return data[0]
+  const query = select_all(filter_eq(update_row(query_table(client, 'posts'), updates), 'id', id))
+  
+  return run_query(query)
+    .then(result => {
+      if (result instanceof Error) throw result
+      return result[0]
     })
 }
 
 export function deleteBlogPost(id) {
-  return supabase
-    .from('posts')
-    .delete()
-    .eq('id', id)
-    .then(({ error }) => {
-      if (error) throw error
+  const query = filter_eq(delete_row(query_table(client, 'posts')), 'id', id)
+  
+  return run_query(query)
+    .then(result => {
+      if (result instanceof Error) throw result
       return true
     })
 }
 
 // Calendar system operations
 export function getCalendarEpochs(calendarSystem) {
-  let query = supabase
-    .from('calendar_epoch_correlations')
-    .select('*')
+  let query = select_all(query_table(client, 'calendar_epoch_correlations'))
   
   if (calendarSystem) {
-    query = query.eq('calendar_system', calendarSystem)
+    query = filter_eq(query, 'calendar_system', calendarSystem)
   }
   
-  return query.then(({ data, error }) => {
-    if (error) throw error
-    return data
-  })
+  return run_query(query)
+    .then(result => {
+      if (result instanceof Error) throw result
+      return result
+    })
 }
 
 export function convertCalendarDate(params) {
   // Using the RPC function defined in the SQL
-  return supabase
-    .rpc('convert_calendar_date', {
+  const query = insert_row(
+    query_table(client, 'rpc/convert_calendar_date'),
+    {
       source_calendar: params.sourceCalendar,
       source_variant: params.sourceVariant,
       source_components: params.sourceComponents,
       target_calendar: params.targetCalendar,
       target_variant: params.targetVariant
-    })
-    .then(({ data, error }) => {
-      if (error) throw error
-      return data
+    }
+  )
+  
+  return run_query(query)
+    .then(result => {
+      if (result instanceof Error) throw result
+      return result
     })
 }
 
 // Calendar special days
 export function getCalendarSpecialDays(calendarSystem) {
-  let query = supabase
-    .from('calendar_special_days')
-    .select('*')
+  let query = select_all(query_table(client, 'calendar_special_days'))
   
   if (calendarSystem) {
-    query = query.eq('calendar_system', calendarSystem)
+    query = filter_eq(query, 'calendar_system', calendarSystem)
   }
   
-  return query.then(({ data, error }) => {
-    if (error) throw error
-    return data
-  })
+  return run_query(query)
+    .then(result => {
+      if (result instanceof Error) throw result
+      return result
+    })
 }
 
 // Planet models
 export function getPlanetModels() {
-  return supabase
-    .from('planet_models')
-    .select('*')
-    .then(({ data, error }) => {
-      if (error) throw error
-      return data
+  const query = select_all(query_table(client, 'planet_models'))
+  
+  return run_query(query)
+    .then(result => {
+      if (result instanceof Error) throw result
+      return result
     })
 }
 
 export function getPlanetModel(name) {
-  return supabase
-    .from('planet_models')
-    .select(`
-      *,
-      planet_textures (*),
-      planet_atmospheres (*),
-      planet_rings (*),
-      planet_effects (*)
-    `)
-    .eq('planet_name', name)
-    .single()
-    .then(({ data, error }) => {
-      if (error) throw error
-      return data
+  const query = filter_eq(
+    select_columns(
+      query_table(client, 'planet_models'),
+      '*,planet_textures(*),planet_atmospheres(*),planet_rings(*),planet_effects(*)'
+    ),
+    'planet_name',
+    name
+  )
+  
+  return run_query(query)
+    .then(result => {
+      if (result instanceof Error) throw result
+      return result[0]
     })
 }
 
 // Interest submissions
 export function createInterestSubmission(submission) {
-  return supabase
-    .from('interest_submissions')
-    .insert([submission])
-    .select()
-    .then(({ data, error }) => {
-      if (error) throw error
-      return data[0]
+  const query = select_all(insert_row(query_table(client, 'interest_submissions'), submission))
+  
+  return run_query(query)
+    .then(result => {
+      if (result instanceof Error) throw result
+      return result[0]
     })
 } 

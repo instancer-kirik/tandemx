@@ -1,5 +1,7 @@
 import argv
-import chartspace_server
+
+// TODO: Implement chartspace_server module
+// import chartspace_server
 import gleam/bytes_tree
 import gleam/dynamic
 import gleam/dynamic/decode
@@ -58,24 +60,45 @@ pub type InterestSubmission {
 }
 
 fn try_serve_static_file(path: String) -> Result(Response(ResponseData), Nil) {
-  // TEMPORARY DEBUG: Only check dist directory for JS files
-  let paths = case string.ends_with(path, ".js") {
-    True -> [string.concat(["../client/dist/", path])]
-    False -> [
-      // Keep original paths for non-JS files
-      string.concat(["../client/dist/", path]),
-      // Check dist first
+  // Check if this is a compiled file (in build directory)
+  let is_compiled = string.contains(path, "build/dev/javascript/")
+
+  let paths = case is_compiled {
+    True -> [
+      // For compiled files, look in build directory first
       string.concat(["../client/", path]),
-      string.concat(["../client/src/", path]),
-      string.concat(["../client/build/", path]),
-      string.concat(["../client/build/dev/", path]),
-      string.concat(["../client/build/dev/javascript/", path]),
       string.concat(["../client/build/dev/javascript/tandemx_client/", path]),
-      string.concat(["../client/build/dev/javascript/gleam_stdlib/gleam/", path]),
-      string.concat(["../client/build/dev/javascript/lustre/", path]),
-      string.concat(["../client/build/dev/javascript/lustre/lustre/", path]),
-      string.concat(["../client/node_modules/", path]),
+      string.concat(["../client/dist/", path]),
+      string.concat(["../client/public/", path]),
     ]
+    False ->
+      case string.ends_with(path, ".js") {
+        True -> [
+          // For FFI files, look in src first
+          string.concat(["../client/src/", path]),
+          string.concat(["../client/dist/", path]),
+          string.concat(["../client/build/dev/javascript/tandemx_client/", path]),
+          string.concat(["../client/public/", path]),
+        ]
+        False -> [
+          // For other files (CSS, etc), look in src first
+          string.concat(["../client/src/", path]),
+          string.concat(["../client/dist/", path]),
+          string.concat(["../client/public/", path]),
+          string.concat(["../client/", path]),
+          string.concat(["../client/build/", path]),
+          string.concat(["../client/build/dev/", path]),
+          string.concat(["../client/build/dev/javascript/", path]),
+          string.concat(["../client/build/dev/javascript/tandemx_client/", path]),
+          string.concat([
+            "../client/build/dev/javascript/gleam_stdlib/gleam/",
+            path,
+          ]),
+          string.concat(["../client/build/dev/javascript/lustre/", path]),
+          string.concat(["../client/build/dev/javascript/lustre/lustre/", path]),
+          string.concat(["../client/node_modules/", path]),
+        ]
+      }
   }
 
   io.println("\nTrying to serve: " <> path)
@@ -205,33 +228,34 @@ pub fn main() {
   let _cart_actor = CartActor(state: cart_state, connections: [])
 
   // Initialize chartspace (with DB errors flag)
-  let chartspace_state = chartspace_server.init()
-  let _chartspace_actor = case chartspace_server.start() {
-    Ok(actor) -> actor
-    Error(error) -> {
-      // Only abort if we're not ignoring DB errors
-      case ignore_db_errors {
-        True -> {
-          io.println(
-            "WARNING: Chartspace actor failed to start, but continuing anyway",
-          )
-          io.println("Error was: " <> string.inspect(error))
-          // Create an empty subject with the correct type
-          process.new_subject()
-        }
-        False -> {
-          io.println(
-            "ERROR: Chartspace actor failed to start: " <> string.inspect(error),
-          )
-          // Still need to return a subject even if we'll exit shortly
-          let _subject = process.new_subject()
-          process.sleep(100)
-          // Give logger time to print
-          panic as "Server cannot start without chartspace actor"
-        }
-      }
-    }
-  }
+  // TODO: Implement chartspace_server module
+  // let chartspace_state = chartspace_server.init()
+  // let _chartspace_actor = case chartspace_server.start() {
+  //   Ok(actor) -> actor
+  //   Error(error) -> {
+  //     // Only abort if we're not ignoring DB errors
+  //     case ignore_db_errors {
+  //       True -> {
+  //         io.println(
+  //           "WARNING: Chartspace actor failed to start, but continuing anyway",
+  //         )
+  //         io.println("Error was: " <> string.inspect(error))
+  //         // Create an empty subject with the correct type
+  //         process.new_subject()
+  //       }
+  //       False -> {
+  //         io.println(
+  //           "ERROR: Chartspace actor failed to start: " <> string.inspect(error),
+  //         )
+  //         // Still need to return a subject even if we'll exit shortly
+  //         let _subject = process.new_subject()
+  //         process.sleep(100)
+  //         // Give logger time to print
+  //         panic as "Server cannot start without chartspace actor"
+  //       }
+  //     }
+  //   }
+  // }
 
   let handler = fn(req: Request(Connection)) {
     case request.path_segments(req) {
@@ -256,17 +280,19 @@ pub fn main() {
       }
 
       ["ws", "chartspace"] -> {
-        let selector = process.new_selector()
-        websocket(
-          request: req,
-          on_init: fn(_conn) { #(chartspace_state, Some(selector)) },
-          on_close: fn(_state) { io.println("Chartspace WebSocket closed") },
-          handler: fn(state, conn, msg) {
-            let #(new_state, _) =
-              chartspace_server.handle_message(state, conn, msg, [])
-            actor.continue(new_state)
-          },
-        )
+        // TODO: Implement chartspace_server module
+        // let selector = process.new_selector()
+        // websocket(
+        //   request: req,
+        //   on_init: fn(_conn) { #(chartspace_state, Some(selector)) },
+        //   on_close: fn(_state) { io.println("Chartspace WebSocket closed") },
+        //   handler: fn(state, conn, msg) {
+        //     let #(new_state, _) =
+        //       chartspace_server.handle_message(state, conn, msg, [])
+        //     actor.continue(new_state)
+        //   },
+        // )
+        serve_404()
       }
 
       // --- API Routes --- 
@@ -664,23 +690,23 @@ fn handle_interest_form(project_name: String) -> Response(ResponseData) {
   )
 }
 
-// Define the decoder logic for InterestSubmission
-fn interest_submission_decoder() -> decode.Decoder(InterestSubmission) {
-  {
-    use project <- decode.field("project", decode.string)
-    use email <- decode.field("email", decode.string)
-    use name <- decode.field("name", decode.string)
-    use company <- decode.field("company", decode.string)
-    use message <- decode.field("message", decode.string)
-    decode.success(InterestSubmission(project, email, name, company, message))
-  }
-}
+// // Define the decoder logic for InterestSubmission
+// fn interest_submission_decoder() -> decode.Decoder(InterestSubmission) {
+//   {
+//     use project <- decode.field("project", decode.string)
+//     use email <- decode.field("email", decode.string)
+//     use name <- decode.field("name", decode.string)
+//     use company <- decode.field("company", decode.string)
+//     use message <- decode.field("message", decode.string)
+//     decode.success(InterestSubmission(project, email, name, company, message))
+//   }
+// }
 
-fn decode_interest_submission(
-  data: dynamic.Dynamic,
-) -> Result(InterestSubmission, List(decode.DecodeError)) {
-  decode.run(data, interest_submission_decoder())
-}
+// fn decode_interest_submission(
+//   data: dynamic.Dynamic,
+// ) -> Result(InterestSubmission, List(decode.DecodeError)) {
+//   decode.run(data, interest_submission_decoder())
+// }
 
 fn bad_request(message: String) -> Response(ResponseData) {
   let error_json = json.object([#("error", json.string(message))])

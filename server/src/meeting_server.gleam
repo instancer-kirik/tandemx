@@ -1,15 +1,13 @@
 import email_service.{type EmailNotification}
-import gleam/bool
 import gleam/bytes_tree
 import gleam/dynamic
 import gleam/dynamic/decode
 import gleam/http/response.{type Response}
 import gleam/int
-import gleam/io
 import gleam/json
 import gleam/list
 import gleam/option.{type Option, None, Some}
-import gleam/result
+
 import gleam/string
 import mist.{type ResponseData, Bytes}
 
@@ -126,78 +124,6 @@ pub fn create_error_response(
   )
 }
 
-/// Create an email notification for a meeting
-fn create_meeting_notification(
-  meeting: Meeting,
-  recipient: String,
-) -> EmailNotification {
-  let location_info = case meeting.location_type {
-    Some(Virtual) ->
-      "Virtual meeting link: "
-      <> option.unwrap(meeting.virtual_meeting_link, "Not specified")
-    Some(Physical) -> "Location: Physical (Address to be confirmed)"
-    None -> "Location: To be determined"
-  }
-
-  let body =
-    string.concat([
-      "You have been invited to a meeting:\n\n",
-      "Title: ",
-      meeting.title,
-      "\n",
-      "Description: ",
-      meeting.description,
-      "\n",
-      "Date: ",
-      meeting.date,
-      "\n",
-      "Time: ",
-      meeting.start_time,
-      " (",
-      meeting.timezone,
-      ")\n",
-      "Duration: ",
-      int.to_string(meeting.duration_minutes),
-      " minutes\n\n",
-      location_info,
-      "\n\n",
-      "This meeting was scheduled using TandemX Calendar.",
-    ])
-
-  email_service.EmailNotification(
-    to: recipient,
-    subject: "Meeting Invitation: " <> meeting.title,
-    body: body,
-    from: "instance.select@gmail.com",
-  )
-}
-
-/// Send an email notification
-fn send_email(notification: EmailNotification) -> Nil {
-  io.println("\nSending email notification:")
-  io.println("From: " <> notification.from)
-  io.println("To: " <> notification.to)
-  io.println("Subject: " <> notification.subject)
-  io.println("Body:\n" <> notification.body)
-  io.println("---")
-}
-
-/// Generate a Google Meet link
-fn generate_meeting_link(service: String) -> String {
-  case service {
-    "google" -> {
-      let random_suffix = generate_random_string(10)
-      "https://meet.google.com/" <> random_suffix
-    }
-    _ -> "https://meet.google.com/" <> generate_random_string(10)
-  }
-}
-
-/// Generate a random string for meeting IDs
-fn generate_random_string(length: Int) -> String {
-  "abc" <> int.to_string(length) <> "xyz123"
-}
-
 // Helper function to format decode errors
 fn format_decode_errors(errors: List(decode.DecodeError)) -> String {
   errors
@@ -267,10 +193,6 @@ pub fn decode_meeting(
 ) -> Result(Meeting, List(decode.DecodeError)) {
   decode.run(data, meeting_field_decoder())
 }
-
-// FFI for sending email (placeholder)
-@external(erlang, "io", "format")
-fn io_format(format: String, args: List(String)) -> Nil
 
 // Placeholder function for sending an email
 fn send_email_ffi_placeholder(

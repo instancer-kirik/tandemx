@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Access Content - TandemX</title>
+  <title>Access Content</title>
   <!-- Basic Styles -->
   <link rel="stylesheet" href="/styles.css">
   <link rel="stylesheet" href="/landing.css">
@@ -30,18 +30,6 @@
   <div id="app"></div>
 
   <!-- Load and run the Lustre application -->
-  <script type="module">
-    // Ensure Lustre runtime is available if not bundled
-    // import * as lustre from "/path/to/lustre/runtime.mjs"; 
-    // Adjust path if needed, or if Lustre is globally available
-
-    // Import the main function from the compiled Gleam module
-    // The path might differ based on your build setup
-    // Use an absolute path from the web root
-    import { main } from "/build/dev/javascript/tandemx_client/access_content.mjs"; 
-    
-    // Run the Lustre app
-    main();
-  </script>
+  <script type="module" src="access_content_ffi.js"></script>
 </body>
 </html> 

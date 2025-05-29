@@ -1,8 +1,14 @@
 // FFI functions for access_content.gleam
-import { createClient } from '@supabase/supabase-js'; // Import createClient
+import * as supabase from '../../supabase/build/dev/javascript/supabase/supabase_ffi.mjs';
+import {
+  create_client,
+  query_table,
+  select_all,
+  insert_row,
+  run_query
+} from '../../supabase/build/dev/javascript/supabase/supabase_ffi.mjs'
 
 // Global Supabase client instance (initialized by init_supabase)
-// This will now be the actual client instance, and we will export it.
 let supabaseClient = null;
 
 // Global Tiptap editor instance
@@ -33,13 +39,13 @@ export async function fetch_config() {
 // Initializes the Supabase client library
 export function init_supabase(url, key) {
     try {
-        // Use the imported createClient
-        supabaseClient = createClient(url, key);
-        if (supabaseClient) {
+        // Create the Gleam Supabase client
+        const client = supabase.create_client(url, key);
+        if (client) {
+            supabaseClient = client;
             console.log("Supabase client initialized and exported.");
             return { Ok: null };
         } else {
-            // This case should ideally not be hit if createClient succeeds
             console.error('Failed to create Supabase client.');
             return { Error: "Failed to create Supabase client." };
         }
@@ -49,9 +55,7 @@ export function init_supabase(url, key) {
     }
 }
 
-// Export the initialized client for other modules to use.
-// Other FFI modules can import { supabase } from './access_content_ffi.js';
-// Note: I am exporting it as 'supabase' to match the import in projects_ffi.js
+// Export the initialized client for other modules to use
 export { supabaseClient as supabase };
 
 // Initializes the Tiptap editor
@@ -413,4 +417,40 @@ export function get_current_iso_date() {
         console.error("Error getting current date:", error);
         return { Error: error.message || "Failed to get current date" };
     }
+}
+
+// Initialize the client
+const url = 'https://xlmibzeenudmkqgiyaif.supabase.co'
+const key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhsbWliemVlbnVkbWtxZ2l5YWlmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDMzODAxNzMsImV4cCI6MjA1ODk1NjE3M30.Yn9AIaqkstjgz1coNJGB-o66L7wiJZZvCXfqyM6Wavs'
+const client = create_client(url, key)
+
+export function checkAccess(userId, contentId) {
+  const query = select_all(
+    query_table(client, 'content_access')
+  )
+  
+  return run_query(query)
+    .then(result => {
+      if (result instanceof Error) throw result
+      return result
+    })
+}
+
+export function grantAccess(userId, contentId) {
+  const query = select_all(
+    insert_row(
+      query_table(client, 'content_access'),
+      {
+        user_id: userId,
+        content_id: contentId,
+        granted_at: new Date().toISOString()
+      }
+    )
+  )
+  
+  return run_query(query)
+    .then(result => {
+      if (result instanceof Error) throw result
+      return result[0]
+    })
 } 

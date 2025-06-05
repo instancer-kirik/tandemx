@@ -1,0 +1,6 @@
+{product_name}
+Price: ${price:.2f}
+SKU: {sku}
+Barcode: {barcode}
+Dept: {department}
+Qty: {quantity}

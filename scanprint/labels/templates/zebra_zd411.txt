@@ -1,0 +1,6 @@
+ZEBRA ZD411 LABEL
+{product_name}
+Price: ${price:.2f}
+SKU: {sku}
+UPC: {barcode}
+{department}

@@ -221,7 +221,6 @@ pub fn meeting_to_json(meeting: Meeting) -> Dynamic {
     #("duration_minutes", json.int(meeting.duration_minutes)),
     #("timezone", json.string(meeting.timezone)),
   ])
-  |> json.to_string
   |> dynamic.from
 }
 
@@ -262,7 +261,6 @@ pub fn contact_to_json(contact: Contact) -> Dynamic {
     #("contact_type", json.string(contact.contact_type)),
     #("notes", json.string(contact.notes)),
   ])
-  |> json.to_string
   |> dynamic.from
 }
 
@@ -304,7 +302,6 @@ pub fn calendar_event_to_json(event: CalendarEvent) -> Dynamic {
     #("calendar_system", json.string(event.calendar_system)),
     #("category", json.string(event.category)),
   ])
-  |> json.to_string
   |> dynamic.from
 }
 
@@ -352,7 +349,6 @@ pub fn blog_post_to_json(post: BlogPost) -> Dynamic {
     }),
     #("published", json.bool(post.published)),
   ])
-  |> json.to_string
   |> dynamic.from
 }
 
@@ -397,7 +393,6 @@ pub fn interest_submission_to_json(submission: InterestSubmission) -> Dynamic {
     }),
     #("message", json.string(submission.message)),
   ])
-  |> json.to_string
   |> dynamic.from
 }
 
@@ -469,8 +464,10 @@ pub fn calendar_variant_to_string(variant: CalendarVariant) -> String {
 
 // Calendar conversion helper - directly take a pre-built params object
 pub fn convert_calendar_date_with_json(params_json: String) -> Dynamic {
-  dynamic.from(params_json)
-  |> convert_calendar_date
+  case json.parse(from: params_json, using: decode.dynamic) {
+    Ok(dynamic_value) -> convert_calendar_date(dynamic_value)
+    Error(_) -> dynamic.array([])
+  }
 }
 
 // Helper function to construct a simple conversion params object

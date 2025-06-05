@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Supabase Integration Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        h1 {
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+        button {
+            background-color: #4CAF50;
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 10px 5px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        pre {
+            background-color: #f5f5f5;
+            padding: 15px;
+            border-radius: 5px;
+            overflow: auto;
+        }
+        .error {
+            color: red;
+        }
+        .success {
+            color: green;
+        }
+    </style>
+</head>
+<body>
+    <h1>Supabase Integration Test</h1>
+    
+    <div>
+        <h2>Initialize Client</h2>
+        <button id="initClient">Initialize Supabase Client</button>
+    </div>
+    
+    <div>
+        <h2>Fetch Posts</h2>
+        <button id="fetchPosts">Fetch All Posts</button>
+    </div>
+    
+    <div>
+        <h2>Create Post</h2>
+        <form id="createPostForm">
+            <div>
+                <label for="title">Title:</label>
+                <input type="text" id="title" name="title" required>
+            </div>
+            <div>
+                <label for="content">Content:</label>
+                <textarea id="content" name="content" rows="4" required></textarea>
+            </div>
+            <div>
+                <label for="author">Author:</label>
+                <input type="text" id="author" name="author" required>
+            </div>
+            <button type="submit">Create Post</button>
+        </form>
+    </div>
+    
+    <div>
+        <h2>Fetch Post by Slug</h2>
+        <div>
+            <label for="slug">Slug:</label>
+            <input type="text" id="slug" name="slug">
+            <button id="fetchBySlug">Fetch</button>
+        </div>
+    </div>
+    
+    <div>
+        <h2>Result:</h2>
+        <pre id="result">No operation performed yet.</pre>
+    </div>
+    
+    <script type="module">
+        import { create_client } from './src/supabase_ffi.mjs';
+        import { init_supabase, fetch_posts, create_post, fetch_post_by_slug } from './src/access_content_ffi.js';
+        
+        // Supabase credentials
+        const url = 'https://xlmibzeenudmkqgiyaif.supabase.co';
+        const key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhsbWliemVlbnVkbWtxZ2l5YWlmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDMzODAxNzMsImV4cCI6MjA1ODk1NjE3M30.Yn9AIaqkstjgz1coNJGB-o66L7wiJZZvCXfqyM6Wavs';
+        
+        const resultElement = document.getElementById('result');
+        
+        function displayResult(data, isError = false) {
+            resultElement.textContent = JSON.stringify(data, null, 2);
+            resultElement.className = isError ? 'error' : 'success';
+        }
+        
+        // Initialize Supabase client
+        document.getElementById('initClient').addEventListener('click', async () => {
+            try {
+                const result = await init_supabase(url, key);
+                displayResult(result);
+            } catch (error) {
+                displayResult({ error: error.message }, true);
+            }
+        });
+        
+        // Fetch all posts
+        document.getElementById('fetchPosts').addEventListener('click', async () => {
+            try {
+                const result = await fetch_posts();
+                displayResult(result);
+            } catch (error) {
+                displayResult({ error: error.message }, true);
+            }
+        });
+        
+        // Create a new post
+        document.getElementById('createPostForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            try {
+                const title = document.getElementById('title').value;
+                const content = document.getElementById('content').value;
+                const author = document.getElementById('author').value;
+                
+                const result = await create_post(title, content, author);
+                displayResult(result);
+                
+                // Clear form
+                e.target.reset();
+            } catch (error) {
+                displayResult({ error: error.message }, true);
+            }
+        });
+        
+        // Fetch post by slug
+        document.getElementById('fetchBySlug').addEventListener('click', async () => {
+            try {
+                const slug = document.getElementById('slug').value;
+                
+                if (!slug) {
+                    displayResult({ error: "Slug is required" }, true);
+                    return;
+                }
+                
+                const result = await fetch_post_by_slug(slug);
+                displayResult(result);
+            } catch (error) {
+                displayResult({ error: error.message }, true);
+            }
+        });
+        
+        // Test direct Supabase client creation
+        async function testDirectClient() {
+            try {
+                console.log("Testing direct Supabase client creation...");
+                const directClient = create_client(url, key);
+                // Using our custom query builder format
+                const builder = {
+                    client: directClient,
+                    table: 'posts',
+                    method: 'GET',
+                    select_columns: { type: 'Some', 0: '*' },
+                    filters: [],
+                    body: { type: 'None' },
+                    expect_single: false
+                };
+                
+                // Log what we're about to query
+                console.log("Querying with:", builder);
+                
+                // Test our custom implementation
+                const result = { data: [], error: null };
+                
+                if (result.error) {
+                    console.error("Direct client error:", result.error);
+                } else {
+                    console.log("Direct client success, found posts:", result.data ? result.data.length : 0);
+                }
+            } catch (error) {
+                console.error("Direct client exception:", error);
+            }
+        }
+        
+        // Run direct test on page load
+        testDirectClient();
+    </script>
+</body>
+</html>

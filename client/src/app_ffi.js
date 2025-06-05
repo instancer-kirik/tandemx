@@ -58,26 +58,55 @@ export function getCurrentUser() {
   // In a real app, you'd interact with Supabase Auth here
   // For now, simulate no user or a specific user
   console.log("FFI: getCurrentUser called (simulating)");
-  // return { type: 'Ok', 0: { type: 'None' } }; // Simulate no user
-  // return { type: 'Ok', 0: { type: 'Some', 0: { id: 'user-123', email: { type: 'Some', 0: 'test@example.com' } } } }; // Simulate logged-in user
-  // Simulate admin user for testing features
-  return { type: 'Ok', 0: { type: 'Some', 0: { id: 'admin-user-777', email: { type: 'Some', 0: 'admin@example.com' } } } }; 
+  
+  // Create a proper Result object with the format Gleam expects
+  const adminUser = {
+    id: 'admin-user-777',
+    email: 'admin@example.com'
+  };
+  
+  // Create an Option type with isSome/isNone functions
+  const someUser = {
+    isSome: function() { return true; },
+    isNone: function() { return false; },
+    value: adminUser
+  };
+  
+  // Return a proper Result object with isOk/isError functions
+  // that Gleam can use with pattern matching
+  return {
+    isOk: function() { return true; },
+    isError: function() { return false; },
+    value: someUser,
+    error: null
+  };
 }
 
 export function signInWithGitHub() {
   console.log("FFI: signInWithGitHub called (simulating)");
   // In a real app, call Supabase signInWithOAuth({ provider: 'github' })
   // This would redirect. For simulation, we just return Ok.
-  // Or simulate an error:
-  // return { type: 'Error', 0: 'Simulated GitHub sign-in error' };
-  return { type: 'Ok', 0: null }; 
+  
+  // Return a proper Result object with isOk/isError functions
+  return {
+    isOk: function() { return true; },
+    isError: function() { return false; },
+    value: null,
+    error: null
+  };
 }
 
 export function signOutUser() {
   console.log("FFI: signOutUser called (simulating)");
   // In a real app, call Supabase auth.signOut()
-  // return { type: 'Error', 0: 'Simulated sign-out error' };
-  return { type: 'Ok', 0: null };
+  
+  // Return a proper Result object with isOk/isError functions
+  return {
+    isOk: function() { return true; },
+    isError: function() { return false; },
+    value: null,
+    error: null
+  };
 }
 
 // FFI function to get the current browser path

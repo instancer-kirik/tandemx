@@ -4,12 +4,13 @@ target = "javascript"
 
 [dependencies]
 gleam_stdlib = ">= 0.60.0"
-lustre = { path = "./lustre"}
+lustre = "5.1.0"
 gleam_http = "~> 4.0.0"
 mist = "~> 4.0.7"
 simplifile = "~> 2.2.1"
-gleam_json = "3.0.0"
+gleam_json = "3.0.1"
 gleam_erlang = ">= 0.34.0"
+supabase = { path = "./supabase" }
 
 [dev-dependencies]
 gleeunit = ">= 1.0.0"

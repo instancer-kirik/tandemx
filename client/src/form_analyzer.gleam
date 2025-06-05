@@ -25,7 +25,7 @@ pub fn main() {
     }
     Error(_error) -> {
       // Return a tuple with null values to match expected type
-      dynamic.from(#(Nil, fn() { Nil }))
+      dynamic.properties([#(dynamic.nil(), dynamic.from(fn() { Nil }))])
     }
   }
 }

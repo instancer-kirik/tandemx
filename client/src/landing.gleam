@@ -22,6 +22,8 @@ fn join_strings(strings: List(String), separator: String) -> String {
 pub type Msg {
   RequestNavigation(String)
   ToggleCategory(String)
+  NavigateToShop
+  GetCustomQuote
 }
 
 pub type Model {
@@ -35,6 +37,12 @@ pub fn init(_) -> #(Model, Effect(Msg)) {
 pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
   case msg {
     RequestNavigation(_path) -> {
+      #(model, effect.none())
+    }
+    NavigateToShop -> {
+      #(model, effect.none())
+    }
+    GetCustomQuote -> {
       #(model, effect.none())
     }
     ToggleCategory(category) -> {
@@ -576,11 +584,61 @@ fn view_about_section() -> Element(Msg) {
 // Update the main view function to include the navigation and footer
 pub fn view(_model: Model) -> Element(Msg) {
   html.div([class("landing-page-content")], [
+    view_moto_hero(),
     view_hero(),
     view_featured_articles(),
     view_featured_tools(),
     view_tools_table(),
     view_category_lists(),
     view_about_section(),
+  ])
+}
+
+fn view_moto_hero() -> Element(Msg) {
+  html.section([class("moto-hero")], [
+    html.div([class("moto-hero-background")], []),
+    html.div([class("moto-hero-content")], [
+      html.div([class("moto-hero-text")], [
+        html.h1([class("moto-hero-title")], [
+          html.text("TandemX Moto"),
+          html.br([]),
+          html.span([class("moto-hero-subtitle")], [html.text("Performance & Custom")])
+        ]),
+        html.p([class("moto-hero-description")], [
+          html.text("Premium motorcycle parts, expert service, and custom builds. Transform your ride with quality components and professional craftsmanship.")
+        ]),
+        html.div([class("moto-hero-actions")], [
+          html.button([
+            class("moto-btn primary"),
+            event.on_click(NavigateToShop)
+          ], [
+            html.text("🏍️ Shop Parts"),
+          ]),
+          html.button([
+            class("moto-btn secondary"),
+            event.on_click(GetCustomQuote)
+          ], [
+            html.text("💬 Get Custom Quote"),
+          ])
+        ])
+      ]),
+      html.div([class("moto-hero-features")], [
+        html.div([class("moto-feature")], [
+          html.div([class("moto-feature-icon")], [html.text("🔧")]),
+          html.h3([class("moto-feature-title")], [html.text("Expert Service")]),
+          html.p([class("moto-feature-desc")], [html.text("Professional maintenance and repairs")])
+        ]),
+        html.div([class("moto-feature")], [
+          html.div([class("moto-feature-icon")], [html.text("⚡")]),
+          html.h3([class("moto-feature-title")], [html.text("Performance Parts")]),
+          html.p([class("moto-feature-desc")], [html.text("Quality components for every ride")])
+        ]),
+        html.div([class("moto-feature")], [
+          html.div([class("moto-feature-icon")], [html.text("🎨")]),
+          html.h3([class("moto-feature-title")], [html.text("Custom Builds")]),
+          html.p([class("moto-feature-desc")], [html.text("Unique motorcycles built to order")])
+        ])
+      ])
+    ])
   ])
 }

@@ -6,12 +6,12 @@ body {
   margin: 0;
   padding: 0;
   line-height: 1.6;
-  color: #1a1a1a;
-  background-color: #fafafa;
+  color: #333;
+  background-color: #f9f9f9;
 }
 
 a {
-  color: #ff6b35;
+  color: #0066cc;
   text-decoration: none;
 }
 
@@ -56,9 +56,8 @@ h2 {
 
 /* Header */
 header {
-  background-color: #1a1a1a;
-  color: #fff;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  background-color: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   padding: 15px 0;
 }
 
@@ -76,14 +75,13 @@ nav {
 .logo {
   font-weight: bold;
   font-size: 1.5em;
-  color: #ff6b35;
 }
 
 /* Buttons */
 .button {
   display: inline-block;
   padding: 8px 16px;
-  background-color: #ff6b35;
+  background-color: #0066cc;
   color: white;
   border-radius: 4px;
   border: none;
@@ -93,17 +91,17 @@ nav {
 }
 
 .button:hover {
-  background-color: #e55a2b;
+  background-color: #0052a3;
   text-decoration: none;
 }
 
 .button-secondary {
-  background-color: #1a1a1a;
-  color: #fff;
+  background-color: #f2f2f2;
+  color: #333;
 }
 
 .button-secondary:hover {
-  background-color: #333;
+  background-color: #e6e6e6;
 }
 
 /* Form elements */
@@ -136,8 +134,7 @@ th, td {
 }
 
 th {
-  background-color: #1a1a1a;
-  color: #fff;
+  background-color: #f2f2f2;
   font-weight: 600;
 }
 
@@ -205,9 +202,9 @@ tr:hover {
 }
 
 .alert-info {
-  background-color: #fff4f0;
-  border: 1px solid #ffb399;
-  color: #ff6b35;
+  background-color: #e6f7ff;
+  border: 1px solid #91d5ff;
+  color: #0066cc;
 }
 
 .alert-success {

@@ -6,6 +6,10 @@ primary_region = "iad"
 
 [env]
   PORT = "8000"
+  PGDATA = "/data/postgres"
+
+[experimental]
+  auto_rollback = true
 
 [http_service]
   internal_port = 8000
@@ -22,4 +26,7 @@ primary_region = "iad"
 
 [mounts]
   source = "tandemx_data"
-  destination = "/data" 
+  destination = "/data"
+
+[deploy]
+  release_command = "gleam run -m database_setup"

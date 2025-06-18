@@ -1,0 +1,296 @@
+import gleam/dynamic
+import gleam/option.{type Option, None, Some}
+import gleam/result
+import gleam/list
+import gleam/string
+import gleam/int
+import gleam/io
+import glenvy/env
+import glenvy/dotenv
+import gleam_postgres as pg
+import gleam_pgo as pgo
+
+pub type DbPool =
+  pgo.Connection
+
+pub type DbError {
+  ConnectionError(String)
+  QueryError(String)
+  TransactionError(String)
+  NoResultError
+  ParseError(String)
+}
+
+pub fn get_connection() -> Result(DbPool, DbError) {
+  // Load environment variables
+  let _ = dotenv.load()
+  
+  // Get database URL from environment variables
+  let db_url = case env.string("DATABASE_URL") {
+    Ok(url) -> url
+    Error(_) -> {
+      // Fallback to local development database
+      io.println("DATABASE_URL not found. Using default local connection.")
+      "postgres://postgres:postgres@localhost:5432/tandemx"
+    }
+  }
+
+  // Parse the connection string and create a PGO config
+  let config_result = pg.connection_config(db_url)
+    |> result.map_error(fn(err) { ConnectionError("Invalid connection URL: " <> string.inspect(err)) })
+  
+  case config_result {
+    Error(err) -> Error(err)
+    Ok(config) -> {
+      // Create connection configuration with pool settings
+      let pgo_config = pgo.Config(
+        ..config,
+        pool_size: 10,
+        connection_timeout: 15000
+      )
+
+      // Connect to the database
+      let pool_result = pgo.connect(pgo_config)
+        |> result.map_error(fn(err) { ConnectionError("Connection failed: " <> string.inspect(err)) })
+      
+      case pool_result {
+        Error(err) -> Error(err)
+        Ok(pool) -> {
+
+          io.println("Successfully connected to PostgreSQL database")
+          Ok(pool)
+        }
+      }
+    }
+  }
+}
+
+pub fn close_connection(conn: DbPool) -> Result(Nil, DbError) {
+  pgo.disconnect(conn)
+  Ok(Nil)
+}
+
+pub fn execute(
+  conn: DbPool,
+  query: String,
+  params: List(pgo.Parameter),
+) -> Result(pgo.Result, DbError) {
+  pgo.execute(conn, query, params)
+  |> result.map_error(fn(err) { QueryError(string.inspect(err)) })
+}
+
+pub fn query_one(
+  conn: DbPool,
+  query: String,
+  params: List(pgo.Parameter),
+) -> Result(dynamic.Dynamic, DbError) {
+  let result_res = pgo.execute(conn, query, params)
+    |> result.map_error(fn(err) { QueryError(string.inspect(err)) })
+  
+  case result_res {
+    Error(err) -> Error(err)
+    Ok(result) -> {
+      case result.rows {
+        [row] -> Ok(row)
+        [] -> Error(NoResultError)
+        _ -> Error(QueryError("Expected exactly one row, but got multiple"))
+      }
+    }
+  }
+}
+
+pub fn query_all(
+  conn: DbPool,
+  query: String,
+  params: List(pgo.Parameter),
+) -> Result(List(dynamic.Dynamic), DbError) {
+  let result_res = pgo.execute(conn, query, params)
+    |> result.map_error(fn(err) { QueryError(string.inspect(err)) })
+  
+  case result_res {
+    Error(err) -> Error(err)
+    Ok(result) -> Ok(result.rows)
+  }
+}
+
+pub fn setup_database() -> Result(Nil, DbError) {
+  io.println("Setting up database...")
+
+  let conn_result = get_connection()
+  case conn_result {
+    Error(err) -> Error(err)
+    Ok(conn) -> {
+
+  // Create tables if they don't exist
+  let create_users_table = "
+    CREATE TABLE IF NOT EXISTS users (
+      id SERIAL PRIMARY KEY,
+      email TEXT UNIQUE NOT NULL,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    );
+  "
+
+  let create_projects_table = "
+    CREATE TABLE IF NOT EXISTS projects (
+      id SERIAL PRIMARY KEY,
+      title TEXT NOT NULL,
+      description TEXT,
+      status TEXT NOT NULL DEFAULT 'active',
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+      user_id INTEGER REFERENCES users(id) ON DELETE CASCADE
+    );
+  "
+
+  let create_tasks_table = "
+    CREATE TABLE IF NOT EXISTS tasks (
+      id SERIAL PRIMARY KEY,
+      title TEXT NOT NULL,
+      description TEXT,
+      status TEXT NOT NULL DEFAULT 'todo',
+      due_date TIMESTAMP WITH TIME ZONE,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+      project_id INTEGER REFERENCES projects(id) ON DELETE CASCADE,
+      user_id INTEGER REFERENCES users(id) ON DELETE CASCADE
+    );
+  "
+
+  // Execute the create table statements
+  let users_result = execute(conn, create_users_table, [])
+  case users_result {
+    Error(err) -> Error(err)
+    Ok(_) -> {
+      io.println("Users table created or already exists")
+      
+      let projects_result = execute(conn, create_projects_table, [])
+      case projects_result {
+        Error(err) -> Error(err)
+        Ok(_) -> {
+          io.println("Projects table created or already exists")
+          
+          let tasks_result = execute(conn, create_tasks_table, [])
+          case tasks_result {
+            Error(err) -> Error(err)
+            Ok(_) -> {
+              io.println("Tasks table created or already exists")
+
+              io.println("Database setup complete!")
+              let _ = close_connection(conn)
+              Ok(Nil)
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+// Helper functions for common operations
+
+pub fn find_user_by_email(
+  conn: DbPool,
+  email: String,
+) -> Result(Option(dynamic.Dynamic), DbError) {
+  let query = "SELECT * FROM users WHERE email = $1"
+  
+  let result_res = pgo.execute(conn, query, [pgo.text(email)])
+    |> result.map_error(fn(err) { QueryError(string.inspect(err)) })
+  
+  case result_res {
+    Error(err) -> Error(err)
+    Ok(result) -> {
+      case result.rows {
+        [row] -> Ok(Some(row))
+        _ -> Ok(None)
+      }
+    }
+  }
+}
+
+pub fn create_user(
+  conn: DbPool,
+  email: String,
+) -> Result(dynamic.Dynamic, DbError) {
+  let query = "
+    INSERT INTO users (email) 
+    VALUES ($1)
+    RETURNING *
+  "
+  
+  query_one(conn, query, [pgo.text(email)])
+}
+
+pub fn get_projects_for_user(
+  conn: DbPool,
+  user_id: Int,
+) -> Result(List(dynamic.Dynamic), DbError) {
+  let query = "
+    SELECT * FROM projects 
+    WHERE user_id = $1
+    ORDER BY created_at DESC
+  "
+  
+  query_all(conn, query, [pgo.int(user_id)])
+}
+
+pub fn create_project(
+  conn: DbPool,
+  title: String,
+  description: String,
+  user_id: Int,
+) -> Result(dynamic.Dynamic, DbError) {
+  let query = "
+    INSERT INTO projects (title, description, user_id) 
+    VALUES ($1, $2, $3)
+    RETURNING *
+  "
+  
+  query_one(conn, query, [pgo.text(title), pgo.text(description), pgo.int(user_id)])
+}
+
+pub fn get_tasks_for_project(
+  conn: DbPool,
+  project_id: Int,
+) -> Result(List(dynamic.Dynamic), DbError) {
+  let query = "
+    SELECT * FROM tasks 
+    WHERE project_id = $1
+    ORDER BY due_date ASC NULLS LAST, created_at DESC
+  "
+  
+  query_all(conn, query, [pgo.int(project_id)])
+}
+
+// Extract values from database rows
+
+pub fn extract_int(row: dynamic.Dynamic, field: String) -> Result(Int, DbError) {
+  dynamic.field(row, field)
+  |> result.then(dynamic.int)
+  |> result.map_error(fn(_) { ParseError("Failed to extract int value for field: " <> field) })
+}
+
+pub fn extract_string(row: dynamic.Dynamic, field: String) -> Result(String, DbError) {
+  dynamic.field(row, field)
+  |> result.then(dynamic.string)
+  |> result.map_error(fn(_) { ParseError("Failed to extract string value for field: " <> field) })
+}
+
+pub fn extract_optional_string(row: dynamic.Dynamic, field: String) -> Result(Option(String), DbError) {
+  case dynamic.field(row, field) {
+    Ok(value) -> {
+      case dynamic.string(value) {
+        Ok(str) -> Ok(Some(str))
+        Error(_) -> {
+          // Check if it's null
+          case dynamic.is_null(value) {
+            True -> Ok(None)
+            False -> Error(ParseError("Field is not a string or null: " <> field))
+          }
+        }
+      }
+    }
+    Error(_) -> Error(ParseError("Field not found: " <> field))
+  }
+}

@@ -5,11 +5,46 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>TandemX</title>
         <link rel="stylesheet" href="/css/styles.css">
+        <link rel="stylesheet" href="/combined.css" onerror="console.warn('Fallback CSS loaded')">
+        <link rel="stylesheet" href="/css/nav.css">
+        <link rel="stylesheet" href="/combined.css" onerror="console.warn('Fallback CSS loaded')">
+        <link rel="stylesheet" href="/css/lustre-components.css">
+        <link rel="stylesheet" href="/combined.css" onerror="console.warn('Fallback CSS loaded')">
         <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
         <meta name="description" content="A collection of specialized development and creative tools organized by language and purpose.">
+        <style>
+            .inventory-banner {
+                position: fixed;
+                bottom: 20px;
+                right: 20px;
+                background: #0D47A1;
+                color: white;
+                padding: 12px 16px;
+                border-radius: 8px;
+                box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+                z-index: 1000;
+                font-family: system-ui, sans-serif;
+                text-decoration: none;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+            }
+            .inventory-banner:hover {
+                background: #0D66CC;
+            }
+            .inventory-icon {
+                font-size: 20px;
+            }
+        </style>
     </head>
     <body>
         <div id="app"></div>
+        <a href="/inventory" class="inventory-banner">
+            <span class="inventory-icon">📦</span>
+            <span>Variety Shop Inventory</span>
+        </a>
+        <script src="/supabase-config.js"></script>
+        <script src="/debug-helper.js"></script>
         <script type="module">
             // Load the bundled JavaScript file created by esbuild
             import * as app from "/build/dev/javascript/tandemx_client/app.mjs";

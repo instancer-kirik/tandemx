@@ -8,9 +8,86 @@ export let supabaseClient = null;
 // Export the create_client function for other modules to use
 export { create_client };
 
-// Supabase credentials
-const url = 'https://xlmibzeenudmkqgiyaif.supabase.co';
-const key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhsbWliemVlbnVkbWtxZ2l5YWlmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDMzODAxNzMsImV4cCI6MjA1ODk1NjE3M30.Yn9AIaqkstjgz1coNJGB-o66L7wiJZZvCXfqyM6Wavs';
+// Development values - publicly safe demo values
+// For better security, configure via environment variables in production
+const DEFAULT_URL = 'https://demo.supabase.co'; // Public demo URL
+const DEFAULT_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRlbW8iLCJyb2xlIjoiYW5vbiIsImlhdCI6MTYyMDY0OTAyNSwiZXhwIjoxOTM2MjI1MDI1fQ.dc_X5iR_VP_qT0zsiyj_I_OZ2T9FtRU2BBNWN8Bu4GE'; // Public demo key
+
+// Get Supabase credentials from environment or config endpoint
+let url = DEFAULT_URL;
+let key = DEFAULT_KEY;
+
+// Function to retrieve Supabase config
+async function getSupabaseConfig() {
+    try {
+        console.log("Attempting to fetch Supabase config from server...");
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 3000);
+        
+        const response = await fetch('/api/config', { 
+            signal: controller.signal,
+            headers: { 'Accept': 'application/json' }
+        });
+        clearTimeout(timeoutId);
+        
+        if (response.ok) {
+            const config = await response.json();
+            if (config.supabaseUrl && config.supabaseAnonKey) {
+                console.log("Supabase credentials loaded from config endpoint");
+                
+                // Only use credentials that are not default/placeholder values
+                if (config.supabaseUrl !== 'your_supabase_url_here' && 
+                    config.supabaseAnonKey !== 'your_supabase_anon_key_here') {
+                    url = config.supabaseUrl;
+                    key = config.supabaseAnonKey;
+                    
+                    // Reinitialize if we have new credentials and client was already initialized
+                    if (supabaseClient !== null) {
+                        supabaseClient = create_client(url, key);
+                        console.log("Supabase client reinitialized with new credentials");
+                    } else {
+                        initializeSupabaseClient();
+                    }
+                    return true;
+                } else {
+                    console.warn("Received placeholder credentials from server, using defaults instead");
+                }
+            }
+        } else {
+            console.warn(`Server returned ${response.status} when fetching config`);
+        }
+    } catch (e) {
+        if (e.name === 'AbortError') {
+            console.warn("Config request timed out after 3 seconds");
+        } else {
+            console.warn("Could not load Supabase config from endpoint, using defaults:", e.message);
+        }
+    }
+    
+    console.log("Using default development Supabase credentials");
+    return false;
+}
+
+// Initialize with defaults immediately
+initializeSupabaseClient();
+
+// Try to load config from server (asynchronous)
+if (typeof window !== 'undefined') {
+    // First try immediately after script loads
+    setTimeout(() => {
+        getSupabaseConfig().then(success => {
+            if (success) {
+                console.log("Successfully loaded Supabase config from server");
+                // Notify any waiting components
+                window.dispatchEvent(new CustomEvent('supabase_initialized', { 
+                    detail: { usingDefaults: false, configLoaded: true }
+                }));
+            }
+        }).catch(err => {
+            console.warn("Failed to load Supabase config, continuing with defaults:", err);
+        });
+    }, 0);
+}
 
 // Global Tiptap editor instance
 let tiptapEditor = null;
@@ -71,14 +148,51 @@ export function init_supabase(url, key) {
     }
 }
 
-// Initialize immediately
-try {
-    if (supabaseClient === null) {
-        supabaseClient = create_client(url, key);
-        console.log("Supabase client auto-initialized on module load");
+// Initialize function that will be called once credentials are available
+function initializeSupabaseClient() {
+    try {
+        if (supabaseClient === null) {
+            // Ensure we have values before initializing
+            if (!url || !key) {
+                console.warn("Missing Supabase credentials, using defaults");
+                url = DEFAULT_URL;
+                key = DEFAULT_KEY;
+            }
+            
+            supabaseClient = create_client(url, key);
+            
+            const credType = url === DEFAULT_URL ? "default development" : "custom";
+            console.log(`Supabase client initialized with ${credType} credentials`);
+            
+            // Make Supabase client available globally for debugging in dev environments only
+            if (typeof window !== 'undefined') {
+                // Don't expose actual credentials in the global object
+                window.__supabaseClient = {
+                    isInitialized: true,
+                    usingDefaults: url === DEFAULT_URL,
+                    instance: supabaseClient
+                };
+                
+                // Make a method to retry config loading
+                window.__retrySupabaseConfig = function() {
+                    return getSupabaseConfig();
+                };
+                
+                // Dispatch an event to notify other modules that Supabase is ready
+                window.dispatchEvent(new CustomEvent('supabase_initialized', { 
+                    detail: { usingDefaults: url === DEFAULT_URL }
+                }));
+            }
+            
+            return true;
+        }
+        return false;
+    } catch (e) {
+        console.error("Failed to initialize Supabase client:", e);
+        // In case of error, set client to null to allow retrying
+        supabaseClient = null;
+        return false;
     }
-} catch (e) {
-    console.error("Failed to auto-initialize Supabase client:", e);
 }
 
 // Export the initialized client for other modules to use
@@ -714,19 +828,49 @@ export function get_current_iso_date() {
 }
 
 // Initialize the client with credentials
-// Also initialize on DOM load to avoid race conditions
+// Also try to initialize on DOM load to avoid race conditions
 document.addEventListener('DOMContentLoaded', () => {
     if (supabaseClient === null) {
-        try {
-            supabaseClient = create_client(url, key);
-            console.log("Supabase client initialized on DOM content loaded");
-        } catch (e) {
-            console.error("Failed to initialize Supabase client on DOM load:", e);
-        }
+        console.log("DOMContentLoaded: Initializing Supabase client");
+        // Try to initialize if we don't have a client yet
+        initializeSupabaseClient();
+        // And try to get config
+        getSupabaseConfig();
     } else {
-        console.log("Supabase client already initialized, skipping DOM load initialization");
+        console.log("DOMContentLoaded: Supabase client already initialized, checking for server credentials");
+        getSupabaseConfig();
     }
 });
+
+// Final fallback - if window loads and we still don't have a client
+if (typeof window !== 'undefined') {
+    window.addEventListener('load', () => {
+        if (supabaseClient === null) {
+            console.log("Window load: Last attempt to initialize Supabase client");
+            initializeSupabaseClient();
+        }
+        
+        // Try config endpoint one more time with longer timeout
+        setTimeout(() => {
+            if (url === DEFAULT_URL) {
+                console.log("Window loaded: Final attempt to get server config");
+                getSupabaseConfig().then(success => {
+                    if (success) {
+                        console.log("Successfully loaded Supabase config on final attempt");
+                    }
+                });
+            }
+        }, 1000);
+        
+        // Force dispatch of initialized event even if client was already initialized
+        // This helps modules that might have missed the initial event
+        if (supabaseClient !== null) {
+            window.dispatchEvent(new CustomEvent('supabase_initialized', { 
+                detail: { usingDefaults: url === DEFAULT_URL, forced: true }
+            }));
+        }
+    });
+}
 
 export function checkAccess(userId, contentId) {
   const query = select_all(

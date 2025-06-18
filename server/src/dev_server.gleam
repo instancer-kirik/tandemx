@@ -1,4 +1,5 @@
 import argv
+import api_config
 
 // TODO: Implement chartspace_server module
 // import chartspace_server
@@ -12,6 +13,10 @@ import gleam/http/response.{type Response}
 import gleam/int
 import gleam/io
 import gleam/json
+// These imports are conditional at runtime
+import shop_api_minimal as shop_api
+import turso_db
+import turso_db_setup
 import gleam/list
 import gleam/option.{None, Some}
 import gleam/otp/actor
@@ -150,12 +155,13 @@ fn should_ignore_db_errors(_args: List(String)) -> Bool {
 
 // Helper to get env var or use a default/error
 fn get_env(variable_name: String, default: String) -> String {
-  // Use glenvy/env.get_string which returns Result(String, env.VariableError)
-  case env.get_string(variable_name) {
+  // Load environment variables from .env file
+  let _ = dotenv.load()
+  
+  case env.string(variable_name) {
     Ok(value) -> value
     Error(_) -> {
-      // Handle env.VariableError (NotPresent, InvalidUtf8)
-      // Log a warning in a real app if a required env var is missing
+      // Log a warning that we're using the default value
       io.println(
         "Warning: Environment variable "
         <> variable_name
@@ -193,14 +199,63 @@ pub fn main() {
   let args = argv.load().arguments
   io.println("\nArguments: " <> string.join(args, ", "))
 
-  // Check if we should ignore DB errors
+  // Register routes and initialize modules
+    api_config.register()
+  
+    // Check if we're using Turso and register shop API routes
+    let use_turso = case simplifile.read("../.use_turso") {
+      Ok(_) -> {
+        io.println("Turso mode detected from file")
+        True
+      }
+      Error(_) -> {
+        case list.contains(args, "--use-turso") {
+          True -> {
+            io.println("Turso mode detected from arguments")
+            True
+          }
+          False -> False
+        }
+      }
+    }
+  
+    // Initialize Turso database if needed
+    case use_turso {
+      True -> {
+        io.println("Registering shop API routes with Turso database")
+        // Try to initialize database if setup is requested
+        let _ = case list.contains(args, "--setup-db") {
+          True -> {
+            io.println("Setting up Turso database (from args)")
+            turso_db_setup.main()
+          }
+          False -> Nil
+        }
+      }
+      False -> Nil
+    }
+    
+    // No longer needed, removed
+  // Check database mode flags
   let ignore_db_errors = should_ignore_db_errors(args)
 
-  // Print the status of database error handling
-  case ignore_db_errors {
-    True ->
+  // Print the status of database handling
+  case ignore_db_errors, use_turso {
+    True, _ ->
       io.println("Database errors will be ignored (running in standalone mode)")
-    False -> io.println("Database features are enabled")
+    False, True -> 
+      io.println("Using Turso database")
+    False, False -> 
+      io.println("Database features are enabled with ElectricSQL")
+  }
+
+  // Check if we need to set up the database
+  case list.contains(args, "--setup-db") {
+    True -> {
+      io.println("Setting up Turso database...")
+      let _ = turso_db_setup.main()
+    }
+    False -> Nil
   }
 
   // Get port from arguments, default to 8000
@@ -303,6 +358,7 @@ pub fn main() {
               json.object([
                 #("supabaseUrl", json.string(supabase_url)),
                 #("supabaseAnonKey", json.string(supabase_anon_key)),
+                #("useTurso", json.bool(use_turso)),
               ])
             let body = json.to_string(config_json)
             response.new(200)
@@ -310,6 +366,18 @@ pub fn main() {
             |> response.set_body(Bytes(bytes_tree.from_string(body)))
           }
           _ -> serve_404()
+        }
+      }
+      
+      // Shop API routes
+      ["api", "shop", ..rest] -> {
+        case use_turso {
+          True -> shop_api.register_routes(req)
+          False -> response.new(503)
+            |> response.set_header("content-type", "application/json")
+            |> response.set_body(Bytes(bytes_tree.from_string(json.to_string(
+              json.object([#("error", json.string("Shop API requires Turso database."))])
+            ))))
         }
       }
       ["api", "schedule-meeting"] -> {

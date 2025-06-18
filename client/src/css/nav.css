@@ -1,0 +1,168 @@
+/* Navigation Component Styles */
+
+.navbar {
+  background-color: #ffffff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  width: 100%;
+}
+
+.nav-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.logo {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--primary-color);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.nav-links {
+  display: flex;
+  gap: 1.5rem;
+}
+
+.nav-item {
+  position: relative;
+}
+
+.nav-item a {
+  color: var(--text-color);
+  text-decoration: none;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0.5rem 0;
+}
+
+.nav-item a:hover {
+  color: var(--primary-color);
+}
+
+.has-megamenu {
+  position: relative;
+}
+
+.megamenu-panel {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background-color: white;
+  border-radius: 4px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  padding: 1rem;
+  display: none;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+  min-width: 400px;
+  z-index: 100;
+}
+
+.megamenu-panel.open {
+  display: grid;
+}
+
+.megamenu-column h4 {
+  margin-top: 0;
+  margin-bottom: 0.75rem;
+  color: var(--primary-color);
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.megamenu-column ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.megamenu-column li {
+  margin-bottom: 0.5rem;
+}
+
+.megamenu-column a {
+  font-weight: 400;
+  font-size: 0.95rem;
+  display: block;
+  padding: 0.25rem 0;
+}
+
+.nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.nav-btn {
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.login {
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+}
+
+.login:hover {
+  background-color: #3a80d2;
+}
+
+.logout {
+  background-color: transparent;
+  color: var(--text-color);
+  border: 1px solid #ddd;
+}
+
+.logout:hover {
+  background-color: #f5f5f5;
+}
+
+.nav-loading {
+  color: #888;
+  font-size: 0.9rem;
+}
+
+/* Responsive nav styles */
+@media (max-width: 768px) {
+  .nav-content {
+    flex-direction: column;
+    padding: 0.5rem;
+  }
+  
+  .nav-links {
+    flex-direction: column;
+    width: 100%;
+    margin-top: 1rem;
+  }
+  
+  .megamenu-panel {
+    position: static;
+    grid-template-columns: 1fr;
+    min-width: unset;
+    width: 100%;
+    box-shadow: none;
+    border-top: 1px solid #eee;
+    border-bottom: 1px solid #eee;
+    margin: 0.5rem 0;
+    padding: 0.5rem 0;
+  }
+  
+  .nav-actions {
+    width: 100%;
+    justify-content: center;
+    margin-top: 1rem;
+  }
+}

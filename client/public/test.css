@@ -1,0 +1,15 @@
+
+/* CSS Test File */
+.css-test {
+  background: #d4edda;
+  color: #155724;
+  padding: 10px;
+  border: 1px solid #c3e6cb;
+  border-radius: 4px;
+  margin: 10px 0;
+}
+
+.css-test::before {
+  content: "✅ CSS is loading correctly! ";
+  font-weight: bold;
+}

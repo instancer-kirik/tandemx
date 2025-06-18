@@ -1,0 +1,604 @@
+/* TandemX Motorcycle Shop Navigation & Megamenu Styles */
+
+/* Reset and base styles for nav */
+.shop-navbar {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: #1a1a1a;
+  color: #fff;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+  position: relative;
+  z-index: 1000;
+}
+
+/* Top bar styles */
+.navbar-top {
+  background: #ff6b35;
+  color: #fff;
+  padding: 8px 0;
+  font-size: 14px;
+}
+
+.navbar-top .nav-content {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.contact-info {
+  display: flex;
+  gap: 30px;
+  align-items: center;
+}
+
+.contact-info .phone,
+.contact-info .hours {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-weight: 500;
+}
+
+.user-actions {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.user-menu {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.welcome {
+  font-weight: 500;
+}
+
+.nav-btn {
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.nav-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+/* Main navigation bar */
+.navbar-main {
+  background: #1a1a1a;
+  padding: 15px 0;
+}
+
+.navbar-main .nav-content {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 20px;
+  display: flex;
+  align-items: center;
+  gap: 40px;
+}
+
+/* Logo styles */
+.shop-logo {
+  text-decoration: none;
+  color: #fff;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.shop-logo:hover {
+  transform: scale(1.02);
+}
+
+.logo-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.bike-icon {
+  font-size: 32px;
+  filter: drop-shadow(0 2px 4px rgba(255, 107, 53, 0.3));
+}
+
+.logo-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.shop-name {
+  font-size: 24px;
+  font-weight: 700;
+  color: #ff6b35;
+  line-height: 1;
+  margin-bottom: 2px;
+}
+
+.shop-tagline {
+  font-size: 12px;
+  color: #ccc;
+  font-weight: 400;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+/* Search bar */
+.search-container {
+  flex: 1;
+  max-width: 400px;
+  position: relative;
+  margin: 0 20px;
+}
+
+.search-input {
+  width: 100%;
+  padding: 12px 50px 12px 16px;
+  border: 2px solid #333;
+  border-radius: 25px;
+  background: #2a2a2a;
+  color: #fff;
+  font-size: 14px;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.search-input::placeholder {
+  color: #888;
+}
+
+.search-input:focus {
+  border-color: #ff6b35;
+  box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
+}
+
+.search-btn {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: #ff6b35;
+  border: none;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.search-btn:hover {
+  background: #e55a2b;
+}
+
+.search-icon {
+  font-size: 14px;
+}
+
+/* Navigation links */
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+
+.nav-item {
+  position: relative;
+}
+
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 15px 20px;
+  color: #fff;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 15px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.nav-link:hover {
+  color: #ff6b35;
+  background: rgba(255, 107, 53, 0.1);
+}
+
+.dropdown-arrow {
+  font-size: 10px;
+  transition: transform 0.2s ease;
+}
+
+.nav-item.has-megamenu:hover .dropdown-arrow {
+  transform: rotate(180deg);
+}
+
+/* Cart and actions */
+.nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.cart-btn {
+  position: relative;
+  background: none;
+  border: 2px solid #ff6b35;
+  border-radius: 8px;
+  padding: 10px 12px;
+  color: #ff6b35;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.cart-btn:hover {
+  background: #ff6b35;
+  color: #fff;
+}
+
+.cart-icon {
+  font-size: 18px;
+}
+
+.cart-badge {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background: #ff6b35;
+  color: #fff;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.quick-quote-btn {
+  background: #ff6b35;
+  color: #fff;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 6px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 14px;
+}
+
+.quick-quote-btn:hover {
+  background: #e55a2b;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
+}
+
+/* Megamenu styles */
+.megamenu-panel {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-top: 3px solid #ff6b35;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-10px);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 1001;
+  min-width: 800px;
+  max-width: 1200px;
+  display: flex;
+  padding: 30px;
+  gap: 40px;
+}
+
+.megamenu-panel.open {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.megamenu-column {
+  flex: 1;
+  min-width: 180px;
+}
+
+.megamenu-column-title {
+  color: #1a1a1a;
+  font-size: 16px;
+  font-weight: 700;
+  margin: 0 0 15px 0;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #ff6b35;
+}
+
+.megamenu-column-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.megamenu-item {
+  margin-bottom: 8px;
+}
+
+.nav-link-item {
+  display: block;
+  color: #555;
+  text-decoration: none;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.nav-link-item:hover {
+  color: #ff6b35;
+  background: rgba(255, 107, 53, 0.08);
+  transform: translateX(4px);
+}
+
+/* Hover effects for nav items with megamenus */
+.nav-item.has-megamenu:hover .megamenu-panel {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+/* Close megamenu when not hovering over nav item */
+.nav-item.has-megamenu {
+  position: relative;
+}
+
+.nav-item.has-megamenu::before {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  height: 10px;
+  z-index: 1000;
+}
+
+/* Responsive styles */
+@media (max-width: 1200px) {
+  .navbar-main .nav-content {
+    gap: 20px;
+  }
+  
+  .search-container {
+    max-width: 300px;
+  }
+  
+  .megamenu-panel {
+    min-width: 600px;
+    gap: 20px;
+    padding: 20px;
+  }
+}
+
+@media (max-width: 968px) {
+  .navbar-top .nav-content {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .contact-info {
+    gap: 20px;
+  }
+  
+  .navbar-main .nav-content {
+    flex-wrap: wrap;
+    gap: 15px;
+  }
+  
+  .nav-links {
+    order: 3;
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .megamenu-panel {
+    position: fixed;
+    left: 20px;
+    right: 20px;
+    min-width: auto;
+    flex-direction: column;
+    gap: 20px;
+  }
+  
+  .megamenu-column {
+    min-width: auto;
+  }
+}
+
+@media (max-width: 768px) {
+  .shop-navbar {
+    position: sticky;
+    top: 0;
+  }
+  
+  .navbar-top {
+    padding: 6px 0;
+  }
+  
+  .navbar-top .nav-content {
+    padding: 0 15px;
+  }
+  
+  .contact-info {
+    flex-direction: column;
+    gap: 5px;
+    font-size: 12px;
+  }
+  
+  .navbar-main {
+    padding: 10px 0;
+  }
+  
+  .navbar-main .nav-content {
+    padding: 0 15px;
+    flex-direction: column;
+    gap: 15px;
+  }
+  
+  .logo-content {
+    gap: 8px;
+  }
+  
+  .bike-icon {
+    font-size: 24px;
+  }
+  
+  .shop-name {
+    font-size: 20px;
+  }
+  
+  .search-container {
+    width: 100%;
+    max-width: none;
+    margin: 0;
+  }
+  
+  .nav-links {
+    flex-wrap: wrap;
+    gap: 5px;
+  }
+  
+  .nav-link {
+    padding: 10px 15px;
+    font-size: 14px;
+  }
+  
+  .nav-actions {
+    gap: 10px;
+  }
+  
+  .quick-quote-btn {
+    padding: 10px 16px;
+    font-size: 13px;
+  }
+  
+  /* Mobile megamenu */
+  .megamenu-panel {
+    position: fixed;
+    top: auto;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    max-height: 70vh;
+    overflow-y: auto;
+    border-radius: 20px 20px 0 0;
+    border-top: 3px solid #ff6b35;
+  }
+  
+  .megamenu-panel.open {
+    transform: translateY(0);
+  }
+  
+  .megamenu-panel:not(.open) {
+    transform: translateY(100%);
+  }
+}
+
+/* Animation keyframes */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.megamenu-panel.open .megamenu-column {
+  animation: fadeInUp 0.3s ease forwards;
+}
+
+.megamenu-panel.open .megamenu-column:nth-child(2) {
+  animation-delay: 0.1s;
+}
+
+.megamenu-panel.open .megamenu-column:nth-child(3) {
+  animation-delay: 0.2s;
+}
+
+.megamenu-panel.open .megamenu-column:nth-child(4) {
+  animation-delay: 0.3s;
+}
+
+/* Loading state */
+.nav-loading {
+  color: #ccc;
+  font-size: 14px;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* Focus states for accessibility */
+.nav-link:focus,
+.nav-link-item:focus,
+.cart-btn:focus,
+.quick-quote-btn:focus,
+.search-input:focus,
+.search-btn:focus,
+.nav-btn:focus {
+  outline: 2px solid #ff6b35;
+  outline-offset: 2px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .shop-navbar {
+    border-bottom: 2px solid #ff6b35;
+  }
+  
+  .nav-link-item:hover {
+    background: #ff6b35;
+    color: #fff;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .megamenu-panel,
+  .nav-link,
+  .cart-btn,
+  .quick-quote-btn,
+  .search-input,
+  .dropdown-arrow {
+    transition: none;
+  }
+  
+  .megamenu-panel.open .megamenu-column {
+    animation: none;
+  }
+}

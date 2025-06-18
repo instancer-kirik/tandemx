@@ -10,6 +10,9 @@ import accomplishments.{
   view as view_accomplishments,
 }
 import components/nav
+import components/shop_nav
+import shop
+import custom_quote
 
 import gleam/option.{type Option, None, Some}
 
@@ -65,12 +68,15 @@ pub type Msg {
   NoOp
   PathChanged(String)
   NavMsg(nav.Msg)
+  ShopNavMsg(shop_nav.Msg)
   AccessContentMsg(AccessContentMsg)
   PartnerProgressMsg(PartnerProgressMsg)
   ProjectsMsg(ProjectsMsg)
   ProjectDetailMsg(ProjectDetailMsg)
   SettingsMsg(SettingsMsg)
   LandingMsg(LandingMsg)
+  ShopMsg(shop.Msg)
+  CustomQuoteMsg(custom_quote.Msg)
   CheckSession
   SessionReceived(Result(Option(SupabaseUser), String))
   LogoutCompleted(Result(Nil, String))
@@ -85,6 +91,7 @@ pub type Model {
     supabase_user: FetchState(Option(SupabaseUser)),
     is_admin: Bool,
     nav_model: nav.Model,
+    shop_nav_model: shop_nav.Model,
     access_content_model: AccessContentModel,
     partner_progress_model: PartnerProgressModel,
     projects_model: ProjectsModel,
@@ -92,12 +99,18 @@ pub type Model {
     settings_model: SettingsModel,
     landing_model: LandingModel,
     accomplishments_model: AccomplishmentsModel,
+    shop_model: shop.Model,
+    custom_quote_model: custom_quote.Model,
   )
 }
 
 // Initialize the app with default state
 pub fn init(_flags: Nil) -> #(Model, Effect(Msg)) {
   let initial_path = get_current_path()
+  
+  // Initialize shop models
+  let #(shop_model, shop_effect) = shop.init()
+  let #(custom_quote_model, quote_effect) = custom_quote.init()
   let #(ac_model, ac_effect) = access_content.init(Nil)
   let #(pp_model, pp_effect) = partner_progress.init(Nil)
   let #(proj_model, proj_effect) = projects.init(Nil)
@@ -106,14 +119,16 @@ pub fn init(_flags: Nil) -> #(Model, Effect(Msg)) {
   let #(accom_model, accom_effect) = init_accomplishments(None)
 
   let initial_nav_model = nav.init(Idle)
+  let initial_shop_nav_model = shop_nav.init(Idle)
 
   let model =
     Model(
       current_path: initial_path,
-      title: "instance.select",
+      title: "TandemX Moto",
       supabase_user: Idle,
       is_admin: False,
       nav_model: initial_nav_model,
+      shop_nav_model: initial_shop_nav_model,
       access_content_model: ac_model,
       partner_progress_model: pp_model,
       projects_model: proj_model,
@@ -121,6 +136,8 @@ pub fn init(_flags: Nil) -> #(Model, Effect(Msg)) {
       settings_model: set_model,
       landing_model: initial_landing_model,
       accomplishments_model: accom_model,
+      shop_model: shop_model,
+      custom_quote_model: custom_quote_model,
     )
 
   let #(model_after_route, route_effect) =
@@ -137,6 +154,8 @@ pub fn init(_flags: Nil) -> #(Model, Effect(Msg)) {
       effect.map(landing_effect, LandingMsg),
       route_effect,
       effect.map(accom_effect, AccomplishmentsMsg),
+      effect.map(shop_effect, ShopMsg),
+      effect.map(quote_effect, CustomQuoteMsg),
     ]),
   )
 }
@@ -207,6 +226,77 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
           )
         }
       }
+    }
+
+    ShopNavMsg(shop_nav_msg) -> {
+      let #(new_shop_nav_model, shop_nav_effect) =
+        shop_nav.update(model.shop_nav_model, shop_nav_msg)
+      
+      let new_model_with_updated_shop_nav =
+        Model(..model, shop_nav_model: new_shop_nav_model)
+      
+      case shop_nav_msg {
+        shop_nav.ParentShouldNavigate(path) -> {
+          let nav_effect = effect.from(fn(dispatch) { dispatch(PathChanged(path)) })
+          #(
+            new_model_with_updated_shop_nav,
+            effect.batch([
+              effect.map(shop_nav_effect, ShopNavMsg),
+              nav_effect,
+            ]),
+          )
+        }
+        shop_nav.ParentShouldLogin -> {
+          let login_effect =
+            effect.from(fn(dispatch) {
+              dispatch(SessionReceived(sign_in_with_github()))
+            })
+          #(
+            new_model_with_updated_shop_nav,
+            effect.batch([
+              effect.map(shop_nav_effect, ShopNavMsg),
+              login_effect,
+            ]),
+          )
+        }
+        shop_nav.ParentShouldLogout -> {
+          let logout_effect =
+            effect.from(fn(dispatch) {
+              dispatch(LogoutCompleted(sign_out_user()))
+            })
+          #(
+            new_model_with_updated_shop_nav,
+            effect.batch([
+              effect.map(shop_nav_effect, ShopNavMsg),
+              logout_effect,
+            ]),
+          )
+        }
+        _ -> {
+          #(
+            new_model_with_updated_shop_nav,
+            effect.map(shop_nav_effect, ShopNavMsg),
+          )
+        }
+      }
+    }
+
+    ShopMsg(shop_msg) -> {
+      let #(new_shop_model, shop_effect) =
+        shop.update(model.shop_model, shop_msg)
+      #(
+        Model(..model, shop_model: new_shop_model),
+        effect.map(shop_effect, ShopMsg),
+      )
+    }
+
+    CustomQuoteMsg(quote_msg) -> {
+      let #(new_quote_model, quote_effect) =
+        custom_quote.update(model.custom_quote_model, quote_msg)
+      #(
+        Model(..model, custom_quote_model: new_quote_model),
+        effect.map(quote_effect, CustomQuoteMsg),
+      )
     }
 
     AccessContentMsg(ac_msg) -> {
@@ -417,11 +507,25 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
 
 // Render the app UI
 pub fn view(model: Model) -> Element(Msg) {
-  let current_nav_model_for_view =
-    nav.Model(..model.nav_model, user_state: model.supabase_user)
+  let is_shop_route = string.starts_with(model.current_path, "/shop") || 
+                     string.starts_with(model.current_path, "/quote") ||
+                     string.starts_with(model.current_path, "/custom")
+
+  let navigation = case is_shop_route {
+    True -> {
+      let current_shop_nav_model = 
+        shop_nav.Model(..model.shop_nav_model, user_state: model.supabase_user)
+      element.map(shop_nav.view(current_shop_nav_model), ShopNavMsg)
+    }
+    False -> {
+      let current_nav_model_for_view =
+        nav.Model(..model.nav_model, user_state: model.supabase_user)
+      element.map(nav.view(current_nav_model_for_view), NavMsg)
+    }
+  }
 
   html.div([attribute.class("app-container")], [
-    element.map(nav.view(current_nav_model_for_view), NavMsg),
+    navigation,
     view_main_content(model),
   ])
 }
@@ -458,6 +562,14 @@ fn view_main_content(model: Model) -> Element(Msg) {
         view_accomplishments(model.accomplishments_model),
         AccomplishmentsMsg,
       )
+    ["", "shop"] ->
+      element.map(shop.view(model.shop_model), ShopMsg)
+    ["", "shop", ..] ->
+      element.map(shop.view(model.shop_model), ShopMsg)
+    ["", "quote"] ->
+      element.map(custom_quote.view(model.custom_quote_model), CustomQuoteMsg)
+    ["", "custom", "quote"] ->
+      element.map(custom_quote.view(model.custom_quote_model), CustomQuoteMsg)
     _ -> view_fallback_page()
   }
 }

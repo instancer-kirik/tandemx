@@ -17,7 +17,7 @@ packages = [
   { name = "gleam_regexp", version = "1.1.1", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "gleam_regexp", source = "hex", outer_checksum = "9C215C6CA84A5B35BB934A9B61A9A306EC743153BE2B0425A0D032E477B062A9" },
   { name = "gleam_stdlib", version = "0.60.0", build_tools = ["gleam"], requirements = [], otp_app = "gleam_stdlib", source = "hex", outer_checksum = "621D600BB134BC239CB2537630899817B1A42E60A1D46C5E9F3FAE39F88C800B" },
   { name = "gleam_yielder", version = "1.1.0", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "gleam_yielder", source = "hex", outer_checksum = "8E4E4ECFA7982859F430C57F549200C7749823C106759F4A19A78AEA6687717A" },
-  { name = "glenvy", version = "1.2.0", build_tools = ["gleam"], requirements = ["gleam_erlang", "gleam_stdlib", "nibble", "simplifile"], otp_app = "glenvy", source = "hex", outer_checksum = "4B03F50180E5270B8104B068447C1AE5D40110270A0ED352F27BDB2E81B14DF8" },
+  { name = "glenvy", version = "2.0.0", build_tools = ["gleam"], requirements = ["gleam_erlang", "gleam_stdlib", "nibble", "simplifile"], otp_app = "glenvy", source = "hex", outer_checksum = "18A4EB33CD533C76C9D1C0E507257744579BE10B71038C484D0F2284460839B9" },
   { name = "glisten", version = "7.0.1", build_tools = ["gleam"], requirements = ["gleam_erlang", "gleam_otp", "gleam_stdlib", "logging", "telemetry"], otp_app = "glisten", source = "hex", outer_checksum = "1A53CF9FB3231A93FF7F1BD519A43DC968C1722F126CDD278403A78725FC5189" },
   { name = "gramps", version = "3.0.1", build_tools = ["gleam"], requirements = ["gleam_crypto", "gleam_erlang", "gleam_http", "gleam_stdlib"], otp_app = "gramps", source = "hex", outer_checksum = "59194B3980110B403EE6B75330DB82CDE05FC8138491C2EAEACBC7AAEF30B2E8" },
   { name = "houdini", version = "1.1.0", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "houdini", source = "hex", outer_checksum = "5BA517E5179F132F0471CB314F27FE210A10407387DA1EA4F6FD084F74469FC2" },
@@ -41,9 +41,10 @@ gleam_erlang = { version = "~> 0.34" }
 gleam_http = { version = "~> 4.0.0" }
 gleam_httpc = { version = "~> 4.1.1" }
 gleam_json = { version = "~> 3.0.1" }
+gleam_otp = { version = ">= 0.16.1 and < 1.0.0" }
 gleam_regexp = { version = "~> 1.1.1" }
 gleam_stdlib = { version = "~> 0.60.0" }
-glenvy = { version = "~> 1.0" }
+glenvy = { version = ">= 2.0.0 and < 3.0.0" }
 mist = { version = "~> 4.0.7" }
 simplifile = { version = "~> 2.2.1" }
 snag = { version = "~> 1.1.0" }

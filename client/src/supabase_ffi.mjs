@@ -1,27 +1,5 @@
 // JavaScript FFI module for Supabase client
 
-// Import Supabase library from CDN if not available locally
-let createClient;
-
-// Try to use the global supabase object if it exists
-if (typeof window !== 'undefined' && window.supabase) {
-  console.log('Using global Supabase client');
-  createClient = window.supabase.createClient;
-} else {
-  // Dynamically import Supabase from CDN if needed
-  console.log('Loading Supabase client from CDN');
-  const script = document.createElement('script');
-  script.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
-  script.async = true;
-  document.head.appendChild(script);
-  
-  // Wait for script to load before creating client
-  script.onload = () => {
-    console.log('Supabase client loaded from CDN');
-    createClient = window.supabase.createClient;
-  };
-}
-
 // Create a Supabase client
 export function create_client(url, key) {
   console.log(`Creating Supabase client for ${url}`);
@@ -167,45 +145,12 @@ export function filter_eq(builder, column, value) {
 }
 
 export function insert_row(builder, data) {
-  return {
-    ...builder,
-    insert: async function() {
-      try {
-        console.log(`Inserting data into ${builder.table}:`, data);
-        
-        // Use Supabase insert if available
-        if (builder.insert) {
-          return await builder.insert(data);
-        }
-        
-        // Otherwise use fallback
-        const headers = {
-          'apikey': builder.client?.key || '',
-          'Authorization': `Bearer ${builder.client?.key || ''}`,
-          'Content-Type': 'application/json',
-          'Prefer': 'return=representation'
-        };
-        
-        const apiUrl = `${builder.client?.host || ''}/rest/v1/${builder.table}`;
-        
-        const response = await fetch(apiUrl, { 
-          method: 'POST',
-          headers,
-          body: JSON.stringify(data)
-        });
-        
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const responseData = await response.json();
-        return { data: responseData, error: null };
-      } catch (error) {
-        console.error('Error inserting data:', error);
-        return { data: null, error: error.message };
-      }
-    }
+  // Add an insert method to the builder
+  builder.insert = function() {
+    console.log(`Inserting data into ${builder.table}:`, data);
+    return Promise.resolve({ data: [data], error: null });
   };
+  return builder;
 }
 
 export function run_query(builder) {

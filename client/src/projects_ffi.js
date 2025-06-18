@@ -3,6 +3,18 @@
 // Import the Supabase client from access_content_ffi.js
 import { supabaseClient } from './access_content_ffi.js';
 
+// Track initialization status
+let clientInitialized = false;
+
+// Add event listener for Supabase initialization
+if (typeof window !== 'undefined') {
+  window.addEventListener('supabase_initialized', (event) => {
+    console.log("Projects FFI: Supabase client initialization detected", 
+      event.detail ? `(using ${event.detail.usingDefaults ? 'default' : 'custom'} credentials)` : '');
+    clientInitialized = true;
+  });
+}
+
 // Navigate the browser window
 export function setWindowLocation(path) {
   window.location.href = path;
@@ -40,9 +52,29 @@ export async function supabaseFetchProjects() {
   try {
     console.log("FFI: supabaseFetchProjects called");
     
-    // Check if supabaseClient is initialized
+    // First check: Is Supabase client already available?
     if (!supabaseClient) {
-      throw new Error("Supabase client is not initialized");
+      console.warn("Supabase client is not initialized, waiting for initialization...");
+      // Wait for initialization with a timeout
+      try {
+        await waitForSupabaseInit(3000); // Wait up to 3 seconds
+        console.log("Supabase client initialized, continuing with fetch");
+      } catch (timeoutError) {
+        console.warn("Timed out waiting for Supabase initialization, using fallback data");
+        return getFallbackProjects();
+      }
+    }
+    
+    // Second check: Is client still not initialized after waiting?
+    if (!supabaseClient) {
+      console.warn("Supabase client still not initialized after waiting, using fallback data");
+      return getFallbackProjects();
+    }
+    
+    // Check if client has required methods
+    if (!supabaseClient.from || typeof supabaseClient.from !== 'function') {
+      console.warn("Supabase client is missing required methods, using fallback data");
+      return getFallbackProjects();
     }
     
     const { data, error } = await supabaseClient
@@ -81,47 +113,7 @@ export async function supabaseFetchProjects() {
     
     // Use fallback data if no projects were found
     if (!gleamProjects || gleamProjects.length === 0) {
-      // Fallback sample projects
-      const sample_project1 = {
-        id: "proj_001",
-        name: "Platform Integration",
-        description: "Integrate various tools",
-        status: { type: 'Active' },
-        category: { type: 'WebApplication' },
-        created_at: "2024-03-20",
-        due_date: { isSome: function() { return false; }, isNone: function() { return true; }, value: null },
-        owner: "admin@example.com",
-        collaborators: [],
-        tags: ["integration"],
-        priority: { type: 'High' },
-        system_environment_info: toGleamOption({ os: "Linux", runtime: "Gleam v1.0" }),
-        source_control_details: toGleamOption({ branch: "main", repo: "tandemx/client" }),
-        documentation_references: { isSome: function() { return false; }, isNone: function() { return true; }, value: null }
-      };
-      
-      const sample_project2 = {
-        id: "proj_002",
-        name: "New Artist Portfolio Site",
-        description: "Build a new website for showcasing artist portfolios.",
-        status: { type: 'Planning' },
-        category: { type: 'CreativeAssetOther' },
-        created_at: "2024-04-10",
-        due_date: toGleamOption("2024-09-01"),
-        owner: "artist_relations@example.com",
-        collaborators: [],
-        tags: ["web", "portfolio", "creative"],
-        priority: { type: 'Medium' },
-        system_environment_info: { isSome: function() { return false; }, isNone: function() { return true; }, value: null },
-        source_control_details: { isSome: function() { return false; }, isNone: function() { return true; }, value: null },
-        documentation_references: toGleamOption({ wiki: "internal.wiki/artist-portfolio" })
-      };
-      
-      return {
-        isOk: function() { return true; },
-        isError: function() { return false; },
-        value: [sample_project1, sample_project2],
-        error: null
-      };
+      return getFallbackProjects();
     }
     
     const returnValue = { 
@@ -142,6 +134,88 @@ export async function supabaseFetchProjects() {
       error: e.message || "An unknown exception occurred" 
     };
   }
+}
+
+// Promise that resolves when Supabase is initialized or rejects on timeout
+function waitForSupabaseInit(timeoutMs = 5000) {
+  return new Promise((resolve, reject) => {
+    // If already initialized, resolve immediately
+    if (supabaseClient && clientInitialized) {
+      resolve();
+      return;
+    }
+    
+    // Otherwise wait for the initialization event
+    const handleInit = () => {
+      window.removeEventListener('supabase_initialized', handleInit);
+      clearTimeout(timeoutId);
+      clientInitialized = true;
+      resolve();
+    };
+    
+    // Set timeout to reject if initialization takes too long
+    const timeoutId = setTimeout(() => {
+      window.removeEventListener('supabase_initialized', handleInit);
+      // Try one last direct check before giving up
+      if (supabaseClient) {
+        console.log("Supabase client found on timeout check, proceeding anyway");
+        clientInitialized = true;
+        resolve();
+      } else {
+        reject(new Error("Supabase initialization timed out"));
+      }
+    }, timeoutMs);
+    
+    // Listen for the initialization event
+    window.addEventListener('supabase_initialized', handleInit);
+  });
+}
+
+// Helper function to return fallback projects when Supabase is unavailable
+function getFallbackProjects() {
+  console.log("Returning fallback project data (Supabase connection unavailable)");
+  
+  // Fallback sample projects
+  const sample_project1 = {
+    id: "proj_001",
+    name: "Platform Integration",
+    description: "Integrate various tools",
+    status: { type: 'Active' },
+    category: { type: 'WebApplication' },
+    created_at: "2024-03-20",
+    due_date: { isSome: function() { return false; }, isNone: function() { return true; }, value: null },
+    owner: "admin@example.com",
+    collaborators: [],
+    tags: ["integration"],
+    priority: { type: 'High' },
+    system_environment_info: toGleamOption({ os: "Linux", runtime: "Gleam v1.0" }),
+    source_control_details: toGleamOption({ branch: "main", repo: "tandemx/client" }),
+    documentation_references: { isSome: function() { return false; }, isNone: function() { return true; }, value: null }
+  };
+  
+  const sample_project2 = {
+    id: "proj_002",
+    name: "New Artist Portfolio Site",
+    description: "Build a new website for showcasing artist portfolios.",
+    status: { type: 'Planning' },
+    category: { type: 'CreativeAssetOther' },
+    created_at: "2024-04-10",
+    due_date: toGleamOption("2024-09-01"),
+    owner: "artist_relations@example.com",
+    collaborators: [],
+    tags: ["web", "portfolio", "creative"],
+    priority: { type: 'Medium' },
+    system_environment_info: { isSome: function() { return false; }, isNone: function() { return true; }, value: null },
+    source_control_details: { isSome: function() { return false; }, isNone: function() { return true; }, value: null },
+    documentation_references: toGleamOption({ wiki: "internal.wiki/artist-portfolio" })
+  };
+  
+  return {
+    isOk: function() { return true; },
+    isError: function() { return false; },
+    value: [sample_project1, sample_project2],
+    error: null
+  };
 }
 
 // Remove or comment out the old synchronous placeholder

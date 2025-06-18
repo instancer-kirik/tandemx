@@ -1,0 +1,399 @@
+/* TandemX Motorcycle Hero Section Styles */
+
+.moto-hero {
+  position: relative;
+  min-height: 80vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 50%, #1a1a1a 100%);
+  color: #fff;
+  overflow: hidden;
+  margin-bottom: 40px;
+}
+
+.moto-hero-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: url('/images/motorcycle-hero-bg.jpg') center/cover;
+  opacity: 0.3;
+  z-index: 1;
+}
+
+.moto-hero-background::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(45deg, #ff6b35 0%, transparent 50%, #ff6b35 100%);
+  opacity: 0.1;
+  z-index: 2;
+}
+
+.moto-hero-content {
+  position: relative;
+  z-index: 3;
+  max-width: 1400px;
+  width: 100%;
+  padding: 0 20px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 60px;
+  align-items: center;
+}
+
+.moto-hero-text {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.moto-hero-title {
+  font-size: 64px;
+  font-weight: 900;
+  line-height: 1.1;
+  margin: 0;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+  letter-spacing: -1px;
+}
+
+.moto-hero-subtitle {
+  color: #ff6b35;
+  font-size: 36px;
+  font-weight: 700;
+  display: block;
+  margin-top: 8px;
+}
+
+.moto-hero-description {
+  font-size: 20px;
+  line-height: 1.6;
+  color: #ccc;
+  margin: 0;
+  max-width: 500px;
+}
+
+.moto-hero-actions {
+  display: flex;
+  gap: 20px;
+  margin-top: 12px;
+}
+
+.moto-btn {
+  padding: 16px 32px;
+  border: none;
+  border-radius: 8px;
+  font-size: 18px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+  overflow: hidden;
+}
+
+.moto-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s ease;
+}
+
+.moto-btn:hover::before {
+  left: 100%;
+}
+
+.moto-btn.primary {
+  background: #ff6b35;
+  color: #fff;
+  box-shadow: 0 4px 16px rgba(255, 107, 53, 0.3);
+}
+
+.moto-btn.primary:hover {
+  background: #e55a2b;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(255, 107, 53, 0.4);
+}
+
+.moto-btn.secondary {
+  background: transparent;
+  color: #fff;
+  border: 2px solid #ff6b35;
+}
+
+.moto-btn.secondary:hover {
+  background: #ff6b35;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(255, 107, 53, 0.3);
+}
+
+.moto-hero-features {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 32px;
+  padding: 40px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 16px;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.moto-feature {
+  text-align: center;
+  padding: 20px;
+  transition: transform 0.3s ease;
+}
+
+.moto-feature:hover {
+  transform: translateY(-4px);
+}
+
+.moto-feature-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  filter: drop-shadow(0 4px 8px rgba(255, 107, 53, 0.3));
+}
+
+.moto-feature-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #fff;
+  margin: 0 0 8px 0;
+}
+
+.moto-feature-desc {
+  font-size: 14px;
+  color: #ccc;
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+  .moto-hero-content {
+    gap: 40px;
+  }
+  
+  .moto-hero-title {
+    font-size: 56px;
+  }
+  
+  .moto-hero-subtitle {
+    font-size: 32px;
+  }
+}
+
+@media (max-width: 968px) {
+  .moto-hero {
+    min-height: 70vh;
+  }
+  
+  .moto-hero-content {
+    grid-template-columns: 1fr;
+    text-align: center;
+    gap: 40px;
+  }
+  
+  .moto-hero-title {
+    font-size: 48px;
+  }
+  
+  .moto-hero-subtitle {
+    font-size: 28px;
+  }
+  
+  .moto-hero-description {
+    font-size: 18px;
+    max-width: none;
+  }
+  
+  .moto-hero-features {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    padding: 30px;
+  }
+}
+
+@media (max-width: 768px) {
+  .moto-hero {
+    min-height: 60vh;
+    margin-bottom: 20px;
+  }
+  
+  .moto-hero-content {
+    padding: 0 15px;
+  }
+  
+  .moto-hero-title {
+    font-size: 40px;
+  }
+  
+  .moto-hero-subtitle {
+    font-size: 24px;
+  }
+  
+  .moto-hero-description {
+    font-size: 16px;
+  }
+  
+  .moto-hero-actions {
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .moto-btn {
+    padding: 14px 24px;
+    font-size: 16px;
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .moto-hero-features {
+    grid-template-columns: 1fr;
+    gap: 16px;
+    padding: 20px;
+  }
+  
+  .moto-feature {
+    padding: 16px;
+  }
+  
+  .moto-feature-icon {
+    font-size: 36px;
+    margin-bottom: 12px;
+  }
+  
+  .moto-feature-title {
+    font-size: 18px;
+  }
+  
+  .moto-feature-desc {
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 480px) {
+  .moto-hero-title {
+    font-size: 32px;
+  }
+  
+  .moto-hero-subtitle {
+    font-size: 20px;
+  }
+  
+  .moto-hero-description {
+    font-size: 14px;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .moto-hero {
+    background: #000;
+  }
+  
+  .moto-hero-background {
+    opacity: 0.1;
+  }
+  
+  .moto-btn.secondary {
+    border-width: 3px;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .moto-btn,
+  .moto-feature,
+  .moto-btn::before {
+    transition: none;
+  }
+  
+  .moto-btn:hover,
+  .moto-feature:hover {
+    transform: none;
+  }
+  
+  .moto-btn:hover::before {
+    left: -100%;
+  }
+}
+
+/* Print styles */
+@media print {
+  .moto-hero {
+    min-height: auto;
+    background: #fff;
+    color: #000;
+    page-break-inside: avoid;
+  }
+  
+  .moto-hero-background {
+    display: none;
+  }
+  
+  .moto-hero-actions {
+    display: none;
+  }
+  
+  .moto-hero-title {
+    color: #000;
+    text-shadow: none;
+  }
+  
+  .moto-hero-subtitle {
+    color: #333;
+  }
+  
+  .moto-hero-description {
+    color: #666;
+  }
+}
+
+/* Focus states for accessibility */
+.moto-btn:focus {
+  outline: 3px solid #ff6b35;
+  outline-offset: 2px;
+}
+
+/* Animation for hero entrance */
+@keyframes heroFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.moto-hero-text {
+  animation: heroFadeIn 0.8s ease-out;
+}
+
+.moto-hero-features {
+  animation: heroFadeIn 0.8s ease-out 0.2s both;
+}
+
+/* Bike icon animation */
+@keyframes bikeRide {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(10px); }
+}
+
+.moto-btn.primary:hover {
+  animation: bikeRide 0.5s ease-in-out;
+}

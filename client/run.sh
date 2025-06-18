@@ -10,92 +10,105 @@ echo -e "${GREEN}Starting TandemX client setup...${NC}"
 
 # Default settings
 SKIP_DB=false
+USE_TURSO=false
 ELECTRIC_PORT=5133
 POSTGRES_PORT=54321
+TURSO_PORT=8080
+
+# Check if Turso is enabled via environment variable
+if [ "$TURSO_DB" = "true" ]; then
+  USE_TURSO=true
+  # Force database features to be enabled when using Turso
+  SKIP_DB=false
+fi
 
 # Parse command-line arguments
 while [[ "$#" -gt 0 ]]; do
   case $1 in
     --skip-db) SKIP_DB=true; shift ;;
+    --use-turso) USE_TURSO=true; shift ;;
     --electric-port) ELECTRIC_PORT="$2"; shift 2 ;;
     --postgres-port) POSTGRES_PORT="$2"; shift 2 ;;
-    *) 
-      # Handle port argument from the server directly
-      if [[ "$1" == "--port" && "$#" -gt 1 ]]; then
-        SERVER_PORT="$2"
-        shift 2
-      else
-        echo "Unknown parameter: $1"; exit 1
-      fi
-    ;;
+    --turso-port) TURSO_PORT="$2"; shift 2 ;;
+    --port) SERVER_PORT="$2"; shift 2 ;;
+    *) shift ;;  # Skip unknown parameters silently
   esac
 done
 
 # Default port if not specified
 SERVER_PORT=${SERVER_PORT:-8000}
 
-if [ "$SKIP_DB" = true ]; then
-  echo -e "${YELLOW}Database sync is disabled. Running in standalone mode.${NC}"
-else
-  # Check if Docker is running
-  if command -v docker &> /dev/null; then
-    if ! docker info &> /dev/null; then
-      echo -e "${RED}Docker is not running. Please start Docker first.${NC}"
-      echo -e "${YELLOW}Note: The ElectricSQL database requires Docker to be running.${NC}"
-      echo -e "${YELLOW}You can continue with --skip-db flag to run without database.${NC}"
-      echo -e "${YELLOW}Proceed anyway? This will disable database features. (y/n)${NC}"
-      read -r proceed
-      if [[ ! "$proceed" =~ ^[Yy]$ ]]; then
-        echo -e "${RED}Setup aborted.${NC}"
-        exit 1
-      fi
-      SKIP_DB=true
+if [ "$USE_TURSO" = true ]; then
+  echo -e "${GREEN}Using Turso database...${NC}"
+  
+  # Load Turso credentials from .env file if it exists
+  if [ -f "../.env" ]; then
+    source "../.env"
+    echo -e "${GREEN}Loaded environment variables from .env file${NC}"
+  fi
+  
+  # Check if Turso CLI is installed
+  if command -v turso &> /dev/null; then
+    echo -e "${GREEN}Turso CLI detected.${NC}"
+    
+    # Check Turso auth status
+    TURSO_STATUS=$(turso auth status 2>&1)
+    if [[ $TURSO_STATUS == *"not logged in"* ]]; then
+      echo -e "${YELLOW}Not logged in to Turso. Some features may require authentication.${NC}"
+      echo -e "${YELLOW}Run 'turso auth login' to authenticate.${NC}"
     else
-      # Check if ElectricSQL container is running
-      if ! docker ps | grep -q electric; then
-        echo -e "${YELLOW}ElectricSQL container not detected.${NC}"
-        echo -e "${YELLOW}Do you want to start the database services? (y/n)${NC}"
-        read -r start_db
-        if [[ "$start_db" =~ ^[Yy]$ ]]; then
-          echo -e "${GREEN}Starting ElectricSQL services...${NC}"
-          cd .. && docker-compose up -d
-          echo -e "${YELLOW}Waiting for services to start...${NC}"
-          sleep 8  # Increased wait time for services to fully initialize
-          cd - > /dev/null
-          
-          # Verify Electric service is running and responding
-          echo -e "${YELLOW}Verifying ElectricSQL service...${NC}"
-          if ! curl -s http://localhost:$ELECTRIC_PORT/api/status > /dev/null 2>&1; then
-            echo -e "${YELLOW}ElectricSQL service not responding. Will run with database features disabled.${NC}"
-            SKIP_DB=true
-          else
-            echo -e "${GREEN}ElectricSQL services verified and running.${NC}"
-            
-            # Set environment variables for auth
-            export PG_PROXY_PASSWORD=proxy_password
-            export DATABASE_URL="postgresql://postgres:password@localhost:$POSTGRES_PORT/tandemx"
-            export ELECTRIC_URL="http://localhost:$ELECTRIC_PORT"
-            export AUTH_MODE=insecure
-          fi
-        else
-          echo -e "${YELLOW}Continuing without database services. Some features may not work.${NC}"
-          SKIP_DB=true
-        fi
-      else
-        echo -e "${GREEN}ElectricSQL services detected and running.${NC}"
-        
-        # Set environment variables for auth
-        export PG_PROXY_PASSWORD=proxy_password
-        export DATABASE_URL="postgresql://postgres:password@localhost:$POSTGRES_PORT/tandemx"
-        export ELECTRIC_URL="http://localhost:$ELECTRIC_PORT"
-        export AUTH_MODE=insecure
-      fi
+      echo -e "${GREEN}Logged in to Turso.${NC}"
+    fi
+    
+    # Set Turso environment variables if not already set
+    if [ -z "$TURSO_DATABASE_URL" ]; then
+      echo -e "${YELLOW}TURSO_DATABASE_URL not set. Using local development database.${NC}"
+      export TURSO_DATABASE_URL="file:tandemx.db"
     fi
   else
-    echo -e "${YELLOW}Docker not found. The database services will not be available.${NC}"
-    echo -e "${YELLOW}Running with database features disabled.${NC}"
-    SKIP_DB=true
+    echo -e "${YELLOW}Turso CLI not found. Using local SQLite database.${NC}"
+    export TURSO_DATABASE_URL="file:tandemx.db"
   fi
+  
+  # Load Supabase credentials from .env file if it exists
+  if [ -f "../.env" ]; then
+    source "../.env"
+    echo -e "${GREEN}Loaded Supabase credentials from .env file${NC}"
+  fi
+  
+  # Explicitly unset ElectricSQL variables to prevent conflicts
+  unset DATABASE_URL
+  unset ELECTRIC_URL
+  unset PG_PROXY_PASSWORD
+  unset AUTH_MODE
+  
+  # Ensure database features are enabled
+  SKIP_DB=false
+elif [ "$SKIP_DB" = true ]; then
+  echo -e "${YELLOW}Database sync is disabled. Running in standalone mode.${NC}"
+else
+  # Automatically switch to Turso since ElectricSQL has issues
+  echo -e "${YELLOW}Switching to Turso database by default...${NC}"
+  USE_TURSO=true
+  
+  # Set Turso environment variables
+  export TURSO_DATABASE_URL="file:tandemx.db"
+  echo -e "${YELLOW}Using local SQLite database.${NC}"
+  
+  # Explicitly unset ElectricSQL variables
+  unset DATABASE_URL
+  unset ELECTRIC_URL
+  unset PG_PROXY_PASSWORD
+  unset AUTH_MODE
+  
+  # Load .env file if it exists
+  if [ -f "../.env" ]; then
+    source "../.env"
+    echo -e "${GREEN}Loaded environment variables from .env file${NC}"
+  fi
+  
+  # Ensure database features are enabled
+  SKIP_DB=false
 fi
 
 # Check if running in fish shell and adjusting commands accordingly
@@ -173,26 +186,54 @@ echo -e "${GREEN}Building server...${NC}"
 cd ../server
 gleam build
 
-# Create a simple file to disable database features
+# Create a simple file to disable database features or set Turso mode
 if [ "$SKIP_DB" = true ]; then
   echo -e "${YELLOW}Creating file to disable database features...${NC}"
-  echo "Database features disabled by run.sh script" > .disable_db
+  echo "Database features disabled by run.sh script" > ../.disable_db
+  # Remove Turso flag if it exists
+  if [ -f "../.use_turso" ]; then
+    rm ../.use_turso
+  fi
+elif [ "$USE_TURSO" = true ]; then
+  echo -e "${YELLOW}Creating file to enable Turso database...${NC}"
+  echo "Using Turso database by run.sh script" > ../.use_turso
+  # Remove disable flag if it exists
+  if [ -f "../.disable_db" ]; then
+    rm ../.disable_db
+  fi
 else
-  # Remove the flag file if it exists
-  if [ -f ".disable_db" ]; then
-    rm .disable_db
+  # Remove the flag files if they exist
+  if [ -f "../.disable_db" ]; then
+    rm ../.disable_db
+  fi
+  if [ -f "../.use_turso" ]; then
+    rm ../.use_turso
   fi
 fi
 
-# Check if db_init module exists, and run it if database is enabled
-if [ "$SKIP_DB" = false ] && grep -q "db_init" src/*.gleam 2>/dev/null; then
-  echo -e "${YELLOW}Initializing database...${NC}"
-  gleam run -m db_init || echo -e "${YELLOW}Database initialization skipped or failed. Continuing...${NC}"
+# Check if database initialization is needed
+if [ "$SKIP_DB" = false ]; then
+  cd ../server
+  if [ "$USE_TURSO" = true ]; then
+    echo -e "${YELLOW}Initializing Turso database...${NC}"
+    cd ../server
+    if grep -q "turso_db_setup" src/*.gleam 2>/dev/null; then
+      gleam run -m turso_db_setup || echo -e "${YELLOW}Turso database initialization skipped or failed. Continuing...${NC}"
+    fi
+    cd - > /dev/null
+  fi
+  cd - > /dev/null
 fi
 
-# Start the server with appropriate port
-echo -e "${YELLOW}Starting server on port ${SERVER_PORT}...${NC}"
-gleam run -m dev_server -- --port $SERVER_PORT &
+# Start the server with appropriate port and flags
+cd ../server
+if [ "$USE_TURSO" = true ]; then
+  echo -e "${YELLOW}Starting server with Turso on port ${SERVER_PORT}...${NC}"
+  gleam run -m dev_server -- --port $SERVER_PORT --use-turso --setup-db &
+else
+  echo -e "${YELLOW}Starting server on port ${SERVER_PORT}...${NC}"
+  gleam run -m dev_server -- --port $SERVER_PORT &
+fi
 
 # Store the PID of the server process
 SERVER_PID=$!
@@ -225,11 +266,24 @@ echo -e "Open your browser at ${YELLOW}http://localhost:$SERVER_PORT/${NC}"
 if [ "$SKIP_DB" = true ]; then
   echo -e "${YELLOW}Running in standalone mode without database connectivity.${NC}"
   echo -e "${YELLOW}To enable database features, restart without the --skip-db flag${NC}"
-  echo -e "${YELLOW}and ensure Docker with ElectricSQL is running.${NC}"
+elif [ "$USE_TURSO" = true ]; then
+  echo -e "${YELLOW}Running with Turso database.${NC}"
+  
+  # Show database info
+  if [[ "$TURSO_DATABASE_URL" == file:* ]]; then
+    echo -e "${YELLOW}Using local SQLite database: ${TURSO_DATABASE_URL#file:}${NC}"
+  else
+    echo -e "${GREEN}Connected to remote Turso database${NC}"
+  fi
+  
+  # Check if Supabase credentials are set
+  if [ -n "$SUPABASE_URL" ]; then
+    echo -e "${GREEN}Supabase is configured${NC}"
+  else
+    echo -e "${YELLOW}Supabase credentials not found (optional)${NC}"
+  fi
 else
-  echo -e "${YELLOW}Database features are enabled. If you see subscription errors,${NC}"
-  echo -e "${YELLOW}they may be safely ignored for non-database functionality.${NC}"
-  echo -e "${YELLOW}To disable database features, restart with the --skip-db flag.${NC}"
+  echo -e "${YELLOW}An unexpected error occurred with the database configuration.${NC}"
 fi
 
 echo -e "Press Ctrl+C to stop the server"

@@ -8,14 +8,25 @@
     "@react-three/fiber": "^8.18.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "three": "^0.162.0"
+    "three": "^0.162.0",
+    "@libsql/client": "^0.4.2"
   },
   "devDependencies": {
     "dotenv": "^16.5.0"
   },
   "scripts": {
-    "start": "./run.sh --skip-db",
+    "start": "bun run bun-start.js",
+    "start:legacy": "TURSO_DB=true ./run.sh --use-turso",
+    "start:electric": "./run.sh",
+    "start:no-db": "./run.sh --skip-db",
+    "inventory": "bun run bun-start.js",
+    "inventory:test": "echo 'Testing inventory transactions' && bun run test-inventory.js",
     "build": "gleam build",
-    "test-db": "node test-db.js"
+    "test-db": "node test-db.js",
+    "test-turso": "bun run test-turso.js",
+    "test-supabase": "bun run test-supabase.js",
+    "fix-css": "bun run fix-css.js",
+    "troubleshoot": "echo 'Running troubleshooting tools...' && bun run test-turso.js && bun run test-supabase.js && bun run fix-css.js",
+    "postinstall": "echo 'TandemX installed successfully! Run \"bun start\" to start the standalone server.'"
   }
 }

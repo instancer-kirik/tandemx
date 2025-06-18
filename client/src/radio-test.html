@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📻 Pockets Radio - Standalone Test</title>
+    <style>
+        /* Pockets Radio - Standalone CSS */
+        body {
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+        }
+
+        .radio-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .radio-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .radio-header h1 {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .radio-header p {
+            font-size: 1.2rem;
+            opacity: 0.8;
+        }
+
+        /* Channel Selector */
+        .channel-selector {
+            margin-bottom: 2rem;
+        }
+
+        .channel-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .channel-button {
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 16px;
+            padding: 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            color: white;
+            text-align: left;
+        }
+
+        .channel-button:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.4);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+        }
+
+        .channel-button.selected {
+            background: rgba(255, 255, 255, 0.25);
+            border-color: #00d2ff;
+            box-shadow: 0 0 20px rgba(0, 210, 255, 0.3);
+        }
+
+        .channel-name {
+            font-size: 1.4rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+
+        .channel-theme {
+            font-size: 1.8rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .channel-desc {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            line-height: 1.4;
+        }
+
+        /* Player */
+        .player {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 20px;
+            padding: 2rem;
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 2rem;
+        }
+
+        /* Now Playing */
+        .now-playing {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .now-playing.empty {
+            opacity: 0.6;
+            font-style: italic;
+        }
+
+        .track-title {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .track-artist {
+            font-size: 1.2rem;
+            opacity: 0.8;
+        }
+
+        /* Playback Controls */
+        .playback-controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .control-btn, .play-pause-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .control-btn {
+            width: 50px;
+            height: 50px;
+            font-size: 1.2rem;
+        }
+
+        .play-pause-btn {
+            width: 70px;
+            height: 70px;
+            font-size: 1.8rem;
+        }
+
+        .control-btn:hover, .play-pause-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.4);
+            transform: scale(1.05);
+        }
+
+        .control-btn:active, .play-pause-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* Progress Bar */
+        .progress-container {
+            margin-bottom: 2rem;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+            cursor: pointer;
+            margin-bottom: 0.5rem;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #00d2ff, #3a7bd5);
+            border-radius: 4px;
+            transition: width 0.1s ease;
+            box-shadow: 0 0 10px rgba(0, 210, 255, 0.5);
+            width: 0%;
+        }
+
+        .time-display {
+            text-align: center;
+            font-size: 0.9rem;
+            opacity: 0.8;
+            font-family: 'Courier New', monospace;
+        }
+
+        /* Volume Control */
+        .volume-control {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .volume-control input[type="range"] {
+            width: 150px;
+            height: 6px;
+            border-radius: 3px;
+            background: rgba(255, 255, 255, 0.2);
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        .volume-control input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #00d2ff;
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Status Display */
+        .status-display {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+            padding: 1rem;
+            margin-bottom: 2rem;
+            font-family: monospace;
+            font-size: 0.9rem;
+        }
+
+        /* Test Controls */
+        .test-controls {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .test-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            color: white;
+            padding: 0.8rem 1.5rem;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .test-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: rgba(255, 255, 255, 0.5);
+            transform: translateY(-2px);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .radio-container {
+                padding: 1rem;
+            }
+            
+            .channel-grid {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+            
+            .radio-header h1 {
+                font-size: 2rem;
+            }
+            
+            .player {
+                padding: 1.5rem;
+            }
+            
+            .track-title {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="radio-container">
+        <div class="radio-header">
+            <h1>📻 Pockets Radio</h1>
+            <p>Your soundtrack for creativity - Standalone Test</p>
+        </div>
+
+        <div class="test-controls">
+            <button class="test-btn" onclick="testAudioSupport()">Test Audio Support</button>
+            <button class="test-btn" onclick="generateTestTone()">Generate Test Tone</button>
+            <button class="test-btn" onclick="clearStatus()">Clear Status</button>
+        </div>
+
+        <div class="status-display" id="status">
+            Status: Ready - Click a test button or select a channel
+        </div>
+
+        <div class="channel-selector">
+            <div class="channel-grid">
+                <div class="channel-button" onclick="selectChannel('main')" id="channel-main">
+                    <div class="channel-name">Main</div>
+                    <div class="channel-theme">🎵</div>
+                    <div class="channel-desc">Electronic & Chill - Your productivity soundtrack</div>
+                </div>
+                
+                <div class="channel-button" onclick="selectChannel('talk')" id="channel-talk">
+                    <div class="channel-name">Talk</div>
+                    <div class="channel-theme">🎙️</div>
+                    <div class="channel-desc">Conversations & Podcasts - Creative discussions</div>
+                </div>
+                
+                <div class="channel-button" onclick="selectChannel('night')" id="channel-night">
+                    <div class="channel-name">Night Vibes</div>
+                    <div class="channel-theme">🌙</div>
+                    <div class="channel-desc">Ambient & Focus - Late night deep work</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="player">
+            <div class="now-playing" id="now-playing">
+                <div class="track-title" id="track-title">Select a channel to start listening</div>
+                <div class="track-artist" id="track-artist"></div>
+            </div>
+
+            <div class="playback-controls">
+                <button class="control-btn" onclick="previousTrack()">⏮️</button>
+                <button class="play-pause-btn" onclick="togglePlayPause()" id="play-btn">▶️</button>
+                <button class="control-btn" onclick="nextTrack()">⏭️</button>
+            </div>
+
+            <div class="progress-container">
+                <div class="progress-bar" onclick="seekAudio(event)">
+                    <div class="progress-fill" id="progress-fill"></div>
+                </div>
+                <div class="time-display" id="time-display">0:00 / 0:00</div>
+            </div>
+
+            <div class="volume-control">
+                <span>🔊</span>
+                <input type="range" min="0" max="100" value="80" id="volume-slider" onchange="setVolume(this.value)">
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden audio element -->
+    <audio id="audio-player" preload="metadata"></audio>
+
+    <script>
+        // Radio State
+        let currentChannel = null;
+        let currentTrack = null;
+        let isPlaying = false;
+        let audioPlayer = document.getElementById('audio-player');
+        let statusEl = document.getElementById('status');
+
+        // Mock channel data
+        const channels = {
+            main: {
+                id: 'main',
+                name: 'Main',
+                tracks: [
+                    { title: 'Digital Sunrise', artist: 'Synth Explorer', duration: 225 },
+                    { title: 'Neon Dreams', artist: 'Digital Waves', duration: 180 },
+                    { title: 'Forest Whispers', artist: 'Nature Sounds', duration: 300 }
+                ],
+                currentIndex: 0
+            },
+            talk: {
+                id: 'talk',
+                name: 'Talk',
+                tracks: [
+                    { title: 'Creative Process Deep Dive', artist: 'POCKETS Host', duration: 1800 }
+                ],
+                currentIndex: 0
+            },
+            night: {
+                id: 'night',
+                name: 'Night Vibes',
+                tracks: [
+                    { title: 'Midnight Code Session', artist: 'Ambient Coder', duration: 3600 }
+                ],
+                currentIndex: 0
+            }
+        };
+
+        // Audio Context for generating test tones
+        let audioContext = null;
+
+        function updateStatus(message) {
+            const timestamp = new Date().toLocaleTimeString();
+            statusEl.innerHTML += `<br>[${timestamp}] ${message}`;
+            statusEl.scrollTop = statusEl.scrollHeight;
+        }
+
+        function clearStatus() {
+            statusEl.innerHTML = 'Status: Ready';
+        }
+
+        function testAudioSupport() {
+            updateStatus('Testing audio support...');
+            
+            const audio = new Audio();
+            const formats = {
+                mp3: audio.canPlayType('audio/mpeg'),
+                ogg: audio.canPlayType('audio/ogg'),
+                wav: audio.canPlayType('audio/wav'),
+                m4a: audio.canPlayType('audio/m4a')
+            };
+            
+            updateStatus('Audio format support:');
+            Object.entries(formats).forEach(([format, support]) => {
+                updateStatus(`  ${format}: ${support || 'Not supported'}`);
+            });
+
+            try {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                updateStatus(`Web Audio API: Available (sample rate: ${audioContext.sampleRate}Hz)`);
+            } catch (e) {
+                updateStatus('Web Audio API: Not available - ' + e.message);
+            }
+        }
+
+        function generateTestTone() {
+            updateStatus('Generating test tone...');
+            
+            if (!audioContext) {
+                try {
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                } catch (e) {
+                    updateStatus('Error: Cannot create audio context');
+                    return;
+                }
+            }
+
+            // Resume context if suspended (required for autoplay policy)
+            if (audioContext.state === 'suspended') {
+                audioContext.resume();
+            }
+
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.value = 440; // A4 note
+            oscillator.type = 'sine';
+            
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 1);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 1);
+            
+            updateStatus('Test tone generated (440Hz sine wave for 1 second)');
+        }
+
+        function selectChannel(channelId) {
+            updateStatus(`Selecting channel: ${channelId}`);
+            
+            // Clear previous selection
+            document.querySelectorAll('.channel-button').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+            
+            // Mark new selection
+            document.getElementById(`channel-${channelId}`).classList.add('selected');
+            
+            currentChannel = channels[channelId];
+            if (currentChannel && currentChannel.tracks.length > 0) {
+                loadTrack(currentChannel.tracks[currentChannel.currentIndex]);
+                updateStatus(`Channel ${currentChannel.name} loaded`);
+            }
+        }
+
+        function loadTrack(track) {
+            currentTrack = track;
+            
+            document.getElementById('track-title').textContent = track.title;
+            document.getElementById('track-artist').textContent = track.artist;
+            document.getElementById('now-playing').classList.remove('empty');
+            
+            // For demo purposes, we'll generate a simple tone instead of loading actual audio
+            updateStatus(`Loaded: ${track.title} by ${track.artist}`);
+        }
+
+        function togglePlayPause() {
+            if (!currentTrack) {
+                updateStatus('No track selected');
+                return;
+            }
+
+            if (isPlaying) {
+                pauseAudio();
+            } else {
+                playAudio();
+            }
+        }
+
+        function playAudio() {
+            if (!currentTrack) return;
+            
+            isPlaying = true;
+            document.getElementById('play-btn').textContent = '⏸️';
+            updateStatus(`Playing: ${currentTrack.title}`);
+            
+            // Simulate playback with progress updates
+            startProgressUpdate();
+        }
+
+        function pauseAudio() {
+            isPlaying = false;
+            document.getElementById('play-btn').textContent = '▶️';
+            updateStatus('Paused');
+            
+            stopProgressUpdate();
+        }
+
+        function nextTrack() {
+            if (!currentChannel) return;
+            
+            currentChannel.currentIndex = (currentChannel.currentIndex + 1) % currentChannel.tracks.length;
+            loadTrack(currentChannel.tracks[currentChannel.currentIndex]);
+            
+            if (isPlaying) {
+                playAudio();
+            }
+        }
+
+        function previousTrack() {
+            if (!currentChannel) return;
+            
+            currentChannel.currentIndex = currentChannel.currentIndex === 0 
+                ? currentChannel.tracks.length - 1 
+                : currentChannel.currentIndex - 1;
+            loadTrack(currentChannel.tracks[currentChannel.currentIndex]);
+            
+            if (isPlaying) {
+                playAudio();
+            }
+        }
+
+        function setVolume(value) {
+            const volume = value / 100;
+            audioPlayer.volume = volume;
+            updateStatus(`Volume set to ${value}%`);
+        }
+
+        function seekAudio(event) {
+            if (!currentTrack) return;
+            
+            const progressBar = event.currentTarget;
+            const rect = progressBar.getBoundingClientRect();
+            const percent = (event.clientX - rect.left) / rect.width;
+            const seekTime = percent * currentTrack.duration;
+            
+            updateStatus(`Seeking to ${formatTime(Math.floor(seekTime))}`);
+        }
+
+        // Progress simulation
+        let progressInterval = null;
+        let currentTime = 0;
+
+        function startProgressUpdate() {
+            stopProgressUpdate();
+            currentTime = 0;
+            
+            progressInterval = setInterval(() => {
+                if (isPlaying && currentTrack) {
+                    currentTime += 1;
+                    const percent = (currentTime / currentTrack.duration) * 100;
+                    
+                    document.getElementById('progress-fill').style.width = percent + '%';
+                    document.getElementById('time-display').textContent = 
+                        formatTime(currentTime) + ' / ' + formatTime(currentTrack.duration);
+                    
+                    if (currentTime >= currentTrack.duration) {
+                        nextTrack();
+                    }
+                }
+            }, 1000);
+        }
+
+        function stopProgressUpdate() {
+            if (progressInterval) {
+                clearInterval(progressInterval);
+                progressInterval = null;
+            }
+        }
+
+        function formatTime(seconds) {
+            const minutes = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return minutes + ':' + (secs < 10 ? '0' : '') + secs;
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            updateStatus('Pockets Radio loaded - Ready to test!');
+            updateStatus('💡 Try generating a test tone or selecting a channel');
+            
+            // Set initial volume
+            setVolume(80);
+        });
+    </script>
+</body>
+</html>

@@ -436,25 +436,25 @@ fn parse_product_json(body: String) -> Result(#(String, String, Float, String, I
   
   case json_result {
     Ok(json_value) -> {
-      try name <- dynamic.field(json_value, "name")
+      use name <- result.try(dynamic.field(json_value, "name")
         |> result.then(dynamic.string)
-        |> result.map_error(fn(_) { "Missing or invalid name field" })
+        |> result.map_error(fn(_) { "Missing or invalid name field" }))
       
-      try description <- dynamic.field(json_value, "description")
+      use description <- result.try(dynamic.field(json_value, "description")
         |> result.then(dynamic.string)
-        |> result.map_error(fn(_) { "Missing or invalid description field" })
+        |> result.map_error(fn(_) { "Missing or invalid description field" }))
       
-      try price <- dynamic.field(json_value, "price")
+      use price <- result.try(dynamic.field(json_value, "price")
         |> result.then(dynamic.float)
-        |> result.map_error(fn(_) { "Missing or invalid price field" })
+        |> result.map_error(fn(_) { "Missing or invalid price field" }))
       
-      try sku <- dynamic.field(json_value, "sku")
+      use sku <- result.try(dynamic.field(json_value, "sku")
         |> result.then(dynamic.string)
-        |> result.map_error(fn(_) { "Missing or invalid sku field" })
+        |> result.map_error(fn(_) { "Missing or invalid sku field" }))
       
-      try stock_quantity <- dynamic.field(json_value, "stock_quantity")
+      use stock_quantity <- result.try(dynamic.field(json_value, "stock_quantity")
         |> result.then(dynamic.int)
-        |> result.map_error(fn(_) { "Missing or invalid stock_quantity field" })
+        |> result.map_error(fn(_) { "Missing or invalid stock_quantity field" }))
       
       // Validation
       case price <= 0.0 {
@@ -480,31 +480,31 @@ fn parse_order_json(body: String) -> Result(#(Option(Int), List(shop.CartItem)),
         |> result.map(Some)
         |> result.unwrap(None)
       
-      try items_json <- dynamic.field(json_value, "items")
+      use items_json <- result.try(dynamic.field(json_value, "items")
         |> result.then(dynamic.list)
-        |> result.map_error(fn(_) { "Missing or invalid items field" })
+        |> result.map_error(fn(_) { "Missing or invalid items field" }))
       
-      try cart_items <- items_json
+      use cart_items <- result.try(items_json
         |> list.try_map(fn(item_json) {
-          try product_id <- dynamic.field(item_json, "product_id")
+          use product_id <- result.try(dynamic.field(item_json, "product_id")
             |> result.then(dynamic.int)
-            |> result.map_error(fn(_) { "Missing or invalid product_id in item" })
+            |> result.map_error(fn(_) { "Missing or invalid product_id in item" }))
           
-          try quantity <- dynamic.field(item_json, "quantity")
+          use quantity <- result.try(dynamic.field(item_json, "quantity")
             |> result.then(dynamic.int)
-            |> result.map_error(fn(_) { "Missing or invalid quantity in item" })
+            |> result.map_error(fn(_) { "Missing or invalid quantity in item" }))
           
-          try unit_price <- dynamic.field(item_json, "unit_price")
+          use unit_price <- result.try(dynamic.field(item_json, "unit_price")
             |> result.then(dynamic.float)
-            |> result.map_error(fn(_) { "Missing or invalid unit_price in item" })
+            |> result.map_error(fn(_) { "Missing or invalid unit_price in item" }))
           
-          try name <- dynamic.field(item_json, "name")
+          use name <- result.try(dynamic.field(item_json, "name")
             |> result.then(dynamic.string)
-            |> result.map_error(fn(_) { "Missing or invalid name in item" })
+            |> result.map_error(fn(_) { "Missing or invalid name in item" }))
           
-          try sku <- dynamic.field(item_json, "sku")
+          use sku <- result.try(dynamic.field(item_json, "sku")
             |> result.then(dynamic.string)
-            |> result.map_error(fn(_) { "Missing or invalid sku in item" })
+            |> result.map_error(fn(_) { "Missing or invalid sku in item" }))
           
           // Validation
           case quantity <= 0 {
@@ -521,7 +521,7 @@ fn parse_order_json(body: String) -> Result(#(Option(Int), List(shop.CartItem)),
             }
           }
         })
-        |> result.map_error(fn(err) { "Invalid item: " <> err })
+        |> result.map_error(fn(err) { "Invalid item: " <> err }))
       
       // Ensure we have at least one item
       case list.is_empty(cart_items) {

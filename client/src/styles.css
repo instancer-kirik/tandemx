@@ -1,3 +1,6 @@
+/* Import radio styles */
+@import url('radio.css');
+
 .card-item {
   background: white;
   border-radius: 12px;

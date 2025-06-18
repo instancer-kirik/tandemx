@@ -105,7 +105,7 @@ pub fn get_all_products(
   page_size: Int,
 ) -> Result(List(Product), ShopError) {
   let limit = page_size
-  let offset = (page - 1) * page_size
+  let offset = { page - 1 } * page_size
 
   case turso_db.get_all_products(conn, limit, offset) {
     Ok(rows) -> {

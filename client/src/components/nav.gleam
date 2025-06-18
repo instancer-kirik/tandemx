@@ -184,6 +184,11 @@ pub fn view(model: Model) -> Element(Msg) {
           ]),
           view_megamenu_panel(ScheduleMegamenu, model),
         ]),
+        html.div([class("nav-item")], [
+          html.a([event.on_click(ParentShouldNavigate("/radio"))], [
+            html.text("📻 Radio"),
+          ]),
+        ]),
       ]),
       html.div([class("nav-actions")], [
         case model.user_state {

@@ -185,6 +185,8 @@ pub fn setup_database() -> Result(Nil, DbError) {
       }
     }
   }
+    }
+  }
 }
 
 // Helper functions for common operations

@@ -40,6 +40,10 @@ import settings.{
   type Model as SettingsModel, type Msg as SettingsMsg, init as init_settings,
   update as update_settings, view as view_settings,
 }
+import radio.{
+  type Model as RadioModel, type Msg as RadioMsg, init as init_radio,
+  update as update_radio, view as view_radio,
+}
 
 // Added for debug
 
@@ -81,6 +85,7 @@ pub type Msg {
   SessionReceived(Result(Option(SupabaseUser), String))
   LogoutCompleted(Result(Nil, String))
   AccomplishmentsMsg(AccomplishmentsMsg)
+  RadioMsg(radio.Msg)
 }
 
 // Define our app's state model
@@ -101,6 +106,7 @@ pub type Model {
     accomplishments_model: AccomplishmentsModel,
     shop_model: shop.Model,
     custom_quote_model: custom_quote.Model,
+    radio_model: radio.Model,
   )
 }
 
@@ -117,6 +123,7 @@ pub fn init(_flags: Nil) -> #(Model, Effect(Msg)) {
   let #(set_model, set_effect) = init_settings(Nil)
   let #(initial_landing_model, landing_effect) = init_landing(Nil)
   let #(accom_model, accom_effect) = init_accomplishments(None)
+  let #(radio_model, radio_effect) = init_radio()
 
   let initial_nav_model = nav.init(Idle)
   let initial_shop_nav_model = shop_nav.init(Idle)
@@ -138,6 +145,7 @@ pub fn init(_flags: Nil) -> #(Model, Effect(Msg)) {
       accomplishments_model: accom_model,
       shop_model: shop_model,
       custom_quote_model: custom_quote_model,
+      radio_model: radio_model,
     )
 
   let #(model_after_route, route_effect) =
@@ -156,6 +164,7 @@ pub fn init(_flags: Nil) -> #(Model, Effect(Msg)) {
       effect.map(accom_effect, AccomplishmentsMsg),
       effect.map(shop_effect, ShopMsg),
       effect.map(quote_effect, CustomQuoteMsg),
+      effect.map(radio_effect, RadioMsg),
     ]),
   )
 }
@@ -502,6 +511,15 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
         effect.map(acc_effect, AccomplishmentsMsg),
       )
     }
+
+    RadioMsg(radio_msg) -> {
+      let #(new_radio_model, radio_effect) =
+        update_radio(model.radio_model, radio_msg)
+      #(
+        Model(..model, radio_model: new_radio_model),
+        effect.map(radio_effect, RadioMsg),
+      )
+    }
   }
 }
 
@@ -570,6 +588,8 @@ fn view_main_content(model: Model) -> Element(Msg) {
       element.map(custom_quote.view(model.custom_quote_model), CustomQuoteMsg)
     ["", "custom", "quote"] ->
       element.map(custom_quote.view(model.custom_quote_model), CustomQuoteMsg)
+    ["", "radio"] ->
+      element.map(view_radio(model.radio_model), RadioMsg)
     _ -> view_fallback_page()
   }
 }

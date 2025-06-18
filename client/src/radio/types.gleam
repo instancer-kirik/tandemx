@@ -59,3 +59,58 @@ pub type BumperTrigger {
   // minutes
   Manual
 }
+
+pub type TrackMetadata {
+  TrackMetadata(
+    genre: Option(String),
+    year: Option(Int),
+    album: Option(String),
+    tags: List(String),
+    uploaded_by: Option(String),
+    upload_date: Option(String),
+  )
+}
+
+pub type Schedule {
+  Schedule(
+    timezone: String,
+    slots: List(ScheduleSlot),
+  )
+}
+
+pub type ScheduleSlot {
+  ScheduleSlot(
+    day_of_week: Int, // 0-6, Sunday = 0
+    start_time: String, // "14:30"
+    end_time: String, // "16:00"
+    content_type: ScheduleContent,
+  )
+}
+
+pub type ScheduleContent {
+  PlaylistLoop(playlist_id: String)
+  LiveShow(host: String, description: String)
+  SpecialProgram(name: String, playlist_id: String)
+}
+
+pub type PlayerState {
+  PlayerState(
+    current_channel: Option(Channel),
+    current_track: Option(Track),
+    is_playing: Bool,
+    position: Int, // seconds
+    volume: Float, // 0.0 - 1.0
+    next_tracks: List(Track),
+    last_bumper_time: Option(Int),
+  )
+}
+
+pub type RadioEvent {
+  ChannelChanged(Channel)
+  TrackStarted(Track)
+  TrackEnded(Track)
+  BumperPlayed(Bumper)
+  PlaybackStateChanged(Bool)
+  PositionUpdated(Int)
+  VolumeChanged(Float)
+}

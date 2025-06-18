@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pockets Radio Test - TandemX</title>
+    <link rel="stylesheet" href="/styles.css">
+    <link rel="stylesheet" href="/radio.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+        }
+        
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        .test-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        
+        .test-status {
+            background: rgba(0, 0, 0, 0.1);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+            font-family: monospace;
+        }
+        
+        .test-controls {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+        
+        .test-btn {
+            background: #00d2ff;
+            color: white;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+        
+        .test-btn:hover {
+            background: #00b8e6;
+            transform: translateY(-2px);
+        }
+        
+        .audio-info {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-top: 1rem;
+        }
+        
+        #radio-app {
+            margin-top: 2rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <div class="test-header">
+            <h1>📻 Pockets Radio Test</h1>
+            <p>Testing the radio functionality with sample audio</p>
+        </div>
+        
+        <div class="test-status" id="status">
+            Status: Initializing...
+        </div>
+        
+        <div class="test-controls">
+            <button class="test-btn" onclick="testAudioSupport()">Test Audio Support</button>
+            <button class="test-btn" onclick="testChannelLoad()">Test Channel Loading</button>
+            <button class="test-btn" onclick="testPlayback()">Test Playback</button>
+            <button class="test-btn" onclick="clearStatus()">Clear Status</button>
+        </div>
+        
+        <div class="audio-info">
+            <h3>Sample Audio Files (for testing)</h3>
+            <p>This test uses browser-generated audio beeps since we don't have actual music files yet.</p>
+            <p>In production, you'll replace these with your actual audio files stored on CDN.</p>
+            <div id="audio-debug"></div>
+        </div>
+        
+        <!-- Radio App Container -->
+        <div id="radio-app"></div>
+    </div>
+
+    <!-- Load the radio FFI -->
+    <script type="module" src="/radio_ffi.js"></script>
+    
+    <script>
+        let statusEl = document.getElementById('status');
+        let debugEl = document.getElementById('audio-debug');
+        
+        function updateStatus(message) {
+            const timestamp = new Date().toLocaleTimeString();
+            statusEl.innerHTML += `<br>[${timestamp}] ${message}`;
+            statusEl.scrollTop = statusEl.scrollHeight;
+        }
+        
+        function clearStatus() {
+            statusEl.innerHTML = 'Status: Ready';
+        }
+        
+        // Generate test audio programmatically
+        function generateTestAudio(frequency = 440, duration = 2) {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.value = frequency;
+            oscillator.type = 'sine';
+            
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + duration);
+            
+            return Promise.resolve('Generated audio at ' + frequency + 'Hz');
+        }
+        
+        function testAudioSupport() {
+            updateStatus('Testing audio support...');
+            
+            const audio = new Audio();
+            const formats = {
+                mp3: audio.canPlayType('audio/mpeg'),
+                ogg: audio.canPlayType('audio/ogg'),
+                wav: audio.canPlayType('audio/wav'),
+                m4a: audio.canPlayType('audio/m4a')
+            };
+            
+            updateStatus('Audio format support:');
+            Object.entries(formats).forEach(([format, support]) => {
+                updateStatus(`  ${format}: ${support || 'Not supported'}`);
+            });
+            
+            // Test Web Audio API
+            try {
+                const context = new (window.AudioContext || window.webkitAudioContext)();
+                updateStatus(`Web Audio API: Available (sample rate: ${context.sampleRate}Hz)`);
+                context.close();
+            } catch (e) {
+                updateStatus('Web Audio API: Not available - ' + e.message);
+            }
+        }
+        
+        async function testChannelLoad() {
+            updateStatus('Testing channel loading...');
+            
+            try {
+                // Import and test the radio FFI
+                const radioModule = await import('/radio_ffi.js');
+                updateStatus('Radio FFI module loaded successfully');
+                
+                // Test the loadChannels function
+                const loadChannels = radioModule.loadChannels;
+                if (typeof loadChannels === 'function') {
+                    updateStatus('loadChannels function found');
+                    
+                    const mockDispatch = (msg) => {
+                        updateStatus('Received message: ' + JSON.stringify(msg));
+                    };
+                    
+                    const effect = loadChannels(mockDispatch);
+                    if (typeof effect === 'function') {
+                        updateStatus('Channel loading effect created');
+                        
+                        effect((result) => {
+                            updateStatus('Channel load result: ' + JSON.stringify(result, null, 2));
+                        });
+                    }
+                } else {
+                    updateStatus('ERROR: loadChannels function not found');
+                }
+            } catch (error) {
+                updateStatus('ERROR loading radio module: ' + error.message);
+            }
+        }
+        
+        async function testPlayback() {
+            updateStatus('Testing audio playback...');
+            
+            try {
+                // Generate a test tone
+                await generateTestAudio(440, 1);
+                updateStatus('Generated test audio (440Hz sine wave)');
+                
+                // Test with actual Audio element
+                const audio = new Audio();
+                
+                // Create a simple data URL audio (silence)
+                const sampleRate = 44100;
+                const duration = 1; // 1 second
+                const samples = sampleRate * duration;
+                const audioBuffer = new ArrayBuffer(44 + samples * 2);
+                const view = new DataView(audioBuffer);
+                
+                // WAV header
+                const writeString = (offset, string) => {
+                    for (let i = 0; i < string.length; i++) {
+                        view.setUint8(offset + i, string.charCodeAt(i));
+                    }
+                };
+                
+                writeString(0, 'RIFF');
+                view.setUint32(4, 36 + samples * 2, true);
+                writeString(8, 'WAVE');
+                writeString(12, 'fmt ');
+                view.setUint32(16, 16, true);
+                view.setUint16(20, 1, true);
+                view.setUint16(22, 1, true);
+                view.setUint32(24, sampleRate, true);
+                view.setUint32(28, sampleRate * 2, true);
+                view.setUint16(32, 2, true);
+                view.setUint16(34, 16, true);
+                writeString(36, 'data');
+                view.setUint32(40, samples * 2, true);
+                
+                // Generate a simple tone
+                for (let i = 0; i < samples; i++) {
+                    const sample = Math.sin(2 * Math.PI * 440 * i / sampleRate) * 0.3 * 32767;
+                    view.setInt16(44 + i * 2, sample, true);
+                }
+                
+                const blob = new Blob([audioBuffer], { type: 'audio/wav' });
+                const url = URL.createObjectURL(blob);
+                
+                audio.src = url;
+                audio.addEventListener('loadeddata', () => {
+                    updateStatus('Test audio loaded, duration: ' + audio.duration + 's');
+                });
+                
+                audio.addEventListener('canplay', () => {
+                    updateStatus('Audio ready to play');
+                });
+                
+                audio.addEventListener('ended', () => {
+                    updateStatus('Test audio playback completed');
+                    URL.revokeObjectURL(url);
+                });
+                
+                audio.addEventListener('error', (e) => {
+                    updateStatus('Audio error: ' + e.message);
+                });
+                
+                try {
+                    await audio.play();
+                    updateStatus('Test audio playback started');
+                } catch (playError) {
+                    updateStatus('Playback failed: ' + playError.message + ' (user interaction may be required)');
+                }
+                
+            } catch (error) {
+                updateStatus('ERROR in playback test: ' + error.message);
+            }
+        }
+        
+        // Initialize
+        window.addEventListener('load', () => {
+            updateStatus('Radio test page loaded');
+            updateStatus('Click "Test Audio Support" to check browser capabilities');
+        });
+        
+        // Debug audio context state
+        setInterval(() => {
+            try {
+                const context = new (window.AudioContext || window.webkitAudioContext)();
+                debugEl.innerHTML = `Audio Context State: ${context.state}`;
+                context.close();
+            } catch (e) {
+                debugEl.innerHTML = 'Audio Context: Not available';
+            }
+        }, 2000);
+    </script>
+</body>
+</html>

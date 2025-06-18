@@ -84,8 +84,8 @@ pub fn query_one(
   query: String,
   params: List(dynamic.Dynamic),
 ) -> Result(glibsql.Row, DbError) {
-  try result <- glibsql.query(conn, query, params)
-    |> result.map_error(fn(err) { QueryError(string.inspect(err)) })
+  use result <- result.try(glibsql.query(conn, query, params)
+    |> result.map_error(fn(err) { QueryError(string.inspect(err)) }))
   
   case result.rows {
     [row] -> Ok(row)
@@ -100,8 +100,8 @@ pub fn query_all(
   query: String,
   params: List(dynamic.Dynamic),
 ) -> Result(List(glibsql.Row), DbError) {
-  try result <- glibsql.query(conn, query, params)
-    |> result.map_error(fn(err) { QueryError(string.inspect(err)) })
+  use result <- result.try(glibsql.query(conn, query, params)
+    |> result.map_error(fn(err) { QueryError(string.inspect(err)) }))
   
   Ok(result.rows)
 }
@@ -110,7 +110,7 @@ pub fn query_all(
 pub fn setup_database() -> Result(Nil, DbError) {
   io.println("Setting up Turso database...")
 
-  try conn <- get_connection()
+  use conn <- result.try(get_connection())
 
   // Create tables if they don't exist
   let create_users_table = "
@@ -184,22 +184,22 @@ pub fn setup_database() -> Result(Nil, DbError) {
   "
 
   // Execute the create table statements
-  try _ <- execute(conn, create_users_table, [])
+  use _ <- result.try(execute(conn, create_users_table, []))
   io.println("Users table created or already exists")
   
-  try _ <- execute(conn, create_products_table, [])
+  use _ <- result.try(execute(conn, create_products_table, []))
   io.println("Products table created or already exists")
   
-  try _ <- execute(conn, create_categories_table, [])
+  use _ <- result.try(execute(conn, create_categories_table, []))
   io.println("Categories table created or already exists")
   
-  try _ <- execute(conn, create_product_categories_table, [])
+  use _ <- result.try(execute(conn, create_product_categories_table, []))
   io.println("Product_Categories table created or already exists")
   
-  try _ <- execute(conn, create_orders_table, [])
+  use _ <- result.try(execute(conn, create_orders_table, []))
   io.println("Orders table created or already exists")
   
-  try _ <- execute(conn, create_order_items_table, [])
+  use _ <- result.try(execute(conn, create_order_items_table, []))
   io.println("Order_Items table created or already exists")
 
   io.println("Turso database setup complete!")

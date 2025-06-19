@@ -1,4 +1,5 @@
 // app_ffi.js - FFI functions for the main app
+import { Ok, Error } from "./gleam.mjs";
 
 // Initialize the application
 function init() {
@@ -87,26 +88,15 @@ export function signInWithGitHub() {
   // In a real app, call Supabase signInWithOAuth({ provider: 'github' })
   // This would redirect. For simulation, we just return Ok.
   
-  // Return a proper Result object with isOk/isError functions
-  return {
-    isOk: function() { return true; },
-    isError: function() { return false; },
-    value: null,
-    error: null
-  };
+  // Return a proper Gleam Result - use the Ok constructor from gleam.mjs
+  return new Ok(null);
 }
 
 export function signOutUser() {
   console.log("FFI: signOutUser called (simulating)");
-  // In a real app, call Supabase auth.signOut()
-  
-  // Return a proper Result object with isOk/isError functions
-  return {
-    isOk: function() { return true; },
-    isError: function() { return false; },
-    value: null,
-    error: null
-  };
+  // In a real app, call Supabase signOut()
+  // Return a proper Gleam Result - use the Ok constructor from gleam.mjs
+  return new Ok(null);
 }
 
 // FFI function to get the current browser path

@@ -3,14 +3,12 @@ import gleam/float
 import gleam/int
 import gleam/list
 import gleam/option.{type Option, None, Some}
-import gleam/result
-import gleam/string
-import lustre/attribute.{class, id, src, alt, href, type_, placeholder, value}
+
+import lustre/attribute.{class, src, alt, type_, placeholder, value}
 import lustre/effect.{type Effect}
 import lustre/element.{type Element}
 import lustre/element/html
 import lustre/event
-import access_content.{type FetchState, Idle, Loading, Loaded, Errored}
 
 // --- Types ---
 
@@ -77,9 +75,9 @@ pub type FilterOptions {
 
 pub type Model {
   Model(
-    products: FetchState(List(Product)),
-    categories: FetchState(List(Category)),
-    cart: Dict(Int, CartItem),
+    products: List(Product),
+    categories: List(Category),
+    cart: List(CartItem),
     current_category: Option(String),
     search_query: String,
     view_mode: ViewMode,
@@ -112,29 +110,31 @@ pub type Msg {
 // --- Init ---
 
 pub fn init() -> #(Model, Effect(Msg)) {
+  let initial_filters = FilterOptions(
+    category: None,
+    brand: None,
+    price_min: None,
+    price_max: None,
+    in_stock_only: False,
+  )
+  
   let model = Model(
-    products: Idle,
-    categories: Idle,
-    cart: dict.new(),
+    products: [],
+    categories: [],
+    cart: [],
     current_category: None,
     search_query: "",
     view_mode: GridView,
     sort_option: Newest,
-    filters: FilterOptions(
-      category: None,
-      brand: None,
-      price_min: None,
-      price_max: None,
-      in_stock_only: False,
-    ),
+    filters: initial_filters,
     page: 1,
-    page_size: 20,
+    page_size: 12,
     total_products: 0,
   )
   
   #(model, effect.batch([
-    effect.from(fn(_) { LoadProducts }),
-    effect.from(fn(_) { LoadCategories }),
+    effect.from(fn(dispatch) { dispatch(LoadProducts) }),
+    effect.from(fn(dispatch) { dispatch(LoadCategories) }),
   ]))
 }
 
@@ -142,102 +142,128 @@ pub fn init() -> #(Model, Effect(Msg)) {
 
 pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
   case msg {
-    LoadProducts -> {
-      #(Model(..model, products: Loading), load_products_effect(model))
-    }
+    LoadProducts -> #(model, load_products_effect(model))
     
-    LoadCategories -> {
-      #(Model(..model, categories: Loading), load_categories_effect())
-    }
+    LoadCategories -> #(model, load_categories_effect())
     
     ProductsLoaded(products) -> {
-      #(Model(..model, products: Loaded(products)), effect.none())
+      let sorted_products = sort_products(products, model.sort_option)
+      #(
+        Model(..model, products: sorted_products, total_products: list.length(products)),
+        effect.none(),
+      )
     }
     
-    CategoriesLoaded(categories) -> {
-      #(Model(..model, categories: Loaded(categories)), effect.none())
-    }
+    CategoriesLoaded(categories) -> #(
+      Model(..model, categories: categories),
+      effect.none(),
+    )
     
     LoadingFailed(error) -> {
-      #(Model(
-        ..model, 
-        products: Errored(error),
-        categories: Errored(error)
-      ), effect.none())
+      // Handle error - could show a toast or error message
+      #(model, effect.none())
     }
     
     CategorySelected(category_id) -> {
-      let new_filters = FilterOptions(..model.filters, category: Some(category_id))
-      #(Model(
-        ..model, 
+      let new_model = Model(
+        ..model,
         current_category: Some(category_id),
-        filters: new_filters,
-        page: 1
-      ), load_products_effect(Model(..model, filters: new_filters)))
+        page: 1, // Reset to first page when changing category
+      )
+      #(new_model, load_products_effect(new_model))
     }
     
     SearchQueryChanged(query) -> {
-      #(Model(..model, search_query: query, page: 1), 
-        load_products_effect(Model(..model, search_query: query)))
+      let new_model = Model(
+        ..model,
+        search_query: query,
+        page: 1, // Reset to first page when searching
+      )
+      #(new_model, load_products_effect(new_model))
     }
     
-    ViewModeChanged(mode) -> {
-      #(Model(..model, view_mode: mode), effect.none())
-    }
+    ViewModeChanged(mode) -> #(
+      Model(..model, view_mode: mode),
+      effect.none(),
+    )
     
-    SortOptionChanged(sort) -> {
-      #(Model(..model, sort_option: sort, page: 1),
-        load_products_effect(Model(..model, sort_option: sort)))
+    SortOptionChanged(option) -> {
+      let sorted_products = sort_products(model.products, option)
+      #(
+        Model(..model, sort_option: option, products: sorted_products),
+        effect.none(),
+      )
     }
     
     FilterChanged(filters) -> {
-      #(Model(..model, filters: filters, page: 1),
-        load_products_effect(Model(..model, filters: filters)))
+      let new_model = Model(
+        ..model,
+        filters: filters,
+        page: 1, // Reset to first page when changing filters
+      )
+      #(new_model, load_products_effect(new_model))
     }
     
     AddToCart(product) -> {
-      let existing_item = dict.get(model.cart, product.id)
-      let new_quantity = case existing_item {
-        Ok(item) -> item.quantity + 1
-        Error(_) -> 1
+      let existing_item = list.find(model.cart, fn(item) {
+        item.product_id == product.id
+      })
+      
+      let new_cart = case existing_item {
+        Ok(item) -> {
+          // Update quantity of existing item
+          list.map(model.cart, fn(cart_item) {
+            case cart_item.product_id == product.id {
+              True -> CartItem(..cart_item, quantity: cart_item.quantity + 1)
+              False -> cart_item
+            }
+          })
+        }
+        Error(_) -> {
+          // Add new item to cart
+          let new_item = CartItem(
+            product_id: product.id,
+            name: product.name,
+            price: product.price,
+            quantity: 1,
+            sku: product.sku,
+          )
+          [new_item, ..model.cart]
+        }
       }
       
-      let cart_item = CartItem(
-        product_id: product.id,
-        name: product.name,
-        price: product.price,
-        quantity: new_quantity,
-        sku: product.sku,
-      )
-      
-      let new_cart = dict.insert(model.cart, product.id, cart_item)
       #(Model(..model, cart: new_cart), effect.none())
     }
     
     RemoveFromCart(product_id) -> {
-      let new_cart = dict.delete(model.cart, product_id)
+      let new_cart = list.filter(model.cart, fn(item) {
+        item.product_id != product_id
+      })
       #(Model(..model, cart: new_cart), effect.none())
     }
     
     UpdateCartQuantity(product_id, quantity) -> {
-      case dict.get(model.cart, product_id) {
-        Ok(item) -> {
-          let updated_item = CartItem(..item, quantity: quantity)
-          let new_cart = case quantity <= 0 {
-            True -> dict.delete(model.cart, product_id)
-            False -> dict.insert(model.cart, product_id, updated_item)
-          }
-          #(Model(..model, cart: new_cart), effect.none())
+      let new_cart = case quantity <= 0 {
+        True -> list.filter(model.cart, fn(item) { item.product_id != product_id })
+        False -> {
+          list.map(model.cart, fn(item) {
+            case item.product_id == product_id {
+              True -> CartItem(..item, quantity: quantity)
+              False -> item
+            }
+          })
         }
-        Error(_) -> #(model, effect.none())
       }
+      #(Model(..model, cart: new_cart), effect.none())
     }
     
     PageChanged(page) -> {
-      #(Model(..model, page: page), load_products_effect(Model(..model, page: page)))
+      let new_model = Model(..model, page: page)
+      #(new_model, load_products_effect(new_model))
     }
     
-    ProductClicked(_product_id) -> {
+    ProductClicked(product_id) -> {
+      // Navigate to product detail page or show modal
       #(model, effect.none())
     }
   }
@@ -245,11 +271,11 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
 
 // --- Effects ---
 
-fn load_products_effect(model: Model) -> Effect(Msg) {
+fn load_products_effect(_model: Model) -> Effect(Msg) {
   // This would normally make an HTTP request to your API
   // For now, return mock data
-  effect.from(fn(_) {
-    ProductsLoaded([
+  effect.from(fn(dispatch) {
+    dispatch(ProductsLoaded([
       Product(
         id: 1,
         name: "K&N High-Flow Air Filter",
@@ -301,13 +327,13 @@ fn load_products_effect(model: Model) -> Effect(Msg) {
           #("Material", "Steel"),
         ]),
       ),
-    ])
+    ]))
   })
 }
 
 fn load_categories_effect() -> Effect(Msg) {
-  effect.from(fn(_) {
-    CategoriesLoaded([
+  effect.from(fn(dispatch) {
+    dispatch(CategoriesLoaded([
       Category(
         id: "engine",
         name: "Engine Parts",
@@ -332,16 +358,16 @@ fn load_categories_effect() -> Effect(Msg) {
         parent_id: None,
         product_count: 67,
       ),
-    ])
+    ]))
   })
 }
 
 // --- View ---
 
 pub fn view(model: Model) -> Element(Msg) {
-  html.div([class("shop-layout")], [
+  html.div([class("shop-container")], [
     view_hero_section(),
-    html.div([class("shop-container")], [
+    html.div([class("shop-content")], [
       view_sidebar(model),
       view_main_content(model),
     ]),
@@ -351,20 +377,20 @@ pub fn view(model: Model) -> Element(Msg) {
 fn view_hero_section() -> Element(Msg) {
   html.section([class("shop-hero")], [
     html.div([class("hero-content")], [
-      html.h1([class("hero-title")], [html.text("Performance Parts & Accessories")]),
+      html.h1([class("hero-title")], [html.text("TandemX Moto Parts & Accessories")]),
       html.p([class("hero-subtitle")], [
-        html.text("Quality motorcycle parts for every ride. From daily commuting to track days.")
+        html.text("Premium motorcycle parts, gear, and custom solutions for riders who demand the best")
       ]),
       html.div([class("hero-search")], [
         html.input([
           type_("search"),
-          placeholder("Search parts by name, brand, or part number..."),
+          placeholder("Search parts, accessories, or part numbers..."),
           class("hero-search-input"),
-          event.on_input(SearchQueryChanged)
+          event.on_input(SearchQueryChanged),
         ]),
-        html.button([class("hero-search-btn")], [html.text("🔍")])
-      ])
-    ])
+        html.button([class("hero-search-btn")], [html.text("Search")]),
+      ]),
+    ]),
   ])
 }
 
@@ -380,35 +406,26 @@ fn view_sidebar(model: Model) -> Element(Msg) {
 fn view_category_filter(model: Model) -> Element(Msg) {
   html.div([class("filter-section")], [
     html.h3([class("filter-title")], [html.text("Categories")]),
-    html.div([class("filter-content")], [
-      case model.categories {
-        Loaded(categories) -> html.ul([class("category-list")], 
-          list.map(categories, view_category_item)
-        )
-        Loading -> html.div([class("loading")], [html.text("Loading categories...")])
-        Errored(error) -> html.div([class("error")], [html.text("Error: " <> error)])
-        Idle -> html.text("")
-      }
-    ])
+    html.div([class("category-list")], 
+      list.map(model.categories, view_category_item)
+    ),
   ])
 }
 
 fn view_category_item(category: Category) -> Element(Msg) {
-  html.li([class("category-item")], [
-    html.button([
-      class("category-btn"),
-      event.on_click(CategorySelected(category.id))
-    ], [
-      html.span([class("category-name")], [html.text(category.name)]),
-      html.span([class("category-count")], [html.text("(" <> int.to_string(category.product_count) <> ")")]),
-    ])
+  html.button([
+    class("category-item"),
+    event.on_click(CategorySelected(category.id)),
+  ], [
+    html.span([class("category-name")], [html.text(category.name)]),
+    html.span([class("category-count")], [html.text("(" <> int.to_string(category.product_count) <> ")")]),
   ])
 }
 
 fn view_price_filter(model: Model) -> Element(Msg) {
   html.div([class("filter-section")], [
     html.h3([class("filter-title")], [html.text("Price Range")]),
-    html.div([class("price-range")], [
+    html.div([class("price-inputs")], [
       html.input([
         type_("number"),
         placeholder("Min"),
@@ -416,9 +433,9 @@ fn view_price_filter(model: Model) -> Element(Msg) {
         value(case model.filters.price_min {
           Some(min) -> float.to_string(min)
           None -> ""
-        })
+        }),
       ]),
-      html.span([class("price-separator")], [html.text("-")]),
+      html.span([class("price-separator")], [html.text(" - ")]),
       html.input([
         type_("number"),
         placeholder("Max"),
@@ -426,41 +443,41 @@ fn view_price_filter(model: Model) -> Element(Msg) {
         value(case model.filters.price_max {
           Some(max) -> float.to_string(max)
           None -> ""
-        })
-      ])
-    ])
+        }),
+      ]),
+    ]),
   ])
 }
 
-fn view_brand_filter(_model: Model) -> Element(Msg) {
+fn view_brand_filter(model: Model) -> Element(Msg) {
   html.div([class("filter-section")], [
     html.h3([class("filter-title")], [html.text("Brand")]),
     html.div([class("brand-list")], [
-      html.label([class("brand-checkbox")], [
+      html.label([class("brand-item")], [
         html.input([type_("checkbox")]),
-        html.span([], [html.text("K&N (23)")]),
+        html.text("K&N"),
       ]),
-      html.label([class("brand-checkbox")], [
+      html.label([class("brand-item")], [
         html.input([type_("checkbox")]),
-        html.span([], [html.text("NGK (18)")]),
+        html.text("NGK"),
       ]),
-      html.label([class("brand-checkbox")], [
+      html.label([class("brand-item")], [
         html.input([type_("checkbox")]),
-        html.span([], [html.text("DID (15)")]),
+        html.text("DID"),
       ]),
-    ])
+    ]),
   ])
 }
 
 fn view_stock_filter(model: Model) -> Element(Msg) {
   html.div([class("filter-section")], [
-    html.label([class("stock-checkbox")], [
+    html.label([class("stock-filter")], [
       html.input([
         type_("checkbox"),
-        attribute.checked(model.filters.in_stock_only)
+        attribute.checked(model.filters.in_stock_only),
       ]),
-      html.span([], [html.text("In Stock Only")]),
-    ])
+      html.text("In Stock Only"),
+    ]),
   ])
 }
 
@@ -476,37 +493,37 @@ fn view_toolbar(model: Model) -> Element(Msg) {
   html.div([class("shop-toolbar")], [
     html.div([class("toolbar-left")], [
       html.span([class("results-count")], [
-        html.text("Showing " <> int.to_string(get_product_count(model)) <> " products")
-      ])
+        html.text(int.to_string(model.total_products) <> " products found")
+      ]),
     ]),
     html.div([class("toolbar-right")], [
       view_sort_dropdown(model),
       view_mode_toggle(model),
-    ])
+    ]),
   ])
 }
 
-fn view_sort_dropdown(model: Model) -> Element(Msg) {
+fn view_sort_dropdown(_model: Model) -> Element(Msg) {
   html.select([
     class("sort-select"),
     event.on_input(fn(value) {
       case value {
+        "newest" -> SortOptionChanged(Newest)
+        "best-selling" -> SortOptionChanged(BestSelling)
         "price-asc" -> SortOptionChanged(PriceAsc)
         "price-desc" -> SortOptionChanged(PriceDesc)
         "name-asc" -> SortOptionChanged(NameAsc)
         "name-desc" -> SortOptionChanged(NameDesc)
-        "newest" -> SortOptionChanged(Newest)
-        "best-selling" -> SortOptionChanged(BestSelling)
         _ -> SortOptionChanged(Newest)
       }
     })
   ], [
-    html.option([value("newest")], [html.text("Newest First")]),
-    html.option([value("best-selling")], [html.text("Best Selling")]),
-    html.option([value("price-asc")], [html.text("Price: Low to High")]),
-    html.option([value("price-desc")], [html.text("Price: High to Low")]),
-    html.option([value("name-asc")], [html.text("Name: A to Z")]),
-    html.option([value("name-desc")], [html.text("Name: Z to A")]),
+    html.option([value("newest")], "Newest First"),
+    html.option([value("best-selling")], "Best Selling"),
+    html.option([value("price-asc")], "Price: Low to High"),
+    html.option([value("price-desc")], "Price: High to Low"),
+    html.option([value("name-asc")], "Name: A to Z"),
+    html.option([value("name-desc")], "Name: Z to A"),
   ])
 }
 
@@ -517,59 +534,53 @@ fn view_mode_toggle(model: Model) -> Element(Msg) {
         GridView -> "mode-btn active"
         _ -> "mode-btn"
       }),
-      event.on_click(ViewModeChanged(GridView))
+      event.on_click(ViewModeChanged(GridView)),
     ], [html.text("⊞")]),
     html.button([
       class(case model.view_mode {
         ListView -> "mode-btn active"
         _ -> "mode-btn"
       }),
-      event.on_click(ViewModeChanged(ListView))
+      event.on_click(ViewModeChanged(ListView)),
     ], [html.text("☰")]),
   ])
 }
 
 fn view_products(model: Model) -> Element(Msg) {
-  case model.products {
-    Loaded(products) -> {
-      let container_class = case model.view_mode {
-        GridView -> "products-grid"
-        ListView -> "products-list"
-      }
-      
-      html.div([class(container_class)], 
-        list.map(products, fn(product) { view_product_card(product, model) })
-      )
-    }
-    Loading -> html.div([class("loading-products")], [
-      html.div([class("loading-spinner")], []),
-      html.p([], [html.text("Loading products...")])
-    ])
-    Errored(error) -> html.div([class("error-products")], [
-      html.p([], [html.text("Failed to load products: " <> error)])
-    ])
-    Idle -> html.text("")
+  let grid_class = case model.view_mode {
+    GridView -> "products-grid"
+    ListView -> "products-list"
   }
+  
+  html.div([class("products-container")], [
+    html.div([class(grid_class)], 
+      list.map(model.products, fn(product) {
+        view_product_card(product, model.view_mode)
+      })
+    ),
+  ])
 }
 
-fn view_product_card(product: Product, model: Model) -> Element(Msg) {
-  let card_class = case model.view_mode {
-    GridView -> "product-card grid-card"
-    ListView -> "product-card list-card"
+fn view_product_card(product: Product, view_mode: ViewMode) -> Element(Msg) {
+  let card_class = case view_mode {
+    GridView -> "product-card grid"
+    ListView -> "product-card list"
   }
   
   html.div([class(card_class)], [
-    html.div([class("product-image")], [
-      case product.image_url {
-        Some(url) -> html.img([
-          src(url),
-          alt(product.name),
-          class("product-img")
-        ])
-        None -> html.div([class("product-img-placeholder")], [
-          html.text("📷")
-        ])
-      }
+    html.div([class("product-image-container")], [
+      html.img([
+        src(case product.image_url {
+          Some(url) -> url
+          None -> "/images/placeholder-product.jpg"
+        }),
+        alt(product.name),
+        class("product-image"),
+      ]),
+      case product.stock_quantity <= 0 {
+        True -> html.div([class("out-of-stock-badge")], [html.text("Out of Stock")])
+        False -> html.div([], [])
+      },
     ]),
     html.div([class("product-info")], [
       html.h3([class("product-name")], [html.text(product.name)]),
@@ -578,74 +589,70 @@ fn view_product_card(product: Product, model: Model) -> Element(Msg) {
         html.span([class("product-sku")], [html.text("SKU: " <> product.sku)]),
         case product.brand {
           Some(brand) -> html.span([class("product-brand")], [html.text(brand)])
-          None -> html.text("")
-        }
+          None -> html.span([], [])
+        },
       ]),
-      html.div([class("product-stock")], [
-        case product.stock_quantity > 0 {
-          True -> html.span([class("in-stock")], [
-            html.text("✓ " <> int.to_string(product.stock_quantity) <> " in stock")
-          ])
-          False -> html.span([class("out-of-stock")], [
-            html.text("✗ Out of stock")
-          ])
-        }
-      ])
+      html.div([class("product-footer")], [
+        html.div([class("product-price")], [
+          html.span([class("price")], [html.text("$" <> float.to_string(product.price))]),
+        ]),
+        html.div([class("product-actions")], [
+          html.button([
+            class(case product.stock_quantity <= 0 {
+              True -> "add-to-cart-btn disabled"
+              False -> "add-to-cart-btn"
+            }),
+            attribute.disabled(product.stock_quantity <= 0),
+            event.on_click(AddToCart(product)),
+          ], [html.text("Add to Cart")]),
+        ]),
+      ]),
     ]),
-    html.div([class("product-actions")], [
-      html.div([class("product-price")], [
-        html.span([class("price")], [html.text("$" <> float.to_string(product.price))])
-      ]),
-      html.button([
-        class(case product.stock_quantity > 0 {
-          True -> "add-to-cart-btn"
-          False -> "add-to-cart-btn disabled"
-        }),
-        event.on_click(AddToCart(product))
-      ], [
-        html.text(case dict.has_key(model.cart, product.id) {
-          True -> "Added ✓"
-          False -> "Add to Cart"
-        })
-      ])
-    ])
   ])
 }
 
 fn view_pagination(model: Model) -> Element(Msg) {
-  let total_pages = case model.total_products > 0 {
-    True -> { model.total_products + model.page_size - 1 } / model.page_size
-    False -> 1
+  let total_pages = case model.total_products == 0 {
+    True -> 1
+    False -> {
+      let pages = model.total_products / model.page_size
+      case model.total_products % model.page_size {
+        0 -> pages
+        _ -> pages + 1
+      }
+    }
   }
   
   html.div([class("pagination")], [
     html.button([
-      class(case model.page > 1 {
-        True -> "page-btn"
-        False -> "page-btn disabled"
-      }),
-      event.on_click(PageChanged(model.page - 1))
+      class("page-btn prev"),
+      attribute.disabled(model.page <= 1),
+      event.on_click(PageChanged(model.page - 1)),
     ], [html.text("Previous")]),
-    
     html.span([class("page-info")], [
       html.text("Page " <> int.to_string(model.page) <> " of " <> int.to_string(total_pages))
     ]),
-    
     html.button([
-      class(case model.page < total_pages {
-        True -> "page-btn"
-        False -> "page-btn disabled"
-      }),
-      event.on_click(PageChanged(model.page + 1))
-    ], [html.text("Next")])
+      class("page-btn next"),
+      attribute.disabled(model.page >= total_pages),
+      event.on_click(PageChanged(model.page + 1)),
+    ], [html.text("Next")]),
   ])
 }
 
 // --- Helper Functions ---
 
-fn get_product_count(model: Model) -> Int {
-  case model.products {
-    Loaded(products) -> list.length(products)
-    _ -> 0
+fn get_product_count(products: List(Product)) -> Int {
+  list.length(products)
+}
+
+fn sort_products(products: List(Product), sort_option: SortOption) -> List(Product) {
+  case sort_option {
+    PriceAsc -> list.sort(products, fn(a, b) { float.compare(a.price, b.price) })
+    PriceDesc -> list.sort(products, fn(a, b) { float.compare(b.price, a.price) })
+    NameAsc -> list.sort(products, fn(a, b) { string.compare(a.name, b.name) })
+    NameDesc -> list.sort(products, fn(a, b) { string.compare(b.name, a.name) })
+    Newest -> list.sort(products, fn(a, b) { int.compare(b.id, a.id) }) // Assuming higher ID = newer
+    BestSelling -> products // Would need sales data to implement properly
   }
 }

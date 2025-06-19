@@ -324,136 +324,136 @@ function initRadioPlayer(dispatch) {
 }
 
 // FFI exports for Gleam
-export function loadChannels(dispatch) {
-  return (callback) => {
+export function loadChannels() {
+  return (dispatch) => {
     const player = initRadioPlayer(dispatch);
     
     player.loadChannels()
       .then(channels => {
-        callback(['ChannelsLoaded', channels]);
+        dispatch(['ChannelsLoaded', channels]);
       })
       .catch(error => {
         console.error('Load channels error:', error);
-        callback(['Error', 'Failed to load channels: ' + error.message]);
+        dispatch(['Error', 'Failed to load channels: ' + error.message]);
       });
   };
 }
 
 export function selectChannel(channel) {
-  return (callback) => {
+  return (dispatch) => {
     if (!radioPlayer) {
-      callback(['Error', 'Radio player not initialized']);
+      dispatch(['Error', 'Radio player not initialized']);
       return;
     }
     
     try {
       radioPlayer.selectChannel(channel);
-      callback(['ChannelSelected', channel]);
+      dispatch(['ChannelSelected', channel]);
     } catch (error) {
       console.error('Select channel error:', error);
-      callback(['Error', 'Failed to select channel: ' + error.message]);
+      dispatch(['Error', 'Failed to select channel: ' + error.message]);
     }
   };
 }
 
 export function playAudio() {
-  return (callback) => {
+  return (dispatch) => {
     if (!radioPlayer) {
-      callback(['Error', 'Radio player not initialized']);
+      dispatch(['Error', 'Radio player not initialized']);
       return;
     }
     
     try {
       radioPlayer.play();
-      callback(['NoOp']);
+      dispatch(['NoOp']);
     } catch (error) {
       console.error('Play audio error:', error);
-      callback(['AudioError', 'Failed to play: ' + error.message]);
+      dispatch(['AudioError', 'Failed to play: ' + error.message]);
     }
   };
 }
 
 export function pauseAudio() {
-  return (callback) => {
+  return (dispatch) => {
     if (!radioPlayer) {
-      callback(['Error', 'Radio player not initialized']);
+      dispatch(['Error', 'Radio player not initialized']);
       return;
     }
     
     try {
       radioPlayer.pause();
-      callback(['NoOp']);
+      dispatch(['NoOp']);
     } catch (error) {
       console.error('Pause audio error:', error);
-      callback(['AudioError', 'Failed to pause: ' + error.message]);
+      dispatch(['AudioError', 'Failed to pause: ' + error.message]);
     }
   };
 }
 
 export function playTrack(track) {
-  return (callback) => {
+  return (dispatch) => {
     if (!radioPlayer) {
-      callback(['Error', 'Radio player not initialized']);
+      dispatch(['Error', 'Radio player not initialized']);
       return;
     }
     
     try {
       radioPlayer.playTrack(track);
-      callback(['NoOp']);
+      dispatch(['NoOp']);
     } catch (error) {
       console.error('Play track error:', error);
-      callback(['AudioError', 'Failed to play track: ' + error.message]);
+      dispatch(['AudioError', 'Failed to play track: ' + error.message]);
     }
   };
 }
 
 export function seekAudio(position) {
-  return (callback) => {
+  return (dispatch) => {
     if (!radioPlayer) {
-      callback(['Error', 'Radio player not initialized']);
+      dispatch(['Error', 'Radio player not initialized']);
       return;
     }
     
     try {
       radioPlayer.seek(position);
-      callback(['NoOp']);
+      dispatch(['NoOp']);
     } catch (error) {
       console.error('Seek audio error:', error);
-      callback(['AudioError', 'Failed to seek: ' + error.message]);
+      dispatch(['AudioError', 'Failed to seek: ' + error.message]);
     }
   };
 }
 
 export function setVolume(volume) {
-  return (callback) => {
+  return (dispatch) => {
     if (!radioPlayer) {
-      callback(['Error', 'Radio player not initialized']);
+      dispatch(['Error', 'Radio player not initialized']);
       return;
     }
     
     try {
       radioPlayer.setVolume(volume);
-      callback(['NoOp']);
+      dispatch(['NoOp']);
     } catch (error) {
       console.error('Set volume error:', error);
-      callback(['AudioError', 'Failed to set volume: ' + error.message]);
+      dispatch(['AudioError', 'Failed to set volume: ' + error.message]);
     }
   };
 }
 
 export function checkBumperTrigger(channel, position) {
-  return (callback) => {
+  return (dispatch) => {
     if (!radioPlayer) {
-      callback(['NoOp']);
+      dispatch(['NoOp']);
       return;
     }
     
     try {
       radioPlayer.checkBumperTrigger(channel, position);
-      callback(['NoOp']);
+      dispatch(['NoOp']);
     } catch (error) {
       console.error('Check bumper trigger error:', error);
-      callback(['NoOp']); // Non-critical, don't error
+      dispatch(['NoOp']); // Non-critical, don't error
     }
   };
 }

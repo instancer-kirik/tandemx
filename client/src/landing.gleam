@@ -40,10 +40,10 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
       #(model, effect.none())
     }
     NavigateToShop -> {
-      #(model, effect.none())
+      #(model, effect.from(fn(dispatch) { dispatch(RequestNavigation("/shop")) }))
     }
     GetCustomQuote -> {
-      #(model, effect.none())
+      #(model, effect.from(fn(dispatch) { dispatch(RequestNavigation("/quote")) }))
     }
     ToggleCategory(category) -> {
       case list.contains(model.expanded_categories, category) {

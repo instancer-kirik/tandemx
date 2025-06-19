@@ -270,7 +270,13 @@ fn radio_interface(model: Model) -> Element(Msg) {
 
 fn channel_selector(channels: List(Channel), selected_id: Option(String)) -> Element(Msg) {
   html.div([attribute.class("channel-selector")], [
-    html.h3([], [html.text("📻 Pockets Radio")]),
+    html.div([attribute.class("radio-header")], [
+      html.h3([], [html.text("📻 Pockets Radio")]),
+      html.button([
+        attribute.class("admin-toggle-btn"),
+        event.on_click(ToggleAdminMode),
+      ], [html.text("🎚️ Admin")]),
+    ]),
     html.div([attribute.class("channel-grid")], 
       list.map(channels, fn(channel) {
         let is_selected = case selected_id {
@@ -496,28 +502,77 @@ fn format_time(seconds: Int) -> String {
 
 // External function declarations for FFI
 @external(javascript, "./radio_ffi.js", "loadChannels")
-fn load_channels_effect() -> Effect(Msg)
+fn load_channels_ffi() -> fn(fn(Msg) -> Nil) -> Nil
 
 @external(javascript, "./radio_ffi.js", "selectChannel")
-fn select_channel_effect(channel: Channel) -> Effect(Msg)
+fn select_channel_ffi(channel: Channel) -> fn(fn(Msg) -> Nil) -> Nil
 
 @external(javascript, "./radio_ffi.js", "playAudio")
-fn play_audio_effect() -> Effect(Msg)
+fn play_audio_ffi() -> fn(fn(Msg) -> Nil) -> Nil
 
 @external(javascript, "./radio_ffi.js", "pauseAudio")
-fn pause_audio_effect() -> Effect(Msg)
+fn pause_audio_ffi() -> fn(fn(Msg) -> Nil) -> Nil
 
 @external(javascript, "./radio_ffi.js", "playTrack")
-fn play_track_effect(track: Track) -> Effect(Msg)
+fn play_track_ffi(track: Track) -> fn(fn(Msg) -> Nil) -> Nil
 
 @external(javascript, "./radio_ffi.js", "seekAudio")
-fn seek_audio_effect(position: Int) -> Effect(Msg)
+fn seek_audio_ffi(position: Int) -> fn(fn(Msg) -> Nil) -> Nil
 
 @external(javascript, "./radio_ffi.js", "setVolume")
-fn set_volume_effect(volume: Float) -> Effect(Msg)
+fn set_volume_ffi(volume: Float) -> fn(fn(Msg) -> Nil) -> Nil
 
 @external(javascript, "./radio_ffi.js", "checkBumperTrigger")
-fn check_bumper_trigger_effect(channel: Option(Channel), position: Int) -> Effect(Msg)
+fn check_bumper_trigger_ffi(channel: Option(Channel), position: Int) -> fn(fn(Msg) -> Nil) -> Nil
+
+// Wrapper functions to create proper effects
+fn load_channels_effect() -> Effect(Msg) {
+  effect.from(fn(dispatch) {
+    load_channels_ffi()(dispatch)
+  })
+}
+
+fn select_channel_effect(channel: Channel) -> Effect(Msg) {
+  effect.from(fn(dispatch) {
+    select_channel_ffi(channel)(dispatch)
+  })
+}
+
+fn play_audio_effect() -> Effect(Msg) {
+  effect.from(fn(dispatch) {
+    play_audio_ffi()(dispatch)
+  })
+}
+
+fn pause_audio_effect() -> Effect(Msg) {
+  effect.from(fn(dispatch) {
+    pause_audio_ffi()(dispatch)
+  })
+}
+
+fn play_track_effect(track: Track) -> Effect(Msg) {
+  effect.from(fn(dispatch) {
+    play_track_ffi(track)(dispatch)
+  })
+}
+
+fn seek_audio_effect(position: Int) -> Effect(Msg) {
+  effect.from(fn(dispatch) {
+    seek_audio_ffi(position)(dispatch)
+  })
+}
+
+fn set_volume_effect(volume: Float) -> Effect(Msg) {
+  effect.from(fn(dispatch) {
+    set_volume_ffi(volume)(dispatch)
+  })
+}
+
+fn check_bumper_trigger_effect(channel: Option(Channel), position: Int) -> Effect(Msg) {
+  effect.from(fn(dispatch) {
+    check_bumper_trigger_ffi(channel, position)(dispatch)
+  })
+}
 
 // Helper function for float/int conversion
 fn int_to_float(i: Int) -> Float {

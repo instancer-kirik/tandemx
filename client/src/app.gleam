@@ -258,7 +258,8 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
         shop_nav.ParentShouldLogin -> {
           let login_effect =
             effect.from(fn(dispatch) {
-              dispatch(SessionReceived(sign_in_with_github()))
+              let _ = sign_in_with_github()
+              dispatch(CheckSession)
             })
           #(
             new_model_with_updated_shop_nav,

@@ -20,6 +20,7 @@ supabase = { path = "../supabase/erlang" }
 glenvy = ">= 2.0.0 and < 3.0.0"
 gleam_otp = ">= 0.16.1 and < 1.0.0"
 # pog = "~> 3.2.0"
+glibsql = "~> 0.8.0"
 
 
 [dev-dependencies]

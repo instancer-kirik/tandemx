@@ -1,3 +1,5 @@
+import gleam/option.{type Option}
+
 pub type Channel {
   Channel(
     id: String,

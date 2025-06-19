@@ -185,6 +185,26 @@ pub fn view(model: Model) -> Element(Msg) {
           view_megamenu_panel(ScheduleMegamenu, model),
         ]),
         html.div([class("nav-item")], [
+          html.a([event.on_click(ParentShouldNavigate("/shop"))], [
+            html.text("🛒 Shop"),
+          ]),
+        ]),
+        html.div([class("nav-item")], [
+          html.a([event.on_click(ParentShouldNavigate("/quote"))], [
+            html.text("💰 Quote"),
+          ]),
+        ]),
+        html.div([class("nav-item")], [
+          html.a([event.on_click(ParentShouldNavigate("/shop"))], [
+            html.text("🛒 Shop"),
+          ]),
+        ]),
+        html.div([class("nav-item")], [
+          html.a([event.on_click(ParentShouldNavigate("/quote"))], [
+            html.text("💰 Quote"),
+          ]),
+        ]),
+        html.div([class("nav-item")], [
           html.a([event.on_click(ParentShouldNavigate("/radio"))], [
             html.text("📻 Radio"),
           ]),
